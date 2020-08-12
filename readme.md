@@ -31,11 +31,11 @@ Merge-pdf is defined in merge-pdfs.yml and it's code is in directory merge-pdfs.
 A function which is created by template common-flask, `faas-cli new merge-pdfs --lang=common-flask` is to merge several pdfs stored in base into a large pdf. Invocation like this
 ```
 curl --request POST 'SERVICE_URL/function/merge-pdfs' \
+--header 'Authorization: Token ef5bef00efe9d81d9341fa1afddcc2dbf9fb0b28' \
 --header 'Content-Type: application/json' \
 --data-raw '{
-	"api_token": "ef5bef00efe9d81d9341fa1afddcc2dbf9fb0b28",
-	"dtable_uuid": "00390415b6dc416a8f2a70a3a1356a18",
-	"username": "xiongchao.cheng@seafile.com",
+	"dtable_uuid": "00390415b6dc416a8f2a70a3a1356a18",  // temp-api-token need post dtable_uuid
+	"username": "xiongchao.cheng@seafile.com",          // temp-api-token need post dtable_uuid
 	"files": ["files/2020-08/011001900611-81790489.pdf", "files/2020-08/013001920011-83356621.pdf"]
 }'
 ```

@@ -26,6 +26,14 @@ def handle(request, context):
     """
     if request.method != 'POST':
         return make_response(('Method %s not allowed.' % (request.method,), 403))
+
+    # Authorization token
+    api_token = request.headers.get('Authorization', '').split()
+    if not api_token or api_token[0].lower() != 'token' or len(api_token) != 2:
+        return make_response(('Permission denied.', 403))
+    api_token = api_token[1]
+
+    # get json data
     try:
         data = json.loads(request.get_data(as_text=True))
     except:
@@ -39,27 +47,26 @@ def handle(request, context):
         if not file.strip('/').endswith('.pdf'):
             return make_response(('file %s invalid.' % (file,), 400))
     username = data.get('username')
-    if not username:
-        return make_response(('username invalid.', 400))
-    api_token = data.get('api_token')
-    if not api_token:
-        return make_response(('api_token invalid.', 400))
     dtable_uuid = data.get('dtable_uuid')
-    if not dtable_uuid:
-        return make_response(('dtable_uuid invalid.', 400))
 
-    # get download links
+    # prepare to get download url
     urls = []
     get_download_url = DTABLE_WEB_SERVICE_URL.strip('/') + '/' + DOWNLOAD_URL.lstrip('/')
     headers = {
         'Authorization': 'Token ' + api_token
     }
-    for file in files:
+
+    # temp api-token need username and dtable_uuid when get download link
+    if username and dtable_uuid:
         params = {
-            'path': file,
             'username': username,
             'dtable_uuid': dtable_uuid
         }
+    else:
+        params = {}
+
+    for file in files:
+        params['path'] = file
         try:
             response = requests.get(get_download_url, params=params, headers=headers)
             if response.status_code != 200:
