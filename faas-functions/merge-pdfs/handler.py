@@ -106,5 +106,6 @@ def handle(request, context):
     merger.write(merged_bytes)
 
     response = make_response(merged_bytes.getvalue())
-    response.headers['Content-Disposition'] = 'attachment;filename*=UTF-8\'\'' + 'merged.pdf'
+    response.headers['Content-Type'] = 'application/pdf'
+    response.headers['Content-Disposition'] = 'attachment;filename*=' + 'merged.pdf'
     return response

@@ -14,7 +14,7 @@ class Context:
 
 @app.route('/', defaults={'path': ''}, methods=['GET', 'PUT', 'POST', 'PATCH', 'DELETE'])
 @app.route('/<path:path>', methods=['GET', 'PUT', 'POST', 'PATCH', 'DELETE'])
-@cross_origin()
+@cross_origin(expose_headers='*')
 def call_handler(path):
     context = Context()
 
