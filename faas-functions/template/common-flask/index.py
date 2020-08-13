@@ -1,7 +1,8 @@
 #!/usr/bin/env python
+import os
 from flask import Flask, request, jsonify, Response
 from waitress import serve
-import os
+from flask_cors import cross_origin
 
 from function import handler
 
@@ -13,6 +14,7 @@ class Context:
 
 @app.route('/', defaults={'path': ''}, methods=['GET', 'PUT', 'POST', 'PATCH', 'DELETE'])
 @app.route('/<path:path>', methods=['GET', 'PUT', 'POST', 'PATCH', 'DELETE'])
+@cross_origin()
 def call_handler(path):
     context = Context()
 
