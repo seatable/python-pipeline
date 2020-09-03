@@ -4,6 +4,16 @@ from flask import Flask, request, jsonify, Response
 from waitress import serve
 from flask_cors import cross_origin
 
+# some extra scripts before import function
+# if nedd extra scripts, create a script file
+# named extra_scripts.py in function path
+# or ignore this
+try:
+    import function.extra_scripts
+except ImportError as e:
+    pass
+
+
 from function import handler
 
 app = Flask(__name__)

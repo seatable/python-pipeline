@@ -103,7 +103,11 @@ def handle(request, context):
             return make_response(('Internal Server Error.', 500))
 
     merged_bytes = io.BytesIO()
-    merger.write(merged_bytes)
+    try:
+        merger.write(merged_bytes)
+    except Exception as e:
+        logging.error('merge pdfs error: %s', e)
+        return make_response(('Internal Server Error.', 500))
 
     response = make_response(merged_bytes.getvalue())
     response.headers['Content-Type'] = 'application/pdf'
