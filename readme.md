@@ -44,3 +44,13 @@ curl --request POST 'SERVICE_URL/function/merge-pdfs' \
 ## Deploy merge-pdfs
 After deploying openfaas and installing faas-cli, cd into path faas-function, you can run `faas-cli build -f merge-pdfs.yml` to build merge-pdfs and run `faas-cli deploy -f merge-pdfs.yml` function.
 Please note that there is an environment variable named `DTABLE_WEB_SERVICE_URL` need to be set in merge-pdfs.yml, or the function will not work.
+
+
+## Run-python function
+run-python function is to download python script file and run it.
+```
+curl --request POST 'SERVICE_URL/function/run-python'
+--data-raw '{
+	"script_url": "https://dev.seafile.com/seafhttp/files/6796540e-4633-40eb-999c-29c2a94595ae/append_row.py"  # script file download-url
+}'
+```
