@@ -25,12 +25,12 @@ def handle(req):
         return make_response(('script_url invalid', 400))
 
     try:
-        resp = requests.get(req)
+        resp = requests.get(script_url)
         if resp.status_code < 200 or resp.status_code >= 300:
-            logging.error('request %s status code: %s', req, resp.status_code)
+            logging.error('request %s status code: %s', script_url, resp.status_code)
             return make_response(('URL error', 400))
     except Exception as e:
-        logging.error('request %s error: %s', req, e)
+        logging.error('request %s error: %s', script_url, e)
         return make_response(('URL error', 400))
 
     file_name = uuid4().hex + '.py'
@@ -38,9 +38,9 @@ def handle(req):
         f.write(resp.content)
 
     try:
-        subprocess.check_call(['python', file_name])
+        subprocess.run(['python', file_name], check=True)
     except Exception as e:
-        logging.error('run file %s error: %s', req, e)
+        logging.error('run file %s error: %s', script_url, e)
         return make_response(('Run error', 500))
     finally:
         try:
