@@ -24,6 +24,11 @@ def handle(req):
     if not script_url:
         return make_response(('script_url invalid', 400))
 
+    env = data.get('env')
+    # env must be map
+    if env and isinstance(env, dict):
+        os.environ.update(env)
+
     try:
         resp = requests.get(script_url)
         if resp.status_code < 200 or resp.status_code >= 300:
@@ -38,7 +43,7 @@ def handle(req):
         f.write(resp.content)
 
     try:
-        subprocess.run(['python', file_name], check=True)
+        subprocess.run(['python', file_name], check=True, env=os.environ)
     except Exception as e:
         logging.error('run file %s error: %s', script_url, e)
         return make_response(('Run error', 500))
