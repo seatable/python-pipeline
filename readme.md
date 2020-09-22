@@ -51,6 +51,10 @@ run-python function is to download python script file and run it.
 ```
 curl --request POST 'SERVICE_URL/function/run-python'
 --data-raw '{
-	"script_url": "https://dev.seafile.com/seafhttp/files/6796540e-4633-40eb-999c-29c2a94595ae/append_row.py"  # script file download-url
+	"script_url": "https://dev.seafile.com/seafhttp/files/6796540e-4633-40eb-999c-29c2a94595ae/append_row.py",  # script file download-url
+	"env": {
+		"dtable_web_url": "",  # dtable-web service URL
+		"api_token": ""  # api-token / temp-api-token of dtable
+	}
 }'
 ```
