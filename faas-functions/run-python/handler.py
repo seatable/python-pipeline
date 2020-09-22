@@ -8,6 +8,12 @@ from uuid import uuid4
 from flask import make_response
 
 
+header_code = b''
+if os.path.isfile('function/template_header.py'):
+    with open('function/template_header.py', 'rb') as f:
+        header_code = f.read() + b'\n'
+
+
 def handle(req):
     """handle a request to the function
     Args:
@@ -40,7 +46,7 @@ def handle(req):
 
     file_name = uuid4().hex + '.py'
     with open(file_name, 'wb') as f:
-        f.write(resp.content)
+        f.write(header_code + resp.content)
 
     try:
         subprocess.run(['python', file_name], check=True, env=os.environ)
