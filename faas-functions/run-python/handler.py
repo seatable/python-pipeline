@@ -42,7 +42,7 @@ def handle(req):
     with open(file_name, 'wb') as f:
         f.write(resp.content)
 
-    output = None  # init output
+    return_code, output = None, None  # init output
 
     try:
         result = subprocess.run(['python', file_name], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
@@ -50,6 +50,7 @@ def handle(req):
         logging.error('run file %s error: %s', script_url, e)
         return make_response(('Run error', 500))
     else:
+        return_code = result.returncode
         output = result.stdout.decode()
     finally:
         try:
@@ -58,5 +59,6 @@ def handle(req):
             pass
 
     return make_response((json.dumps({
-        'output': output
+        'output': output,
+        'return_code': return_code
     }), 200))
