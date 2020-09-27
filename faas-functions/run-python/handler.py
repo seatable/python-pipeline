@@ -42,14 +42,21 @@ def handle(req):
     with open(file_name, 'wb') as f:
         f.write(resp.content)
 
+    output = None  # init output
+
     try:
-        subprocess.run(['python', file_name], check=True, env=os.environ)
+        result = subprocess.run(['python', file_name], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     except Exception as e:
         logging.error('run file %s error: %s', script_url, e)
         return make_response(('Run error', 500))
+    else:
+        output = result.stdout.decode()
     finally:
         try:
             os.remove(file_name)
         except:
             pass
-    return make_response(('', 200))
+
+    return make_response((json.dumps({
+        'output': output
+    }), 200))
