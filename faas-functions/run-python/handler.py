@@ -26,8 +26,15 @@ def handle(req):
 
     env = data.get('env')
     # env must be map
-    if env and isinstance(env, dict):
-        os.environ.update(env)
+    if env and not isinstance(env, dict):
+        env = {}
+    env.update(os.environ)
+
+    # args must be map
+    args = data.get('args')
+    if args and not isinstance(args, dict):
+        args = None
+    args = json.dumps(args).encode() if args else None
 
     try:
         resp = requests.get(script_url)
@@ -45,7 +52,11 @@ def handle(req):
     return_code, output = None, None  # init output
 
     try:
-        result = subprocess.run(['python', file_name], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        result = subprocess.run(['python', file_name],
+                                stdout=subprocess.PIPE,
+                                stderr=subprocess.STDOUT,
+                                input=args,
+                                env=env)
     except Exception as e:
         logging.error('run file %s error: %s', script_url, e)
         return make_response(('Run error', 500))
