@@ -19,7 +19,7 @@ SCHEDULER_WORKERS = 3
 #
 DTABLE_PRIVATE_KEY = ''
 DTABLE_WEB_SERVICE_URL = ''
-INNER_FILE_SERVER_ROOT = 'http://127.0.0.1:8082'
+FILE_SERVER_ROOT = ''
 
 #
 CONF_DIR = '/opt/seatable-faas-scheduler/conf/'
@@ -34,6 +34,6 @@ except ImportError as e:
 try:
     if os.path.exists(CONF_DIR):
         sys.path.insert(0, CONF_DIR)
-    from seatable_thumbnail_settings import *
+    from seatable_faas_scheduler_settings import *
 except ImportError as e:
     pass

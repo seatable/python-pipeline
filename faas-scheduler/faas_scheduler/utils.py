@@ -12,7 +12,7 @@ from faas_scheduler.models import Task, TaskLog
 import faas_scheduler.settings as settings
 
 logger = logging.getLogger(__name__)
-faas_func_url = settings.FAAS_URL.strip('/') + '/function/' + 'run-python'
+faas_func_url = settings.FAAS_URL.rstrip('/') + '/function/' + 'run-python'
 
 
 def get_asset_id(repo_id, dtable_uuid, script_name):
@@ -28,7 +28,7 @@ def get_inner_path(repo_id, asset_id, script_name):
     if not token:
         return None
     inner_path = '%s/files/%s/%s' % (
-        settings.INNER_FILE_SERVER_ROOT.rstrip('/'), token, urllib.parse.quote(script_name))
+        settings.FILE_SERVER_ROOT.rstrip('/'), token, urllib.parse.quote(script_name))
 
     return inner_path
 
@@ -68,6 +68,7 @@ def call_faas_func(script_url, temp_api_token):
 def get_task(db_session, dtable_uuid, script_name):
     task = db_session.query(
         Task).filter_by(dtable_uuid=dtable_uuid, script_name=script_name).first()
+
     return task
 
 
@@ -76,6 +77,7 @@ def add_task(db_session, repo_id, dtable_uuid, script_name, trigger, is_active):
                 json.dumps(trigger), is_active)
     db_session.add(task)
     db_session.commit()
+
     return task
 
 
@@ -92,12 +94,14 @@ def update_task(db_session, task, trigger, is_active):
 def delete_task(db_session, task):
     db_session.delete(task)
     db_session.commit()
+
     return True
 
 
 def list_tasks(db_session, is_active=True):
     tasks = db_session.query(
         Task).filter_by(is_active=is_active)
+
     return tasks
 
 
@@ -105,11 +109,11 @@ def add_task_log(db_session, task_id):
     task_log = TaskLog(task_id, datetime.now())
     db_session.add(task_log)
     db_session.commit()
+
     return task_log
 
 
 def update_task_log(db_session, task_log, success, return_code, output):
-
     task_log.finished_at = datetime.now()
     task_log.success = success
     task_log.return_code = return_code
@@ -122,6 +126,7 @@ def update_task_log(db_session, task_log, success, return_code, output):
 def list_task_logs(db_session, task_id):
     task_logs = db_session.query(
         TaskLog).filter_by(task_id=task_id)
+
     return task_logs
 
 

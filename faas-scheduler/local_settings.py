@@ -7,6 +7,7 @@ DATABASE_NAME = 'faas_scheduler'
 
 #
 FAAS_URL = 'http://127.0.0.1:5055/'
+FILE_SERVER_ROOT = 'http://127.0.0.1:8082'
 
 #
 DTABLE_PRIVATE_KEY = 'M@O8VWUb81YvmtWLHGB2I_V7di5-@0p(MF*GrE!sIws23F'
