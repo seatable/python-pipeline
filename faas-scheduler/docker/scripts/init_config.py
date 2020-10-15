@@ -67,11 +67,12 @@ DATABASE_NAME = 'faas_scheduler'
 FAAS_URL = ''
 
 # seatable
-FILE_SERVER_ROOT = ''
+FILE_SERVER_ROOT = '%s/seafhttp/'
 DTABLE_WEB_SERVICE_URL = ''
 DTABLE_PRIVATE_KEY = ''
+SEATABLE_SERVER_AUTH_KEY = ''
 
-""" % (DB_ROOT_PASSWD, DB_HOST)
+""" % (DB_ROOT_PASSWD, DB_HOST, SERVER_URL)
 
 if not os.path.exists(seatable_faas_scheduler_config_path):
     with open(seatable_faas_scheduler_config_path, 'w') as f:
@@ -100,6 +101,25 @@ nginx_common_config = """
 
         access_log      /opt/nginx-logs/seatable-faas-scheduler.access.log seatableformat;
         error_log       /opt/nginx-logs/seatable-faas-scheduler.error.log;
+    }
+
+    location /seafhttp {
+        rewrite ^/seafhttp(.*)$ $1 break;
+        proxy_pass http://127.0.0.1:8082;
+
+        client_max_body_size 0;
+        proxy_set_header   X-Forwarded-For $proxy_add_x_forwarded_for;
+
+        proxy_request_buffering off;
+        proxy_connect_timeout  36000s;
+        proxy_read_timeout  36000s;
+        proxy_send_timeout  36000s;
+
+        send_timeout  36000s;
+
+        access_log      /opt/nginx-logs/seafhttp.access.log seatableformat;
+        error_log       /opt/nginx-logs/seafhttp.error.log;
+
     }
 
 }

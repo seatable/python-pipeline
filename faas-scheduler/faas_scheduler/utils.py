@@ -15,6 +15,13 @@ logger = logging.getLogger(__name__)
 faas_func_url = settings.FAAS_URL.rstrip('/') + '/function/' + 'run-python'
 
 
+def check_auth_key(request):
+    value = request.headers.get('Authorization', '')
+    if value == 'Token ' + settings.SEATABLE_SERVER_AUTH_KEY:
+        return True
+    return False
+
+
 def get_asset_id(repo_id, dtable_uuid, script_name):
     script_path = os.path.join(
         '/asset', str(dtable_uuid), 'scripts', script_name)
@@ -22,15 +29,15 @@ def get_asset_id(repo_id, dtable_uuid, script_name):
     return asset_id
 
 
-def get_inner_path(repo_id, asset_id, script_name):
+def get_script_url(repo_id, asset_id, script_name):
     token = seafile_api.get_fileserver_access_token(
-        repo_id, asset_id, 'view', '', use_onetime=True)
+        repo_id, asset_id, 'download', '', use_onetime=True)
     if not token:
         return None
-    inner_path = '%s/files/%s/%s' % (
+    script_url = '%s/files/%s/%s' % (
         settings.FILE_SERVER_ROOT.rstrip('/'), token, urllib.parse.quote(script_name))
 
-    return inner_path
+    return script_url
 
 
 def get_temp_api_token(dtable_uuid, script_name):
@@ -159,9 +166,9 @@ def run_task(db_session, task):
         task_log = add_task_log(db_session, task_id)
 
         asset_id = get_asset_id(repo_id, dtable_uuid, script_name)
-        inner_path = get_inner_path(repo_id, asset_id, script_name)
+        script_url = get_script_url(repo_id, asset_id, script_name)
         temp_api_token = get_temp_api_token(dtable_uuid, script_name)
-        result = call_faas_func(inner_path, temp_api_token)
+        result = call_faas_func(script_url, temp_api_token)
 
         if not result:
             success = False

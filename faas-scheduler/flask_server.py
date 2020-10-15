@@ -1,20 +1,24 @@
+from gevent import monkey
+monkey.patch_all()
+
 import json
 import logging
 from flask import Flask, request, make_response
 from gevent.pywsgi import WSGIServer
-from gevent import monkey
 
 from faas_scheduler import DBSession
-from faas_scheduler.utils import get_asset_id, get_inner_path, \
+from faas_scheduler.utils import check_auth_key, get_asset_id, get_script_url, \
     get_temp_api_token, call_faas_func, add_task, get_task, update_task, delete_task
 
-monkey.patch_all()
 app = Flask(__name__)
 logger = logging.getLogger(__name__)
 
 
 @app.route('/script/run/', methods=['POST'])
 def run_script():
+    if not check_auth_key(request):
+        return make_response(('Forbidden', 403))
+
     try:
         data = json.loads(request.data)
         if not isinstance(data, dict):
@@ -35,13 +39,13 @@ def run_script():
     if not asset_id:
         return make_response(('Not found', 404))
 
-    inner_path = get_inner_path(repo_id, asset_id, script_name)
-    if not inner_path:
+    script_url = get_script_url(repo_id, asset_id, script_name)
+    if not script_url:
         return make_response(('Not found', 404))
 
     temp_api_token = get_temp_api_token(dtable_uuid, script_name)
 
-    result = call_faas_func(inner_path, temp_api_token)
+    result = call_faas_func(script_url, temp_api_token)
     if not result:
         return make_response(('Internal server error', 500))
 
@@ -50,6 +54,9 @@ def run_script():
 
 @app.route('/tasks/', methods=['POST'])
 def tasks():
+    if not check_auth_key(request):
+        return make_response(('Forbidden', 403))
+
     try:
         data = json.loads(request.data)
         if not isinstance(data, dict):
@@ -86,6 +93,9 @@ def tasks():
 
 @app.route('/tasks/<dtable_uuid>/<script_name>/', methods=['GET', 'PUT', 'DELETE'])
 def task(dtable_uuid, script_name):
+    if not check_auth_key(request):
+        return make_response(('Forbidden', 403))
+
     try:
         db_session = DBSession()
         task = get_task(db_session, dtable_uuid, script_name)
