@@ -13,10 +13,10 @@ app = Flask(__name__)
 logger = logging.getLogger(__name__)
 
 
-@app.route('/script/run', methods=['POST'])
+@app.route('/script/run/', methods=['POST'])
 def run_script():
     try:
-        data = json.loads(request.dada)
+        data = json.loads(request.data)
         if not isinstance(data, dict):
             return make_response(('Bad request', 400))
     except Exception as e:
@@ -51,7 +51,7 @@ def run_script():
 @app.route('/tasks/', methods=['POST'])
 def tasks():
     try:
-        data = json.loads(request.dada)
+        data = json.loads(request.data)
         if not isinstance(data, dict):
             return make_response(('Bad request', 400))
     except Exception as e:
@@ -73,7 +73,7 @@ def tasks():
     try:
         task_in_db = get_task(db_session, dtable_uuid, script_name)
         if task_in_db:
-            return make_response(('task exist', 400))
+            return make_response(('task exists', 400))
 
         task = add_task(
             db_session, repo_id, dtable_uuid, script_name, trigger, is_active)
@@ -97,7 +97,7 @@ def task(dtable_uuid, script_name):
 
         elif request.method == 'PUT':
             try:
-                data = json.loads(request.dada)
+                data = json.loads(request.data)
                 if not isinstance(data, dict):
                     return make_response(('Bad request', 400))
             except Exception as e:

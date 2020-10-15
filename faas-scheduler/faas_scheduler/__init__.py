@@ -3,9 +3,9 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 import faas_scheduler.settings as settings
-from faas_scheduler.scheduler import FAASScheduler
 
-# db
+
+# DBSession for flask and scheduler
 db_url = 'mysql+pymysql://%s:%s@%s:%s/%s?charset=utf8mb4' % \
     (settings.MYSQL_USER, settings.MYSQL_PASSWORD,
      settings.MYSQL_HOST, settings.MYSQL_PORT, settings.DATABASE_NAME)
@@ -14,8 +14,3 @@ db_kwargs = dict(pool_recycle=300, echo=False, echo_pool=False)
 engine = create_engine(db_url, **db_kwargs)
 Base = declarative_base()
 DBSession = sessionmaker(bind=engine)
-
-
-# scheduler
-scheduler = FAASScheduler()
-scheduler.start()

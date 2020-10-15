@@ -10,7 +10,7 @@ class Task(Base):
     id = Column(Integer, primary_key=True)
     repo_id = Column(String(36))
     dtable_uuid = Column(String(36))
-    script_name = Column(String(500))
+    script_name = Column(String(255))
     trigger = Column(Text)
     last_trigger_time = Column(DateTime, nullable=True)
     is_active = Column(Boolean)

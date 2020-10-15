@@ -2,14 +2,16 @@ import os
 import jwt
 import time
 import json
+import logging
 import requests
 import urllib.parse
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from seaserv import seafile_api
 from faas_scheduler.models import Task, TaskLog
 import faas_scheduler.settings as settings
 
+logger = logging.getLogger(__name__)
 faas_func_url = settings.FAAS_URL.strip('/') + '/function/' + 'run-python'
 
 
@@ -78,25 +80,24 @@ def add_task(db_session, repo_id, dtable_uuid, script_name, trigger, is_active):
 
 
 def update_task(db_session, task, trigger, is_active):
-    kwargs = {}
     if trigger is not None:
-        kwargs['trigger'] = json.dumps(trigger)
+        task.trigger = json.dumps(trigger)
     if is_active is not None:
-        kwargs['is_active'] = is_active
-    task.update(kwargs)
+        task.is_active = is_active
     db_session.commit()
+
     return task
 
 
 def delete_task(db_session, task):
-    task.delete()
+    db_session.delete(task)
     db_session.commit()
     return True
 
 
-def list_task(db_session, is_active=True):
+def list_tasks(db_session, is_active=True):
     tasks = db_session.query(
-        Task).filter_by(dis_active=is_active)
+        Task).filter_by(is_active=is_active)
     return tasks
 
 
@@ -108,17 +109,64 @@ def add_task_log(db_session, task_id):
 
 
 def update_task_log(db_session, task_log, success, return_code, output):
-    task_log.update({
-        'finished_at': datetime.now(),
-        'success': success,
-        'return_code': return_code,
-        'output': json.dumps(output) if output else None,
-    })
+
+    task_log.finished_at = datetime.now()
+    task_log.success = success
+    task_log.return_code = return_code
+    task_log.output = output
     db_session.commit()
+
     return task_log
 
 
-def list_task_log(db_session, task_id):
+def list_task_logs(db_session, task_id):
     task_logs = db_session.query(
         TaskLog).filter_by(task_id=task_id)
     return task_logs
+
+
+def list_tasks_to_run(db_session):
+    active_tasks = list_tasks(db_session)
+    tasks = []
+    now = datetime.now()
+    for task in active_tasks:
+        last_trigger_time = task.last_trigger_time
+        trigger = json.loads(task.trigger)
+        condition = trigger.get('condition')
+        alarm_days = trigger.get('alarm_days', 7)
+
+        if last_trigger_time == None:
+            tasks.append(task)
+        else:
+            if last_trigger_time + timedelta(days=alarm_days) <= now:
+                tasks.append(task)
+
+    return tasks
+
+
+def run_task(db_session, task):
+    task_id = task.id
+    repo_id = task.repo_id
+    dtable_uuid = task.dtable_uuid
+    script_name = task.script_name
+
+    try:
+        task_log = add_task_log(db_session, task_id)
+
+        asset_id = get_asset_id(repo_id, dtable_uuid, script_name)
+        inner_path = get_inner_path(repo_id, asset_id, script_name)
+        temp_api_token = get_temp_api_token(dtable_uuid, script_name)
+        result = call_faas_func(inner_path, temp_api_token)
+
+        if not result:
+            success = False
+            return_code = None
+            output = None
+        else:
+            success = False
+            return_code = result.get('return_code')
+            output = result.get('output')
+
+        update_task_log(db_session, task_log, success, return_code, output)
+    except Exception as e:
+        logger.exception('Run task %d error: %s' % (task_id, e))

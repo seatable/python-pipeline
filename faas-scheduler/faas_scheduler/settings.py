@@ -14,10 +14,12 @@ FAAS_URL = ''
 
 #
 SCHEDULER_INTERVAL = 3600
+SCHEDULER_WORKERS = 3
 
 #
 DTABLE_PRIVATE_KEY = ''
 DTABLE_WEB_SERVICE_URL = ''
+INNER_FILE_SERVER_ROOT = 'http://127.0.0.1:8082'
 
 #
 CONF_DIR = '/opt/seatable-faas-scheduler/conf/'

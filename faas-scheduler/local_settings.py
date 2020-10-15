@@ -1,0 +1,15 @@
+# mysql
+MYSQL_USER = 'root'
+MYSQL_PASSWORD = 'db_dev'
+MYSQL_HOST = 'db'
+MYSQL_PORT = '3306'
+DATABASE_NAME = 'faas_scheduler'
+
+#
+FAAS_URL = 'http://127.0.0.1:5055/'
+
+#
+DTABLE_PRIVATE_KEY = 'M@O8VWUb81YvmtWLHGB2I_V7di5-@0p(MF*GrE!sIws23F'
+DTABLE_WEB_SERVICE_URL = 'http://127.0.0.1/'
+LOG_DIR = 'logs/'
+SCHEDULER_INTERVAL = 10

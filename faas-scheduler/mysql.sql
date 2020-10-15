@@ -2,7 +2,7 @@ CREATE TABLE `task` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `repo_id` varchar(36) NOT NULL,
   `dtable_uuid` varchar(36) NOT NULL,
-  `script_name` varchar(500) NOT NULL,
+  `script_name` varchar(255) NOT NULL,
   `trigger` longtext NOT NULL,
   `last_trigger_time` datetime(6),
   `is_active` tinyint(1) NOT NULL,
