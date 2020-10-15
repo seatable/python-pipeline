@@ -28,13 +28,14 @@ def handle(req):
     # env must be map
     if env and not isinstance(env, dict):
         env = {}
+    env['is_cloud'] = "1"
     env.update(os.environ)
 
-    # args must be map
-    args = data.get('args')
-    if args and not isinstance(args, dict):
-        args = None
-    args = json.dumps(args).encode() if args else None
+    # context_data must be map
+    context_data = data.get('context_data')
+    if context_data and not isinstance(context_data, dict):
+        context_data = None
+    context_data = json.dumps(context_data).encode() if context_data else None
 
     try:
         resp = requests.get(script_url)
@@ -55,7 +56,7 @@ def handle(req):
         result = subprocess.run(['python', file_name],
                                 stdout=subprocess.PIPE,
                                 stderr=subprocess.STDOUT,
-                                input=args,
+                                input=context_data,
                                 env=env)
     except Exception as e:
         logging.error('run file %s error: %s', script_url, e)
