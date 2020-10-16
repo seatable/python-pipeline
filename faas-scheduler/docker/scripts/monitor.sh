@@ -56,7 +56,7 @@ function monitor_flask_server() {
         log "Start $process_name"
         sleep 0.2
         cd /opt/seatable-faas-scheduler/faas-scheduler/
-        python3 flask_server.py &>> /opt/seatable-faas-scheduler/logs/flask.log &
+        python3 flask_server.py &>>/opt/seatable-faas-scheduler/logs/flask.log &
         sleep 0.2
     fi
 }
@@ -68,7 +68,7 @@ function monitor_seatable_faas_scheduler() {
         log "Start $process_name"
         sleep 0.2
         cd /opt/seatable-faas-scheduler/faas-scheduler/
-        python3 scheduler.py &>> /opt/seatable-faas-scheduler/logs/scheduler.log &
+        python3 scheduler.py &>>/opt/seatable-faas-scheduler/logs/scheduler.log &
         sleep 0.2
     fi
 }

@@ -20,7 +20,7 @@ SCHEDULER_WORKERS = 3
 DTABLE_PRIVATE_KEY = ''
 DTABLE_WEB_SERVICE_URL = ''
 FILE_SERVER_ROOT = ''
-SEATABLE_SERVER_AUTH_KEY = ''
+AUTH_TOKEN = ''
 
 #
 CONF_DIR = '/opt/seatable-faas-scheduler/conf/'

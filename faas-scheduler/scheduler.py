@@ -1,4 +1,5 @@
 import os
+import gc
 import time
 import logging
 from concurrent.futures import ThreadPoolExecutor, wait, ALL_COMPLETED
@@ -20,7 +21,7 @@ class FAASScheduler(object):
 
     def start(self):
         while True:
-            logging.info('Starts to run tasks...')
+            logger.info('Start run tasks...')
             db_session = DBSession()
             try:
                 # main
@@ -35,7 +36,8 @@ class FAASScheduler(object):
                 db_session.close()
 
             # sleep
-            logging.info('Sleep %d...' % self.interval)
+            logger.info('gc.collect: ' + str(gc.collect()))
+            logger.info('Sleep %d...' % self.interval)
             time.sleep(self.interval)
 
 

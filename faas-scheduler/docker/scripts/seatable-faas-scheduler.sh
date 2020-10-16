@@ -50,13 +50,13 @@ function start_server() {
     sleep 0.2
 
     cd /opt/seatable-faas-scheduler/faas-scheduler/
-    python3 flask_server.py &>> /opt/seatable-faas-scheduler/logs/flask.log &
+    python3 flask_server.py &>>/opt/seatable-faas-scheduler/logs/flask.log &
     sleep 0.2
 
-    python3 scheduler.py &>> /opt/seatable-faas-scheduler/logs/scheduler.log &
+    python3 scheduler.py &>>/opt/seatable-faas-scheduler/logs/scheduler.log &
     sleep 0.2
 
-    /scripts/monitor.sh &>> /opt/seatable-faas-scheduler/logs/monitor.log &
+    /scripts/monitor.sh &>>/opt/seatable-faas-scheduler/logs/monitor.log &
 
     echo "SeaTable-faas-scheduler started"
     echo

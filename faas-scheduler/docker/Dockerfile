@@ -8,6 +8,11 @@ COPY scripts/my-ubuntu-source.list /etc/apt/sources.list
 ## Dev related libs
 RUN apt-get update --fix-missing
 
+# Time zone
+RUN ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
+RUN echo "Asia/Shanghai" > /etc/timezone
+RUN export DEBIAN_FRONTEND=noninteractive && apt-get install -y tzdata
+
 # Nginx
 RUN apt-get install -y nginx
 

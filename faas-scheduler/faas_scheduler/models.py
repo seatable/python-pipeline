@@ -59,5 +59,5 @@ class TaskLog(Base):
             'finished_at': self.finished_at,
             'success': self.success,
             'return_code': self.return_code,
-            'output': json.loads(self.output) if self.output else None,
+            'output': self.output,
         }

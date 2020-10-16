@@ -7,8 +7,9 @@ from flask import Flask, request, make_response
 from gevent.pywsgi import WSGIServer
 
 from faas_scheduler import DBSession
-from faas_scheduler.utils import check_auth_key, get_asset_id, get_script_url, \
-    get_temp_api_token, call_faas_func, add_task, get_task, update_task, delete_task
+from faas_scheduler.utils import check_auth_token, get_asset_id, get_script_url, \
+    get_temp_api_token, call_faas_func, add_task, get_task, update_task, \
+    delete_task, list_task_logs
 
 app = Flask(__name__)
 logger = logging.getLogger(__name__)
@@ -16,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 @app.route('/script/run/', methods=['POST'])
 def run_script():
-    if not check_auth_key(request):
+    if not check_auth_token(request):
         return make_response(('Forbidden', 403))
 
     try:
@@ -54,7 +55,7 @@ def run_script():
 
 @app.route('/tasks/', methods=['POST'])
 def tasks():
-    if not check_auth_key(request):
+    if not check_auth_token(request):
         return make_response(('Forbidden', 403))
 
     try:
@@ -93,7 +94,7 @@ def tasks():
 
 @app.route('/tasks/<dtable_uuid>/<script_name>/', methods=['GET', 'PUT', 'DELETE'])
 def task(dtable_uuid, script_name):
-    if not check_auth_key(request):
+    if not check_auth_token(request):
         return make_response(('Forbidden', 403))
 
     try:
@@ -121,6 +122,26 @@ def task(dtable_uuid, script_name):
         elif request.method == 'DELETE':
             delete_task(db_session, task)
             return make_response(({'success': True}, 200))
+
+    except Exception as e:
+        logger.exception(e)
+        return make_response(('Internal server error', 500))
+
+
+@app.route('/tasks/<dtable_uuid>/<script_name>/logs/', methods=['GET'])
+def task_logs(dtable_uuid, script_name):
+    if not check_auth_token(request):
+        return make_response(('Forbidden', 403))
+
+    try:
+        db_session = DBSession()
+        task = get_task(db_session, dtable_uuid, script_name)
+        if not task:
+            make_response(('Not found', 404))
+
+        task_logs = list_task_logs(db_session, task.id)
+        task_log_list = [task_log.to_dict() for task_log in task_logs]
+        return make_response(({'task_logs': task_log_list}, 200))
 
     except Exception as e:
         logger.exception(e)

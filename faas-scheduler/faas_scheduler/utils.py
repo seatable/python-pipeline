@@ -15,10 +15,11 @@ logger = logging.getLogger(__name__)
 faas_func_url = settings.FAAS_URL.rstrip('/') + '/function/' + 'run-python'
 
 
-def check_auth_key(request):
+def check_auth_token(request):
     value = request.headers.get('Authorization', '')
-    if value == 'Token ' + settings.SEATABLE_SERVER_AUTH_KEY:
+    if value == 'Token ' + settings.AUTH_TOKEN:
         return True
+
     return False
 
 
@@ -26,6 +27,7 @@ def get_asset_id(repo_id, dtable_uuid, script_name):
     script_path = os.path.join(
         '/asset', str(dtable_uuid), 'scripts', script_name)
     asset_id = seafile_api.get_file_id_by_path(repo_id, script_path)
+
     return asset_id
 
 
@@ -138,6 +140,7 @@ def list_task_logs(db_session, task_id):
 
 
 def list_tasks_to_run(db_session):
+    """ Only for scheduler """
     active_tasks = list_tasks(db_session)
     tasks = []
     now = datetime.now()
@@ -156,7 +159,15 @@ def list_tasks_to_run(db_session):
     return tasks
 
 
+def update_task_trigger_time(db_session, task):
+    task.last_trigger_time = datetime.now()
+    db_session.commit()
+
+    return task
+
+
 def run_task(db_session, task):
+    """ Only for scheduler """
     task_id = task.id
     repo_id = task.repo_id
     dtable_uuid = task.dtable_uuid
@@ -175,10 +186,13 @@ def run_task(db_session, task):
             return_code = None
             output = None
         else:
-            success = False
+            success = True
             return_code = result.get('return_code')
             output = result.get('output')
+            task = update_task_trigger_time(db_session, task)
 
         update_task_log(db_session, task_log, success, return_code, output)
     except Exception as e:
         logger.exception('Run task %d error: %s' % (task_id, e))
+
+    return True
