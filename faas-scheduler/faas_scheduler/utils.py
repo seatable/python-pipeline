@@ -94,7 +94,7 @@ def add_task(db_session, repo_id, dtable_uuid, script_name, context_data, trigge
 
 
 def update_task(db_session, task, context_data, trigger, is_active):
-    if context_data:
+    if context_data is not None:
         task.context_data = json.dumps(context_data)
     if trigger is not None:
         task.trigger = json.dumps(trigger)
@@ -144,6 +144,13 @@ def list_task_logs(db_session, task_id):
     return task_logs
 
 
+def update_task_trigger_time(db_session, task):
+    task.last_trigger_time = datetime.now()
+    db_session.commit()
+
+    return task
+
+
 def list_tasks_to_run(db_session):
     """ Only for scheduler """
     active_tasks = list_tasks(db_session)
@@ -164,15 +171,11 @@ def list_tasks_to_run(db_session):
     return tasks
 
 
-def update_task_trigger_time(db_session, task):
-    task.last_trigger_time = datetime.now()
-    db_session.commit()
-
-    return task
-
-
-def run_task(db_session, task):
+def run_task(task):
     """ Only for scheduler """
+    from faas_scheduler import DBSession
+    db_session = DBSession()  # for multithreading
+
     task_id = task.id
     repo_id = task.repo_id
     dtable_uuid = task.dtable_uuid
@@ -180,11 +183,15 @@ def run_task(db_session, task):
     context_data = json.dumps(task.context_data) if task.context_data else None
 
     try:
-        task_log = add_task_log(db_session, task_id)
-
         asset_id = get_asset_id(repo_id, dtable_uuid, script_name)
+        if not asset_id:
+            task = get_task(db_session, dtable_uuid, script_name)
+            update_task(db_session, task, None, None, False)
+            raise ValueError('script not found')
         script_url = get_script_url(repo_id, asset_id, script_name)
         temp_api_token = get_temp_api_token(dtable_uuid, script_name)
+        #
+        task_log = add_task_log(db_session, task_id)
         result = call_faas_func(script_url, temp_api_token, context_data)
 
         if not result:
@@ -195,10 +202,13 @@ def run_task(db_session, task):
             success = True
             return_code = result.get('return_code')
             output = result.get('output')
-            task = update_task_trigger_time(db_session, task)
+            task = get_task(db_session, dtable_uuid, script_name)
+            update_task_trigger_time(db_session, task)
 
         update_task_log(db_session, task_log, success, return_code, output)
     except Exception as e:
         logger.exception('Run task %d error: %s' % (task_id, e))
+    finally:
+        db_session.close()
 
     return True
