@@ -11,6 +11,7 @@ class Task(Base):
     repo_id = Column(String(36))
     dtable_uuid = Column(String(36))
     script_name = Column(String(255))
+    context_data = Column(Text, nullable=True)
     trigger = Column(Text)
     last_trigger_time = Column(DateTime, nullable=True)
     is_active = Column(Boolean)
@@ -19,10 +20,11 @@ class Task(Base):
         UniqueConstraint('dtable_uuid', 'script_name'),
     )
 
-    def __init__(self, repo_id, dtable_uuid, script_name, trigger, is_active):
+    def __init__(self, repo_id, dtable_uuid, script_name, context_data, trigger, is_active):
         self.repo_id = repo_id
         self.dtable_uuid = dtable_uuid
         self.script_name = script_name
+        self.context_data = context_data
         self.trigger = trigger
         self.is_active = is_active
 
@@ -31,6 +33,7 @@ class Task(Base):
             'id': self.id,
             'dtable_uuid': self.dtable_uuid,
             'script_name': self.script_name,
+            'context_data': json.loads(self.context_data) if self.context_data else None,
             'trigger': json.loads(self.trigger),
             'last_trigger_time': self.last_trigger_time,
             'is_active': self.is_active,

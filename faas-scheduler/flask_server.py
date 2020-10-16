@@ -15,7 +15,7 @@ app = Flask(__name__)
 logger = logging.getLogger(__name__)
 
 
-@app.route('/script/run/', methods=['POST'])
+@app.route('/run-script/', methods=['POST'])
 def run_script():
     if not check_auth_token(request):
         return make_response(('Forbidden', 403))
@@ -30,6 +30,7 @@ def run_script():
     repo_id = data.get('repo_id')
     dtable_uuid = data.get('dtable_uuid')
     script_name = data.get('script_name')
+    context_data = data.get('context_data')
     if not repo_id \
             or not dtable_uuid \
             or not script_name:
@@ -46,7 +47,7 @@ def run_script():
 
     temp_api_token = get_temp_api_token(dtable_uuid, script_name)
 
-    result = call_faas_func(script_url, temp_api_token)
+    result = call_faas_func(script_url, temp_api_token, context_data)
     if not result:
         return make_response(('Internal server error', 500))
 
@@ -68,6 +69,7 @@ def tasks():
     repo_id = data.get('repo_id')
     dtable_uuid = data.get('dtable_uuid')
     script_name = data.get('script_name')
+    context_data = data.get('context_data')
     trigger = data.get('trigger')
     is_active = data.get('is_active', True)
     if not repo_id \
@@ -84,7 +86,7 @@ def tasks():
             return make_response(('task exists', 400))
 
         task = add_task(
-            db_session, repo_id, dtable_uuid, script_name, trigger, is_active)
+            db_session, repo_id, dtable_uuid, script_name, context_data, trigger, is_active)
     except Exception as e:
         logger.exception(e)
         return make_response(('Internal server error', 500))
@@ -101,7 +103,7 @@ def task(dtable_uuid, script_name):
         db_session = DBSession()
         task = get_task(db_session, dtable_uuid, script_name)
         if not task:
-            make_response(('Not found', 404))
+            return make_response(('Not found', 404))
 
         if request.method == 'GET':
             return make_response(({'task': task.to_dict()}, 200))
@@ -114,9 +116,10 @@ def task(dtable_uuid, script_name):
             except Exception as e:
                 return make_response(('Bad request', 400))
 
+            context_data = data.get('context_data')
             trigger = data.get('trigger', None)
             is_active = data.get('is_active', None)
-            task = update_task(db_session, task, trigger, is_active)
+            task = update_task(db_session, task, context_data, trigger, is_active)
             return make_response(({'task': task.to_dict()}, 200))
 
         elif request.method == 'DELETE':
@@ -137,7 +140,7 @@ def task_logs(dtable_uuid, script_name):
         db_session = DBSession()
         task = get_task(db_session, dtable_uuid, script_name)
         if not task:
-            make_response(('Not found', 404))
+            return make_response(('Not found', 404))
 
         task_logs = list_task_logs(db_session, task.id)
         task_log_list = [task_log.to_dict() for task_log in task_logs]

@@ -12,7 +12,7 @@ from faas_scheduler.models import Task, TaskLog
 import faas_scheduler.settings as settings
 
 logger = logging.getLogger(__name__)
-faas_func_url = settings.FAAS_URL.rstrip('/') + '/function/' + 'run-python'
+faas_func_url = settings.FAAS_URL.rstrip('/') + '/function/run-python'
 
 
 def check_auth_token(request):
@@ -52,19 +52,21 @@ def get_temp_api_token(dtable_uuid, script_name):
     return temp_api_token
 
 
-def call_faas_func(script_url, temp_api_token):
+def call_faas_func(script_url, temp_api_token, context_data):
     response = requests.post(faas_func_url, json={
         'script_url': script_url,
         'env': {
             'dtable_web_url': settings.DTABLE_WEB_SERVICE_URL,
             'api_token': temp_api_token,
-        }
+        },
+        'context_data': context_data,
     })
 
     # No matter the success or failure of running script
     # return 200 always
     # if response status is not 200, it indicates that some internal error occurs
     if response.status_code != 200:
+        logger.error('FAAS error: %d %s' % (response.status_code, response.text))
         return None
 
     # there is a `output`, normal output or error output, and a `return_code`, 0 success 1 fail, in response json
@@ -81,16 +83,19 @@ def get_task(db_session, dtable_uuid, script_name):
     return task
 
 
-def add_task(db_session, repo_id, dtable_uuid, script_name, trigger, is_active):
-    task = Task(repo_id, dtable_uuid, script_name,
-                json.dumps(trigger), is_active)
+def add_task(db_session, repo_id, dtable_uuid, script_name, context_data, trigger, is_active):
+    context_data = json.dumps(context_data) if context_data else None
+    task = Task(
+        repo_id, dtable_uuid, script_name, context_data, json.dumps(trigger), is_active)
     db_session.add(task)
     db_session.commit()
 
     return task
 
 
-def update_task(db_session, task, trigger, is_active):
+def update_task(db_session, task, context_data, trigger, is_active):
+    if context_data:
+        task.context_data = json.dumps(context_data)
     if trigger is not None:
         task.trigger = json.dumps(trigger)
     if is_active is not None:
@@ -172,6 +177,7 @@ def run_task(db_session, task):
     repo_id = task.repo_id
     dtable_uuid = task.dtable_uuid
     script_name = task.script_name
+    context_data = json.dumps(task.context_data) if task.context_data else None
 
     try:
         task_log = add_task_log(db_session, task_id)
@@ -179,7 +185,7 @@ def run_task(db_session, task):
         asset_id = get_asset_id(repo_id, dtable_uuid, script_name)
         script_url = get_script_url(repo_id, asset_id, script_name)
         temp_api_token = get_temp_api_token(dtable_uuid, script_name)
-        result = call_faas_func(script_url, temp_api_token)
+        result = call_faas_func(script_url, temp_api_token, context_data)
 
         if not result:
             success = False

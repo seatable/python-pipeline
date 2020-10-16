@@ -3,6 +3,7 @@ CREATE TABLE `task` (
   `repo_id` varchar(36) NOT NULL,
   `dtable_uuid` varchar(36) NOT NULL,
   `script_name` varchar(255) NOT NULL,
+  `context_data` longtext,
   `trigger` longtext NOT NULL,
   `last_trigger_time` datetime(6),
   `is_active` tinyint(1) NOT NULL,
