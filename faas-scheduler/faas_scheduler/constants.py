@@ -1,1 +1,1 @@
-CONDITION_NEAR_DEADLINE = 'near_deadline'
+CONDITION_DAILY = 'daily'

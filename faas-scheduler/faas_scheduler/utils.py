@@ -9,7 +9,7 @@ from datetime import datetime, timedelta
 
 from seaserv import seafile_api
 from faas_scheduler.models import Task, TaskLog
-from faas_scheduler.constants import CONDITION_NEAR_DEADLINE
+from faas_scheduler.constants import CONDITION_DAILY
 import faas_scheduler.settings as settings
 
 logger = logging.getLogger(__name__)
@@ -161,7 +161,8 @@ def list_tasks_to_run(db_session):
         last_trigger_time = task.last_trigger_time
         trigger = json.loads(task.trigger)
         condition = trigger.get('condition')
-        alarm_days = trigger.get('alarm_days', 7)
+        # if condition == CONDITION_DAILY:
+        alarm_days = trigger.get('alarm_days', 1)
 
         if last_trigger_time == None:
             tasks.append(task)
