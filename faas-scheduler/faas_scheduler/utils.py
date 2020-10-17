@@ -9,6 +9,7 @@ from datetime import datetime, timedelta
 
 from seaserv import seafile_api
 from faas_scheduler.models import Task, TaskLog
+from faas_scheduler.constants import CONDITION_NEAR_DEADLINE
 import faas_scheduler.settings as settings
 
 logger = logging.getLogger(__name__)
