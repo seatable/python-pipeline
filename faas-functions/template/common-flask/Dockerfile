@@ -8,6 +8,7 @@ ARG ADDITIONAL_PACKAGE
 # Alternatively use ADD https:// (which will not be cached by Docker builder)
 
 RUN apk --no-cache add ${ADDITIONAL_PACKAGE}
+RUN apk --no-cache add gcc musl-dev libxslt-dev
 
 # Add non root user
 RUN addgroup -S app && adduser app -S -G app
