@@ -22,11 +22,10 @@ class FAASScheduler(object):
     def start(self):
         while True:
             logger.info('Start run tasks...')
+            db_session = DBSession()
             try:
                 # main
-                db_session = DBSession()
                 tasks = list_tasks_to_run(db_session)
-                db_session.close()
                 logger.info('Found %d tasks to run...' % len(tasks))
 
                 all_tasks = [
@@ -34,6 +33,8 @@ class FAASScheduler(object):
                 wait(all_tasks, return_when=ALL_COMPLETED)
             except Exception as e:
                 logger.exception('Run tasks error: %s' % e)
+            finally:
+                db_session.close()
 
             # sleep
             logger.info('gc.collect: ' + str(gc.collect()))

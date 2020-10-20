@@ -87,11 +87,13 @@ def tasks():
 
         task = add_task(
             db_session, repo_id, dtable_uuid, script_name, context_data, trigger, is_active)
+        return make_response(({'task': task.to_dict()}, 200))
+
     except Exception as e:
         logger.exception(e)
         return make_response(('Internal server error', 500))
-
-    return make_response(({'task': task.to_dict()}, 200))
+    finally:
+        db_session.close()
 
 
 @app.route('/tasks/<dtable_uuid>/<script_name>/', methods=['GET', 'PUT', 'DELETE'])
@@ -99,8 +101,8 @@ def task(dtable_uuid, script_name):
     if not check_auth_token(request):
         return make_response(('Forbidden', 403))
 
+    db_session = DBSession()
     try:
-        db_session = DBSession()
         task = get_task(db_session, dtable_uuid, script_name)
         if not task:
             return make_response(('Not found', 404))
@@ -129,15 +131,16 @@ def task(dtable_uuid, script_name):
     except Exception as e:
         logger.exception(e)
         return make_response(('Internal server error', 500))
-
+    finally:
+        db_session.close()
 
 @app.route('/tasks/<dtable_uuid>/<script_name>/logs/', methods=['GET'])
 def task_logs(dtable_uuid, script_name):
     if not check_auth_token(request):
         return make_response(('Forbidden', 403))
 
+    db_session = DBSession()
     try:
-        db_session = DBSession()
         task = get_task(db_session, dtable_uuid, script_name)
         if not task:
             return make_response(('Not found', 404))
@@ -149,7 +152,8 @@ def task_logs(dtable_uuid, script_name):
     except Exception as e:
         logger.exception(e)
         return make_response(('Internal server error', 500))
-
+    finally:
+        db_session.close()
 
 if __name__ == '__main__':
     http_server = WSGIServer(('0.0.0.0', 5055), app)
