@@ -1,0 +1,33 @@
+version: '2.0'
+services:
+  db:
+    image: mariadb:10.4
+    container_name: seatable-faas-scheduler-mysql
+    volumes:
+      - "/opt/seatable-faas-scheduler/mysql-data:/var/lib/mysql"
+    environment:
+      - MYSQL_ROOT_PASSWORD=
+      - MYSQL_LOG_CONSOLE=true
+    networks:
+      - seatable-faas-scheduler-net
+
+  seatable:
+    image: docker.seafile.top/seafile-dev/seatable-faas-scheduler:1.4.0
+    container_name: seatable-faas-scheduler
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /opt/seatable-faas-scheduler/shared:/shared
+    environment:
+      - DB_HOST=db
+      - DB_ROOT_PASSWD=
+      - SEATABLE_FAAS_SCHEDULER_SERVER_HOSTNAME=faas-scheduler.seatable.cn
+      - SEATABLE_FAAS_SCHEDULER_SERVER_LETSENCRYPT=True
+    depends_on:
+      - db
+    networks:
+      - seatable-faas-scheduler-net
+
+networks:
+  seatable-faas-scheduler-net:

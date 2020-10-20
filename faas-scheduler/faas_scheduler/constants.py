@@ -1,0 +1,1 @@
+CONDITION_DAILY = 'daily'
