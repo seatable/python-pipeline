@@ -8,7 +8,7 @@ import urllib.parse
 from datetime import datetime, timedelta
 
 from seaserv import seafile_api
-from faas_scheduler.models import Task, TaskLog
+from faas_scheduler.models import Task, TaskLog, ScriptLog
 from faas_scheduler.constants import CONDITION_DAILY
 import faas_scheduler.settings as settings
 
@@ -54,28 +54,31 @@ def get_temp_api_token(dtable_uuid, script_name):
 
 
 def call_faas_func(script_url, temp_api_token, context_data):
-    response = requests.post(faas_func_url, json={
-        'script_url': script_url,
-        'env': {
-            'dtable_web_url': settings.DTABLE_WEB_SERVICE_URL,
-            'api_token': temp_api_token,
-        },
-        'context_data': context_data,
-    })
+    try:
+        response = requests.post(faas_func_url, json={
+            'script_url': script_url,
+            'env': {
+                'dtable_web_url': settings.DTABLE_WEB_SERVICE_URL,
+                'api_token': temp_api_token,
+            },
+            'context_data': context_data,
+        })
 
-    # No matter the success or failure of running script
-    # return 200 always
-    # if response status is not 200, it indicates that some internal error occurs
-    if response.status_code != 200:
-        logger.error(
-            'FAAS error: %d %s' % (response.status_code, response.text))
+        # No matter the success or failure of running script
+        # return 200 always
+        # if response status is not 200, it indicates that some internal error occurs
+        if response.status_code != 200:
+            logger.error('FAAS error: %d %s' % (response.status_code, response.text))
+            return None
+
+        # there is a `output`, normal output or error output, and a `return_code`, 0 success 1 fail, in response json
+        # just return it
+        result = response.json()
+        return result
+
+    except Exception as e:
+        logger.error(e)
         return None
-
-    # there is a `output`, normal output or error output, and a `return_code`, 0 success 1 fail, in response json
-    # just return it
-    result = response.json()
-
-    return result
 
 
 def get_task(db_session, dtable_uuid, script_name):
@@ -216,6 +219,60 @@ def run_task(task):
         update_task_log(db_session, task_log, success, return_code, output)
     except Exception as e:
         logger.exception('Run task %d error: %s' % (task_id, e))
+    finally:
+        db_session.close()
+
+    return True
+
+
+def get_script(db_session, script_id):
+    script = db_session.query(
+        ScriptLog).filter_by(id=script_id).first()
+
+    return script
+
+
+def add_script(db_session, repo_id, dtable_uuid, script_name, context_data):
+    context_data = json.dumps(context_data) if context_data else None
+    script = ScriptLog(
+        repo_id, dtable_uuid, script_name, context_data, datetime.now())
+    db_session.add(script)
+    db_session.commit()
+
+    return script
+
+
+def update_script(db_session, script, success, return_code, output):
+    script.finished_at = datetime.now()
+    script.success = success
+    script.return_code = return_code
+    script.output = output
+    db_session.commit()
+
+    return script
+
+
+def run_script(script_id, script_url, temp_api_token, context_data):
+    """ Only for server """
+    from faas_scheduler import DBSession
+    db_session = DBSession()  # for multithreading
+
+    try:
+        result = call_faas_func(script_url, temp_api_token, context_data)
+
+        if not result:
+            success = False
+            return_code = None
+            output = None
+        else:
+            success = True
+            return_code = result.get('return_code')
+            output = result.get('output')
+
+        script = get_script(db_session, script_id)
+        update_script(db_session, script, success, return_code, output)
+    except Exception as e:
+        logger.exception('Run script %d error: %s' % (script_id, e))
     finally:
         db_session.close()
 

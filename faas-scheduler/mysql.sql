@@ -22,3 +22,17 @@ CREATE TABLE `task_log` (
   PRIMARY KEY (`id`),
   KEY `task_id_yw8kjf7y` (`task_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+CREATE TABLE `script_log` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `repo_id` varchar(36) NOT NULL,
+  `dtable_uuid` varchar(36) NOT NULL,
+  `script_name` varchar(255) NOT NULL,
+  `context_data` longtext,
+  `started_at` datetime(6) NOT NULL,
+  `finished_at` datetime(6),
+  `success` tinyint(1),
+  `return_code` int(11),
+  `output` longtext,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
