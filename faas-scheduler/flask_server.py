@@ -9,7 +9,7 @@ from gevent.pywsgi import WSGIServer
 from faas_scheduler import DBSession
 from faas_scheduler.utils import check_auth_token, get_asset_id, get_script_url, \
     get_temp_api_token, call_faas_func, add_task, get_task, update_task, \
-    delete_task, list_task_logs
+    delete_task, list_task_logs, get_task_log
 
 app = Flask(__name__)
 logger = logging.getLogger(__name__)
@@ -139,15 +139,46 @@ def task_logs(dtable_uuid, script_name):
     if not check_auth_token(request):
         return make_response(('Forbidden', 403))
 
+    try:
+        current_page = int(request.args.get('page', '1'))
+        per_page = int(request.args.get('per_page', '20'))
+    except ValueError:
+        current_page = 1
+        per_page = 20
+
     db_session = DBSession()
     try:
         task = get_task(db_session, dtable_uuid, script_name)
         if not task:
             return make_response(('Not found', 404))
 
-        task_logs = list_task_logs(db_session, task.id)
+        task_logs = list_task_logs(db_session, task.id, current_page, per_page)
         task_log_list = [task_log.to_dict() for task_log in task_logs]
         return make_response(({'task_logs': task_log_list}, 200))
+
+    except Exception as e:
+        logger.exception(e)
+        return make_response(('Internal server error', 500))
+    finally:
+        db_session.close()
+
+@app.route('/tasks/<dtable_uuid>/<script_name>/logs/<log_id>/', methods=['GET'])
+def task_log(dtable_uuid, script_name, log_id):
+    if not check_auth_token(request):
+        return make_response(('Forbidden', 403))
+
+    db_session = DBSession()
+    try:
+        task = get_task(db_session, dtable_uuid, script_name)
+        if not task:
+            return make_response(('Not found', 404))
+        task_log = get_task_log(db_session, log_id)
+        if not task_log or task_log.task_id != task.id:
+            return make_response(('Not found', 404))
+
+        task_log_info= task_log.to_dict()
+        task_log_info['output'] = task_log.output
+        return make_response(({'task_log': task_log_info}, 200))
 
     except Exception as e:
         logger.exception(e)

@@ -62,5 +62,4 @@ class TaskLog(Base):
             'finished_at': self.finished_at,
             'success': self.success,
             'return_code': self.return_code,
-            'output': self.output,
         }

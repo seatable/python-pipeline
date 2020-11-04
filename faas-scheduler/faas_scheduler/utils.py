@@ -138,11 +138,18 @@ def update_task_log(db_session, task_log, success, return_code, output):
     return task_log
 
 
-def list_task_logs(db_session, task_id):
+def list_task_logs(db_session, task_id, current_page, per_page):
+    start = per_page * (current_page - 1)
     task_logs = db_session.query(
-        TaskLog).filter_by(task_id=task_id)
+        TaskLog).filter_by(task_id=task_id).offset(start).limit(per_page)
 
     return task_logs
+
+
+def get_task_log(db_session, log_id):
+    task_log = db_session.query(TaskLog).filter_by(id=log_id).first()
+
+    return task_log
 
 
 def update_task_trigger_time(db_session, task):
