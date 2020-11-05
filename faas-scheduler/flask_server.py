@@ -145,6 +145,8 @@ def task_logs(dtable_uuid, script_name):
     except ValueError:
         current_page = 1
         per_page = 20
+    start = per_page * (current_page - 1)
+    end = start + per_page
 
     db_session = DBSession()
     try:
@@ -152,9 +154,14 @@ def task_logs(dtable_uuid, script_name):
         if not task:
             return make_response(('Not found', 404))
 
-        task_logs = list_task_logs(db_session, task.id, current_page, per_page)
+        task_logs = list_task_logs(db_session, task.id)
+        count = task_logs.count()
+        task_logs = task_logs[start: end]
         task_log_list = [task_log.to_dict() for task_log in task_logs]
-        return make_response(({'task_logs': task_log_list}, 200))
+        return make_response(({
+            'task_logs': task_log_list,
+            'count': count,
+        }, 200))
 
     except Exception as e:
         logger.exception(e)
