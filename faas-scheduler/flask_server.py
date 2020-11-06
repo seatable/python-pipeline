@@ -152,7 +152,10 @@ def task_logs(dtable_uuid, script_name):
     try:
         task = get_task(db_session, dtable_uuid, script_name)
         if not task:
-            return make_response(('Not found', 404))
+            return make_response(({
+                'task_logs': [],
+                'count': 0,
+            }, 200))
 
         task_logs = list_task_logs(db_session, task.id)
         count = task_logs.count()
