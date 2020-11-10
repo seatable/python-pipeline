@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 
 @app.route('/run-script/', methods=['POST'])
-def run_script():
+def scripts_api():
     if not check_auth_token(request):
         return make_response(('Forbidden', 403))
 
@@ -55,7 +55,7 @@ def run_script():
 
 
 @app.route('/tasks/', methods=['POST'])
-def tasks():
+def tasks_api():
     if not check_auth_token(request):
         return make_response(('Forbidden', 403))
 
@@ -97,7 +97,7 @@ def tasks():
 
 
 @app.route('/tasks/<dtable_uuid>/<script_name>/', methods=['GET', 'PUT', 'DELETE'])
-def task(dtable_uuid, script_name):
+def task_api(dtable_uuid, script_name):
     if not check_auth_token(request):
         return make_response(('Forbidden', 403))
 
@@ -105,7 +105,7 @@ def task(dtable_uuid, script_name):
     try:
         task = get_task(db_session, dtable_uuid, script_name)
         if not task:
-            return make_response(('Not found', 404))
+            return make_response(({'task': None}, 200))
 
         if request.method == 'GET':
             return make_response(({'task': task.to_dict()}, 200))
@@ -135,7 +135,7 @@ def task(dtable_uuid, script_name):
         db_session.close()
 
 @app.route('/tasks/<dtable_uuid>/<script_name>/logs/', methods=['GET'])
-def task_logs(dtable_uuid, script_name):
+def task_logs_api(dtable_uuid, script_name):
     if not check_auth_token(request):
         return make_response(('Forbidden', 403))
 
@@ -173,7 +173,7 @@ def task_logs(dtable_uuid, script_name):
         db_session.close()
 
 @app.route('/tasks/<dtable_uuid>/<script_name>/logs/<log_id>/', methods=['GET'])
-def task_log(dtable_uuid, script_name, log_id):
+def task_log_api(dtable_uuid, script_name, log_id):
     if not check_auth_token(request):
         return make_response(('Forbidden', 403))
 
@@ -181,10 +181,10 @@ def task_log(dtable_uuid, script_name, log_id):
     try:
         task = get_task(db_session, dtable_uuid, script_name)
         if not task:
-            return make_response(('Not found', 404))
+            return make_response(({'task_log': None}, 200))
         task_log = get_task_log(db_session, log_id)
         if not task_log or task_log.task_id != task.id:
-            return make_response(('Not found', 404))
+            return make_response(({'task_log': None}, 200))
 
         task_log_info= task_log.to_dict()
         task_log_info['output'] = task_log.output
