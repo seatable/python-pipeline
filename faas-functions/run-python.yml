@@ -10,3 +10,6 @@ functions:
     environment:
       exec_timeout: 60s
 
+      # waitress threads count
+      thread_count: 20
+

@@ -37,5 +37,15 @@ def main_route(path):
     ret = handler.handle(request.get_data(as_text=as_text))
     return ret
 
+
+def get_threads():
+    thread_count_str = os.environ.get('thread_count', 4)
+    try:
+        thread_count = int(thread_count_str)
+    except:
+        thread_count = 4
+    return thread_count
+
+
 if __name__ == '__main__':
-    serve(app, host='0.0.0.0', port=5000)
+    serve(app, host='0.0.0.0', port=5000, threads=get_threads())
