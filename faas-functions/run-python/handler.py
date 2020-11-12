@@ -8,6 +8,10 @@ from uuid import uuid4
 from flask import make_response
 
 
+def get_sub_proc_timeout():
+    return 60 * 30
+
+
 def handle(req):
     """handle a request to the function
     Args:
@@ -57,7 +61,10 @@ def handle(req):
                                 stdout=subprocess.PIPE,
                                 stderr=subprocess.STDOUT,
                                 input=context_data,
-                                env=env)
+                                env=env,
+                                timeout=get_sub_proc_timeout())
+    except subprocess.TimeoutExpired as e:
+        return make_response(('Script running for too long time!', 400))
     except Exception as e:
         logging.error('run file %s error: %s', script_url, e)
         return make_response(('Run error', 500))

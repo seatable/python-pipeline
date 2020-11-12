@@ -7,4 +7,6 @@ functions:
     lang: python3-flask
     handler: ./run-python
     image: run-python:latest
+    environment:
+      exec_timeout: 60s
 
