@@ -3,13 +3,43 @@ import logging
 import os
 import requests
 import subprocess
+import time
 from uuid import uuid4
 
 from flask import make_response
 
+DEFAULT_SUB_PROCESS_TIMEOUT = 9
+
 
 def get_sub_proc_timeout():
-    return 60 * 30
+    sub_proc_timeout = os.environ.get('sub_proc_timeout').strip()
+    if not sub_proc_timeout:
+        return DEFAULT_SUB_PROCESS_TIMEOUT
+    threed_end = sub_proc_timeout[-3:]
+    if threed_end.lower() == 'min':
+        try:
+            return int(sub_proc_timeout[:-3]) * 60
+        except:
+            return DEFAULT_SUB_PROCESS_TIMEOUT
+    if threed_end.lower() == 'sec':
+        try:
+            return int(sub_proc_timeout[:-3])
+        except:
+            return DEFAULT_SUB_PROCESS_TIMEOUT
+
+    one_end = sub_proc_timeout[-1]
+    if one_end in ('m', 'M'):
+        try:
+            return int(sub_proc_timeout[:-1]) * 60
+        except:
+            return DEFAULT_SUB_PROCESS_TIMEOUT
+    if one_end in ('s', 'S'):
+        try:
+            return int(sub_proc_timeout[:-1])
+        except:
+            return DEFAULT_SUB_PROCESS_TIMEOUT
+
+    return DEFAULT_SUB_PROCESS_TIMEOUT
 
 
 def handle(req):
@@ -56,6 +86,7 @@ def handle(req):
 
     return_code, output = None, None  # init output
 
+    start_at = time.time()
     try:
         result = subprocess.run(['python', file_name],
                                 stdout=subprocess.PIPE,
@@ -72,6 +103,7 @@ def handle(req):
         return_code = result.returncode
         output = result.stdout.decode()
     finally:
+        spend_time = time.time() - start_at
         try:
             os.remove(file_name)
         except:
@@ -79,5 +111,6 @@ def handle(req):
 
     return make_response((json.dumps({
         'output': output,
-        'return_code': return_code
+        'return_code': return_code,
+        'spend_time': spend_time
     }), 200))
