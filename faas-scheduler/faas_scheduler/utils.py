@@ -7,7 +7,7 @@ import requests
 import urllib.parse
 from datetime import datetime, timedelta
 
-from seaserv import seafile_api
+from seaserv import seafile_api, ccnet_api
 from faas_scheduler.models import Task, TaskLog, ScriptLog
 from faas_scheduler.constants import CONDITION_DAILY
 import faas_scheduler.settings as settings
@@ -81,6 +81,65 @@ def call_faas_func(script_url, temp_api_token, context_data):
         return None
 
 
+def update_statistics(db_session, dtable_uuid, owner, result):
+    spend_time = result.get('spend_time')
+    if not spend_time:
+        return
+
+    sqls = ['''
+    INSERT INTO dtable_run_script_statistics(dtable_uuid, total_run_count, total_run_time, update_at) VALUES
+    (:dtable_uuid, 1, :spend_time, :update_at)
+    ON DUPLICATE KEY UPDATE
+    total_run_count=total_run_count+1,
+    total_run_time=total_run_time+:spend_time,
+    update_at=:update_at;
+    ''']
+
+    org_id = -1
+    if owner:  # maybe some old tasks without owner, so user/org statistics only for valuable owner
+        if '@seafile_group' not in owner:
+            orgs = ccnet_api.get_orgs_by_user(owner)
+            if orgs:
+                org_id = orgs[0].org_id
+            else:
+                org_id = -1
+        else:
+            group_id = owner[:owner.find('@seafile_grpup')]
+            org_id = ccnet_api.get_org_id_by_group(int(group_id))
+
+        if org_id == -1:
+            sqls += ['''
+            INSERT INTO user_run_script_statistics(username, total_run_count, total_run_time, update_at) VALUES
+            (:username, 1, :spend_time, :update_at)
+            ON DUPLICATE KEY UPDATE
+            total_run_count=total_run_count+1,
+            total_run_time=total_run_time+:spend_time,
+            update_at=:update_at;
+            ''']
+        else:
+            sqls += ['''
+            INSERT INTO org_run_script_statistics(org_id, total_run_count, total_run_time, update_at) VALUES
+            (:org_id, 1, :spend_time, :update_at)
+            ON DUPLICATE KEY UPDATE
+            total_run_count=total_run_count+1,
+            total_run_time=total_run_time+:spend_time,
+            update_at=:update_at;
+            ''']
+
+    for sql in sqls:
+        try:
+            db_session.execute(sql, {
+                'dtable_uuid': dtable_uuid,
+                'username': owner,
+                'spend_time': spend_time,
+                'org_id': org_id,
+                'update_at': datetime.now()
+            })
+        except Exception as e:
+            logger.exception('update statistics sql error: %s' % (e,))
+    db_session.commit()
+
+
 def get_task(db_session, dtable_uuid, script_name):
     task = db_session.query(
         Task).filter_by(dtable_uuid=dtable_uuid, script_name=script_name).first()
@@ -88,10 +147,10 @@ def get_task(db_session, dtable_uuid, script_name):
     return task
 
 
-def add_task(db_session, repo_id, dtable_uuid, script_name, context_data, trigger, is_active):
+def add_task(db_session, repo_id, dtable_uuid, owner, script_name, context_data, trigger, is_active):
     context_data = json.dumps(context_data) if context_data else None
     task = Task(
-        repo_id, dtable_uuid, script_name, context_data, json.dumps(trigger), is_active)
+        repo_id, dtable_uuid, owner, script_name, context_data, json.dumps(trigger), is_active)
     db_session.add(task)
     db_session.commit()
 
@@ -197,6 +256,7 @@ def run_task(task):
     task_id = task.id
     repo_id = task.repo_id
     dtable_uuid = task.dtable_uuid
+    owner = task.owner
     script_name = task.script_name
     context_data = json.dumps(task.context_data) if task.context_data else None
 
@@ -211,6 +271,7 @@ def run_task(task):
         #
         task_log = add_task_log(db_session, task_id)
         result = call_faas_func(script_url, temp_api_token, context_data)
+        update_statistics(db_session, dtable_uuid, owner, result)
 
         if not result:
             success = False

@@ -1,6 +1,6 @@
 import json
 from sqlalchemy import Column, Integer, String, DateTime, Boolean, Text, \
-    UniqueConstraint
+    UniqueConstraint, Float, text
 
 from faas_scheduler import Base
 
@@ -10,6 +10,7 @@ class Task(Base):
     id = Column(Integer, primary_key=True)
     repo_id = Column(String(36))
     dtable_uuid = Column(String(36))
+    owner = Column(String(255))
     script_name = Column(String(255))
     context_data = Column(Text, nullable=True)
     trigger = Column(Text)
@@ -20,9 +21,10 @@ class Task(Base):
         UniqueConstraint('dtable_uuid', 'script_name'),
     )
 
-    def __init__(self, repo_id, dtable_uuid, script_name, context_data, trigger, is_active):
+    def __init__(self, repo_id, dtable_uuid, owner, script_name, context_data, trigger, is_active):
         self.repo_id = repo_id
         self.dtable_uuid = dtable_uuid
+        self.owner = owner
         self.script_name = script_name
         self.context_data = context_data
         self.trigger = trigger
@@ -32,6 +34,7 @@ class Task(Base):
         return {
             'id': self.id,
             'dtable_uuid': self.dtable_uuid,
+            'owner': self.owner,
             'script_name': self.script_name,
             'context_data': json.loads(self.context_data) if self.context_data else None,
             'trigger': json.loads(self.trigger),
@@ -96,4 +99,67 @@ class ScriptLog(Base):
             'success': self.success,
             'return_code': self.return_code,
             'output': self.output,
+        }
+
+
+class DTableRunScriptStatistics(Base):
+    __tablename__ = 'dtable_run_script_statistics'
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    dtable_uuid = Column(String(36), nullable=False, unique=True)
+    total_run_count = Column(Integer, default=0)
+    total_run_time = Column(Float, default=0)
+    update_at = Column(DateTime)
+
+    def __init__(self, dtable_uuid):
+        self.dtable_uuid = dtable_uuid
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'dtable_uuid': self.dtable_uuid,
+            'total_run_count': self.total_run_count,
+            'total_run_time': self.total_run_time,
+            'update_at': self.update_at
+        }
+
+
+class UserRunScriptStatistics(Base):
+    __tablename__ = 'user_run_script_statistics'
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    username = Column(String(255), nullable=False, unique=True)
+    total_run_count = Column(Integer, default=0)
+    total_run_time = Column(Float, default=0)
+    update_at = Column(DateTime)
+
+    def __init__(self, username):
+        self.username = username
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'username': self.username,
+            'total_run_count': self.total_run_count,
+            'total_run_time': self.total_run_time,
+            'update_at': self.update_at
+        }
+
+
+class OrgRunScriptStatistics(Base):
+    __tablename__ = 'org_run_script_statistics'
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    org_id = Column(Integer, nullable=False, unique=True)
+    total_run_count = Column(Integer, default=0)
+    total_run_time = Column(Float, default=0)
+    update_at = Column(DateTime)
+
+    def __init__(self, org_id):
+        self.org_id = org_id
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'org_id': self.org_id,
+            'total_run_count': self.total_run_count,
+            'total_run_time': self.total_run_time,
+            'update_at': self.update_at
         }
