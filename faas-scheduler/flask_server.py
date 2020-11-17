@@ -37,7 +37,8 @@ def scripts_api():
     owner = data.get('owner')  # todo: owner???
     if not repo_id \
             or not dtable_uuid \
-            or not script_name:
+            or not script_name \
+            or not owner:
         return make_response(('Parameters invalid', 400))
 
     # check

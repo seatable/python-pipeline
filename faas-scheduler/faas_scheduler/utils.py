@@ -126,8 +126,8 @@ def update_statistics(db_session, dtable_uuid, owner, result):
             update_at=:update_at;
             ''']
 
-    for sql in sqls:
-        try:
+    try:
+        for sql in sqls:
             db_session.execute(sql, {
                 'dtable_uuid': dtable_uuid,
                 'username': owner,
@@ -135,9 +135,9 @@ def update_statistics(db_session, dtable_uuid, owner, result):
                 'org_id': org_id,
                 'update_at': datetime.now()
             })
-        except Exception as e:
-            logger.exception('update statistics sql error: %s' % (e,))
-    db_session.commit()
+        db_session.commit()
+    except Exception as e:
+        logger.exception('update statistics sql error: %s' % (e,))
 
 
 def get_task(db_session, dtable_uuid, script_name):

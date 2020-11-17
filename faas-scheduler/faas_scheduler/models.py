@@ -1,6 +1,6 @@
 import json
 from sqlalchemy import Column, Integer, String, DateTime, Boolean, Text, \
-    UniqueConstraint, Float, text
+    UniqueConstraint, Float
 
 from faas_scheduler import Base
 
@@ -110,9 +110,6 @@ class DTableRunScriptStatistics(Base):
     total_run_time = Column(Float, default=0)
     update_at = Column(DateTime)
 
-    def __init__(self, dtable_uuid):
-        self.dtable_uuid = dtable_uuid
-
     def to_dict(self):
         return {
             'id': self.id,
@@ -131,9 +128,6 @@ class UserRunScriptStatistics(Base):
     total_run_time = Column(Float, default=0)
     update_at = Column(DateTime)
 
-    def __init__(self, username):
-        self.username = username
-
     def to_dict(self):
         return {
             'id': self.id,
@@ -151,9 +145,6 @@ class OrgRunScriptStatistics(Base):
     total_run_count = Column(Integer, default=0)
     total_run_time = Column(Float, default=0)
     update_at = Column(DateTime)
-
-    def __init__(self, org_id):
-        self.org_id = org_id
 
     def to_dict(self):
         return {
