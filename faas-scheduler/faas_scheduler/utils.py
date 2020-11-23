@@ -87,8 +87,8 @@ def update_statistics(db_session, dtable_uuid, owner, result):
         return
 
     sqls = ['''
-    INSERT INTO dtable_run_script_statistics(dtable_uuid, total_run_count, total_run_time, update_at) VALUES
-    (:dtable_uuid, 1, :spend_time, :update_at)
+    INSERT INTO dtable_run_script_statistics(dtable_uuid, run_date, total_run_count, total_run_time, update_at) VALUES
+    (:dtable_uuid, :run_date, 1, :spend_time, :update_at)
     ON DUPLICATE KEY UPDATE
     total_run_count=total_run_count+1,
     total_run_time=total_run_time+:spend_time,
@@ -109,8 +109,8 @@ def update_statistics(db_session, dtable_uuid, owner, result):
 
         if org_id == -1:
             sqls += ['''
-            INSERT INTO user_run_script_statistics(username, total_run_count, total_run_time, update_at) VALUES
-            (:username, 1, :spend_time, :update_at)
+            INSERT INTO user_run_script_statistics(username, run_date, total_run_count, total_run_time, update_at) VALUES
+            (:username, :run_date, 1, :spend_time, :update_at)
             ON DUPLICATE KEY UPDATE
             total_run_count=total_run_count+1,
             total_run_time=total_run_time+:spend_time,
@@ -118,8 +118,8 @@ def update_statistics(db_session, dtable_uuid, owner, result):
             ''']
         else:
             sqls += ['''
-            INSERT INTO org_run_script_statistics(org_id, total_run_count, total_run_time, update_at) VALUES
-            (:org_id, 1, :spend_time, :update_at)
+            INSERT INTO org_run_script_statistics(org_id, run_date, total_run_count, total_run_time, update_at) VALUES
+            (:org_id, :run_date, 1, :spend_time, :update_at)
             ON DUPLICATE KEY UPDATE
             total_run_count=total_run_count+1,
             total_run_time=total_run_time+:spend_time,
@@ -131,8 +131,9 @@ def update_statistics(db_session, dtable_uuid, owner, result):
             db_session.execute(sql, {
                 'dtable_uuid': dtable_uuid,
                 'username': owner,
-                'spend_time': spend_time,
                 'org_id': org_id,
+                'run_date': datetime.today(),
+                'spend_time': spend_time,
                 'update_at': datetime.now()
             })
         db_session.commit()

@@ -1,6 +1,6 @@
 import json
 from sqlalchemy import Column, Integer, String, DateTime, Boolean, Text, \
-    UniqueConstraint, Float
+    UniqueConstraint, Float, Date
 
 from faas_scheduler import Base
 
@@ -105,15 +105,21 @@ class ScriptLog(Base):
 class DTableRunScriptStatistics(Base):
     __tablename__ = 'dtable_run_script_statistics'
     id = Column(Integer, primary_key=True, autoincrement=True)
-    dtable_uuid = Column(String(36), nullable=False, unique=True)
+    dtable_uuid = Column(String(36), nullable=False, index=True)
+    run_date = Column(Date, nullable=False)
     total_run_count = Column(Integer, default=0)
     total_run_time = Column(Float, default=0)
     update_at = Column(DateTime)
+
+    __table_args__ = (
+        UniqueConstraint('dtable_uuid', 'run_date'),
+    )
 
     def to_dict(self):
         return {
             'id': self.id,
             'dtable_uuid': self.dtable_uuid,
+            'run_date': self.run_date,
             'total_run_count': self.total_run_count,
             'total_run_time': self.total_run_time,
             'update_at': self.update_at
@@ -123,15 +129,21 @@ class DTableRunScriptStatistics(Base):
 class UserRunScriptStatistics(Base):
     __tablename__ = 'user_run_script_statistics'
     id = Column(Integer, primary_key=True, autoincrement=True)
-    username = Column(String(255), nullable=False, unique=True)
+    username = Column(String(255), nullable=False, index=True)
+    run_date = Column(Date, nullable=False)
     total_run_count = Column(Integer, default=0)
     total_run_time = Column(Float, default=0)
     update_at = Column(DateTime)
+
+    __table_args__ = (
+        UniqueConstraint('username', 'run_date'),
+    )
 
     def to_dict(self):
         return {
             'id': self.id,
             'username': self.username,
+            'run_date': self.run_date,
             'total_run_count': self.total_run_count,
             'total_run_time': self.total_run_time,
             'update_at': self.update_at
@@ -141,15 +153,21 @@ class UserRunScriptStatistics(Base):
 class OrgRunScriptStatistics(Base):
     __tablename__ = 'org_run_script_statistics'
     id = Column(Integer, primary_key=True, autoincrement=True)
-    org_id = Column(Integer, nullable=False, unique=True)
+    org_id = Column(Integer, nullable=False, index=True)
+    run_date = Column(Date, nullable=False)
     total_run_count = Column(Integer, default=0)
     total_run_time = Column(Float, default=0)
     update_at = Column(DateTime)
+
+    __table_args__ = (
+        UniqueConstraint('org_id', 'run_date'),
+    )
 
     def to_dict(self):
         return {
             'id': self.id,
             'org_id': self.org_id,
+            'run_date': self.run_date,
             'total_run_count': self.total_run_count,
             'total_run_time': self.total_run_time,
             'update_at': self.update_at
