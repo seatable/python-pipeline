@@ -67,7 +67,8 @@ def call_faas_func(script_url, temp_api_token, context_data):
     # return 200 always
     # if response status is not 200, it indicates that some internal error occurs
     if response.status_code != 200:
-        logger.error('FAAS error: %d %s' % (response.status_code, response.text))
+        logger.error(
+            'FAAS error: %d %s' % (response.status_code, response.text))
         return None
 
     # there is a `output`, normal output or error output, and a `return_code`, 0 success 1 fail, in response json
@@ -139,10 +140,15 @@ def update_task_log(db_session, task_log, success, return_code, output):
 
 
 def list_task_logs(db_session, task_id):
-    task_logs = db_session.query(
-        TaskLog).filter_by(task_id=task_id)
+    task_logs = db_session.query(TaskLog).filter_by(task_id=task_id)
 
     return task_logs
+
+
+def get_task_log(db_session, log_id):
+    task_log = db_session.query(TaskLog).filter_by(id=log_id).first()
+
+    return task_log
 
 
 def update_task_trigger_time(db_session, task):
