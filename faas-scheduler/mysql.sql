@@ -20,7 +20,8 @@ CREATE TABLE `task_log` (
   `return_code` int(11),
   `output` longtext,
   PRIMARY KEY (`id`),
-  KEY `task_id_yw8kjf7y` (`task_id`)
+  KEY `task_id_yw8kjf7y` (`task_id`),
+  KEY `started_at_prn7fu3j` (`started_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 CREATE TABLE `script_log` (
@@ -34,5 +35,6 @@ CREATE TABLE `script_log` (
   `success` tinyint(1),
   `return_code` int(11),
   `output` longtext,
-  PRIMARY KEY (`id`)
+  PRIMARY KEY (`id`),
+  KEY `started_at_c6ns09vt` (`started_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
