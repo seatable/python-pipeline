@@ -148,6 +148,13 @@ def list_task_logs(db_session, task_id):
     return task_logs
 
 
+def delete_task_logs(db_session, task_id):
+    db_session.query(TaskLog).filter_by(task_id=task_id).delete()
+    db_session.commit()
+
+    return True
+
+
 def get_task_log(db_session, log_id):
     task_log = db_session.query(TaskLog).filter_by(id=log_id).first()
 

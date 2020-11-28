@@ -44,7 +44,7 @@ class TaskLog(Base):
     __tablename__ = 'task_log'
     id = Column(Integer, primary_key=True)
     task_id = Column(Integer, index=True)
-    started_at = Column(DateTime)
+    started_at = Column(DateTime, index=True)
     finished_at = Column(DateTime, nullable=True)
     success = Column(Boolean, nullable=True)
     return_code = Column(Integer, nullable=True)
@@ -72,7 +72,7 @@ class ScriptLog(Base):
     dtable_uuid = Column(String(36))
     script_name = Column(String(255))
     context_data = Column(Text, nullable=True)
-    started_at = Column(DateTime)
+    started_at = Column(DateTime, index=True)
     finished_at = Column(DateTime, nullable=True)
     success = Column(Boolean, nullable=True)
     return_code = Column(Integer, nullable=True)

@@ -11,7 +11,7 @@ from faas_scheduler import DBSession
 import faas_scheduler.settings as settings
 from faas_scheduler.utils import check_auth_token, get_asset_id, get_script_url, \
     get_temp_api_token, add_task, get_task, update_task, delete_task, list_task_logs, \
-    get_task_log, run_script, get_script, add_script
+    get_task_log, run_script, get_script, add_script, delete_task_logs
 
 app = Flask(__name__)
 logger = logging.getLogger(__name__)
@@ -169,7 +169,9 @@ def task_api(dtable_uuid, script_name):
             return make_response(({'task': task.to_dict()}, 200))
 
         elif request.method == 'DELETE':
+            task_id = task.id
             delete_task(db_session, task)
+            delete_task_logs(db_session, task_id)
             return make_response(({'success': True}, 200))
 
     except Exception as e:
