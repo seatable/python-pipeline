@@ -5,14 +5,17 @@ import json
 import logging
 from flask import Flask, request, make_response
 from gevent.pywsgi import WSGIServer
+from concurrent.futures import ThreadPoolExecutor
 
 from faas_scheduler import DBSession
+import faas_scheduler.settings as settings
 from faas_scheduler.utils import check_auth_token, get_asset_id, get_script_url, \
-    get_temp_api_token, call_faas_func, add_task, get_task, update_task, \
-    delete_task, list_task_logs, get_task_log
+    get_temp_api_token, add_task, get_task, update_task, delete_task, list_task_logs, \
+    get_task_log, run_script, get_script, add_script
 
 app = Flask(__name__)
 logger = logging.getLogger(__name__)
+executor = ThreadPoolExecutor(max_workers=settings.SCRIPT_WORKERS)
 
 
 @app.route('/run-script/', methods=['POST'])
@@ -36,7 +39,7 @@ def scripts_api():
             or not script_name:
         return make_response(('Parameters invalid', 400))
 
-    # main
+    # check
     asset_id = get_asset_id(repo_id, dtable_uuid, script_name)
     if not asset_id:
         return make_response(('Not found', 404))
@@ -47,11 +50,52 @@ def scripts_api():
 
     temp_api_token = get_temp_api_token(dtable_uuid, script_name)
 
-    result = call_faas_func(script_url, temp_api_token, context_data)
-    if not result:
-        return make_response(('Internal server error', 500))
+    # main
+    db_session = DBSession()
+    try:
+        script = add_script(db_session, repo_id, dtable_uuid, script_name, context_data)
+        executor.submit(run_script, script.id, script_url, temp_api_token, context_data)
 
-    return make_response((result, 200))
+        return make_response(({'script_id': script.id}, 200))
+    except Exception as e:
+        logger.exception(e)
+        return make_response(('Internal server error', 500))
+    finally:
+        db_session.close()
+
+
+
+@app.route('/run-script/<script_id>/', methods=['GET'])
+def script_api(script_id):
+    if not check_auth_token(request):
+        return make_response(('Forbidden', 403))
+
+    try:
+        script_id = int(script_id)
+    except Exception as e:
+        return make_response(('Bad request', 400))
+    dtable_uuid = request.args.get('dtable_uuid')
+    script_name = request.args.get('script_name')
+    if not dtable_uuid or not script_name:
+        return make_response(('Parameters invalid', 400))
+
+    # main
+    db_session = DBSession()
+    try:
+        script = get_script(db_session, script_id)
+        if not script:
+            return make_response(('Not found', 404))
+        if dtable_uuid != script.dtable_uuid \
+                or script_name != script.script_name:
+            return make_response(('Bad request', 400))
+
+        return make_response(({'script': script.to_dict()}, 200))
+
+    except Exception as e:
+        logger.exception(e)
+        return make_response(('Internal server error', 500))
+    finally:
+        db_session.close()
 
 
 @app.route('/tasks/', methods=['POST'])
