@@ -346,3 +346,58 @@ def run_script(script_id, script_url, temp_api_token, context_data):
         db_session.close()
 
     return True
+def get_run_script_statistics_by_month(db_session, is_user=1, month=None, start=None, limit=None, order_by=None):
+    sql = '''
+    SELECT {column}, SUM(total_run_count) AS total_run_count, SUM(total_run_time) AS total_run_time
+    FROM {table_name}
+    WHERE DATE_FORMAT(run_date, '%%Y-%%m')=DATE_FORMAT(:month, '%%Y-%%m')
+    GROUP BY {column}
+    %(order_by)s
+    LIMIT :limit OFFSET :offset
+    '''
+
+    if not month:
+        month = datetime.today()
+    if is_user:
+        table_name = 'user_run_script_statistics'
+        column = 'username'
+    else:
+        table_name = 'org_run_script_statistics'
+        column = 'org_id'
+
+    sql = sql.format(table_name=table_name, column=column)
+
+    args = {
+        'month': month,
+        'limit': limit,
+        'offset': start,
+    }
+    if order_by:
+        sql = sql % {'order_by': 'ORDER BY %s' % (order_by,)}
+    else:
+        sql = sql % {'order_by': ''}
+
+    results = []
+    for temp in db_session.execute(sql, args).fetchall():
+        item = {
+            'total_run_count': int(temp[1]),
+            'total_run_time': temp[2]
+        }
+        if is_user:
+            item['username'] = temp[0]
+        else:
+            item['org_id'] = temp[0]
+        results.append(item)
+
+    if results:
+        count_sql = '''
+        SELECT COUNT(1) FROM
+            (SELECT DISTINCT {column} FROM {table_name}
+            WHERE DATE_FORMAT(run_date, '%Y-%m')=DATE_FORMAT(:month, '%Y-%m')
+            GROUP BY {column}) t
+        '''
+        count = db_session.execute(count_sql.format(table_name=table_name, column=column), args).fetchone()[0]
+    else:
+        count = 0
+
+    return results, count

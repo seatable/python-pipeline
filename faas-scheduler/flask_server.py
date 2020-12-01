@@ -3,6 +3,7 @@ monkey.patch_all()
 
 import json
 import logging
+from datetime import datetime
 from flask import Flask, request, make_response
 from gevent.pywsgi import WSGIServer
 from concurrent.futures import ThreadPoolExecutor
@@ -11,7 +12,8 @@ from faas_scheduler import DBSession
 import faas_scheduler.settings as settings
 from faas_scheduler.utils import check_auth_token, get_asset_id, get_script_url, \
     get_temp_api_token, add_task, get_task, update_task, delete_task, list_task_logs, \
-    get_task_log, run_script, get_script, add_script, delete_task_logs, update_statistics
+    get_task_log, run_script, get_script, add_script, delete_task_logs, \
+    update_statistics, get_run_script_statistics_by_month
 
 app = Flask(__name__)
 logger = logging.getLogger(__name__)
@@ -244,6 +246,51 @@ def task_log_api(dtable_uuid, script_name, log_id):
         return make_response(('Internal server error', 500))
     finally:
         db_session.close()
+
+
+@app.route('/admin/statistics/run-scripts/', methods=['GET'])
+def user_run_python_statistics():
+    if not check_auth_token(request):
+        return make_response(('Forbidden', 403))
+
+    raw_month = request.args.get('month')
+    if raw_month:
+        try:
+            month = datetime.strptime(raw_month, '%Y-%m')
+        except:
+            return make_response(('month invalid.', 400))
+    else:
+        month = None
+
+    order_by = request.args.get('order_by')
+    if order_by:
+        if order_by.strip('-') not in ('total_run_time', 'total_run_count'):
+            return make_response(('order_by invalid.', 400))
+        if '-' in order_by:
+            order_by = order_by.strip('-') + ' DESC'
+
+    try:
+        is_user = int(request.args.get('is_user', 1))
+        page = int(request.args.get('page', 1))
+        per_page = int(request.args.get('per_page', 25))
+    except:
+        is_user = 1
+        page, per_page = 1, 25
+
+    start, limit = (page - 1) * per_page, per_page
+
+    db_session = DBSession()
+    try:
+        results, count = get_run_script_statistics_by_month(db_session, is_user, month=month, start=start, limit=limit, order_by=order_by)
+    except Exception as e:
+        logger.error(e)
+        logger.exception(e)
+        return make_response(('Internal Server Error.', 500))
+    finally:
+        db_session.close()
+
+    return make_response(({'results': results, 'count': count}, 200))
+
 
 if __name__ == '__main__':
     http_server = WSGIServer(('0.0.0.0', 5055), app)
