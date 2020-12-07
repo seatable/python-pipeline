@@ -13,7 +13,7 @@ import faas_scheduler.settings as settings
 from faas_scheduler.utils import check_auth_token, get_asset_id, get_script_url, \
     get_temp_api_token, add_task, get_task, update_task, delete_task, list_task_logs, \
     get_task_log, run_script, get_script, add_script, delete_task_logs, \
-    update_statistics, get_run_script_statistics_by_month
+    get_run_script_statistics_by_month
 
 app = Flask(__name__)
 logger = logging.getLogger(__name__)
@@ -36,7 +36,7 @@ def scripts_api():
     dtable_uuid = data.get('dtable_uuid')
     script_name = data.get('script_name')
     context_data = data.get('context_data')
-    owner = data.get('owner')  # todo: owner???
+    owner = data.get('owner')
     if not repo_id \
             or not dtable_uuid \
             or not script_name \
@@ -58,7 +58,7 @@ def scripts_api():
     db_session = DBSession()
     try:
         script = add_script(db_session, repo_id, dtable_uuid, script_name, context_data)
-        executor.submit(run_script, script.id, script_url, temp_api_token, context_data)
+        executor.submit(run_script, dtable_uuid, owner, script.id, script_url, temp_api_token, context_data)
 
         return make_response(({'script_id': script.id}, 200))
     except Exception as e:

@@ -82,6 +82,8 @@ def call_faas_func(script_url, temp_api_token, context_data):
 
 
 def update_statistics(db_session, dtable_uuid, owner, result):
+    if not isinstance(result, dict):
+        return
     spend_time = result.get('spend_time')
     if not spend_time:
         return
@@ -321,7 +323,7 @@ def update_script(db_session, script, success, return_code, output):
     return script
 
 
-def run_script(script_id, script_url, temp_api_token, context_data):
+def run_script(dtable_uuid, owner, script_id, script_url, temp_api_token, context_data):
     """ Only for server """
     from faas_scheduler import DBSession
     db_session = DBSession()  # for multithreading
@@ -340,12 +342,15 @@ def run_script(script_id, script_url, temp_api_token, context_data):
 
         script = get_script(db_session, script_id)
         update_script(db_session, script, success, return_code, output)
+        update_statistics(db_session, dtable_uuid, owner, result)
     except Exception as e:
         logger.exception('Run script %d error: %s' % (script_id, e))
     finally:
         db_session.close()
 
     return True
+
+
 def get_run_script_statistics_by_month(db_session, is_user=1, month=None, start=None, limit=None, order_by=None):
     sql = '''
     SELECT {column}, SUM(total_run_count) AS total_run_count, SUM(total_run_time) AS total_run_time
