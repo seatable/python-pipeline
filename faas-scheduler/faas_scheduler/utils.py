@@ -381,7 +381,7 @@ def get_run_script_statistics_by_month(db_session, is_user=1, month=None, start=
     for temp in db_session.execute(sql, args).fetchall():
         item = {
             'total_run_count': int(temp[1]),
-            'total_run_time': temp[2]
+            'total_run_time': int(temp[2])
         }
         if is_user:
             item['username'] = temp[0]
