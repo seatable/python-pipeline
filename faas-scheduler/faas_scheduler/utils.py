@@ -351,7 +351,7 @@ def run_script(dtable_uuid, owner, script_id, script_url, temp_api_token, contex
     return True
 
 
-def get_run_script_statistics_by_month(db_session, is_user=1, month=None, start=None, limit=None, order_by=None):
+def get_run_script_statistics_by_month(db_session, is_user=1, month=None, start=0, limit=25, order_by=None):
     sql = '''
     SELECT {column}, SUM(total_run_count) AS total_run_count, SUM(total_run_time) AS total_run_time
     FROM {table_name}
