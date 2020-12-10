@@ -248,11 +248,7 @@ def task_log_api(dtable_uuid, script_name, log_id):
         db_session.close()
 
 
-@app.route('/admin/statistics/run-scripts/', methods=['GET'])
-def user_run_python_statistics():
-    if not check_auth_token(request):
-        return make_response(('Forbidden', 403))
-
+def get_scripts_running_statistics_by_request(request, is_user=True):
     raw_month = request.args.get('month')
     if raw_month:
         try:
@@ -270,11 +266,9 @@ def user_run_python_statistics():
             order_by = order_by.strip('-') + ' DESC'
 
     try:
-        is_user = int(request.args.get('is_user', 1))
         page = int(request.args.get('page', 1))
         per_page = int(request.args.get('per_page', 25))
     except:
-        is_user = 1
         page, per_page = 1, 25
 
     start, limit = (page - 1) * per_page, per_page
@@ -290,6 +284,22 @@ def user_run_python_statistics():
         db_session.close()
 
     return make_response(({'results': results, 'count': count}, 200))
+
+
+@app.route('/admin/statistics/scripts-running/by-user/', methods=['GET'])
+def user_run_python_statistics():
+    if not check_auth_token(request):
+        return make_response(('Forbidden', 403))
+
+    return get_scripts_running_statistics_by_request(request, is_user=True)
+
+
+@app.route('/admin/statistics/scripts-running/by-org/', methods=['GET'])
+def org_run_python_statistics():
+    if not check_auth_token(request):
+        return make_response(('Forbidden', 403))
+
+    return get_scripts_running_statistics_by_request(request, is_user=False)
 
 
 if __name__ == '__main__':
