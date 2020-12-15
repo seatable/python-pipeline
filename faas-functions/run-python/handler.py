@@ -4,6 +4,7 @@ import os
 import requests
 import subprocess
 import time
+import shutil
 from uuid import uuid4
 
 from flask import make_response
@@ -15,13 +16,13 @@ def get_sub_proc_timeout():
     sub_proc_timeout = os.environ.get('sub_proc_timeout').strip()
     if not sub_proc_timeout:
         return DEFAULT_SUB_PROCESS_TIMEOUT
-    threed_end = sub_proc_timeout[-3:]
-    if threed_end.lower() == 'min':
+    three_end = sub_proc_timeout[-3:]
+    if three_end.lower() == 'min':
         try:
             return int(sub_proc_timeout[:-3]) * 60
         except:
             return DEFAULT_SUB_PROCESS_TIMEOUT
-    if threed_end.lower() == 'sec':
+    if three_end.lower() == 'sec':
         try:
             return int(sub_proc_timeout[:-3])
         except:
@@ -38,6 +39,12 @@ def get_sub_proc_timeout():
             return int(sub_proc_timeout[:-1])
         except:
             return DEFAULT_SUB_PROCESS_TIMEOUT
+
+    # no(zero) end
+    try:
+        return int(sub_proc_timeout)
+    except:
+        return DEFAULT_SUB_PROCESS_TIMEOUT
 
     return DEFAULT_SUB_PROCESS_TIMEOUT
 
@@ -80,8 +87,10 @@ def handle(req):
         logging.error('request %s error: %s', script_url, e)
         return make_response(('URL error', 400))
 
-    file_name = uuid4().hex + '.py'
-    with open(file_name, 'wb') as f:
+    dir_id = uuid4().hex
+    file_name = dir_id + '.py'
+    os.makedirs(dir_id)
+    with open(os.path.join(dir_id, file_name), 'wb') as f:
         f.write(resp.content)
 
     return_code, output = None, None  # init output
@@ -93,6 +102,7 @@ def handle(req):
                                 stderr=subprocess.STDOUT,
                                 input=context_data,
                                 env=env,
+                                cwd=dir_id,
                                 timeout=get_sub_proc_timeout())
     except subprocess.TimeoutExpired as e:
         return make_response(('Script running for too long time!', 400))
@@ -105,7 +115,7 @@ def handle(req):
     finally:
         spend_time = time.time() - start_at
         try:
-            os.remove(file_name)
+            shutil.rmtree(dir_id)
         except:
             pass
 
