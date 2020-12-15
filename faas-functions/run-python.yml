@@ -8,8 +8,10 @@ functions:
     handler: ./run-python
     image: run-python:latest
     environment:
-      exec_timeout: 60s
+      read_timeout: 60s
+      write_timeout: 60s
+      exec_timeout: 58s
       # waitress threads count
       thread_count: 20
       # script sub-process timeout, should lower than exec_timeout or no response return
-      sub_proc_timeout: 59s
+      sub_proc_timeout: 55s
