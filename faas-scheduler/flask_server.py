@@ -3,6 +3,7 @@ monkey.patch_all()
 
 import json
 import logging
+from datetime import datetime
 from flask import Flask, request, make_response
 from gevent.pywsgi import WSGIServer
 from concurrent.futures import ThreadPoolExecutor
@@ -11,7 +12,8 @@ from faas_scheduler import DBSession
 import faas_scheduler.settings as settings
 from faas_scheduler.utils import check_auth_token, get_asset_id, get_script_url, \
     get_temp_api_token, add_task, get_task, update_task, delete_task, list_task_logs, \
-    get_task_log, run_script, get_script, add_script, delete_task_logs
+    get_task_log, run_script, get_script, add_script, delete_task_logs, \
+    get_run_script_statistics_by_month
 
 app = Flask(__name__)
 logger = logging.getLogger(__name__)
@@ -34,9 +36,11 @@ def scripts_api():
     dtable_uuid = data.get('dtable_uuid')
     script_name = data.get('script_name')
     context_data = data.get('context_data')
+    owner = data.get('owner')
     if not repo_id \
             or not dtable_uuid \
-            or not script_name:
+            or not script_name \
+            or not owner:
         return make_response(('Parameters invalid', 400))
 
     # check
@@ -54,7 +58,7 @@ def scripts_api():
     db_session = DBSession()
     try:
         script = add_script(db_session, repo_id, dtable_uuid, script_name, context_data)
-        executor.submit(run_script, script.id, script_url, temp_api_token, context_data)
+        executor.submit(run_script, dtable_uuid, owner, script.id, script_url, temp_api_token, context_data)
 
         return make_response(({'script_id': script.id}, 200))
     except Exception as e:
@@ -62,7 +66,6 @@ def scripts_api():
         return make_response(('Internal server error', 500))
     finally:
         db_session.close()
-
 
 
 @app.route('/run-script/<script_id>/', methods=['GET'])
@@ -116,10 +119,12 @@ def tasks_api():
     context_data = data.get('context_data')
     trigger = data.get('trigger')
     is_active = data.get('is_active', True)
+    owner = data.get('owner')
     if not repo_id \
             or not dtable_uuid \
             or not script_name \
-            or not trigger:
+            or not trigger \
+            or not owner:
         return make_response(('Parameters invalid', 400))
 
     # main
@@ -130,7 +135,7 @@ def tasks_api():
             return make_response(('task exists', 400))
 
         task = add_task(
-            db_session, repo_id, dtable_uuid, script_name, context_data, trigger, is_active)
+            db_session, repo_id, dtable_uuid, owner, script_name, context_data, trigger, is_active)
         return make_response(({'task': task.to_dict()}, 200))
 
     except Exception as e:
@@ -241,6 +246,61 @@ def task_log_api(dtable_uuid, script_name, log_id):
         return make_response(('Internal server error', 500))
     finally:
         db_session.close()
+
+
+def get_scripts_running_statistics_by_request(request, is_user=True):
+    raw_month = request.args.get('month')
+    if raw_month:
+        try:
+            month = datetime.strptime(raw_month, '%Y-%m')
+        except:
+            return make_response(('month invalid.', 400))
+    else:
+        month = None
+
+    order_by = request.args.get('order_by')
+    if order_by:
+        if order_by.strip('-') not in ('total_run_time', 'total_run_count'):
+            return make_response(('order_by invalid.', 400))
+        if '-' in order_by:
+            order_by = order_by.strip('-') + ' DESC'
+
+    try:
+        page = int(request.args.get('page', 1))
+        per_page = int(request.args.get('per_page', 25))
+    except:
+        page, per_page = 1, 25
+
+    start, limit = (page - 1) * per_page, per_page
+
+    db_session = DBSession()
+    try:
+        results, count = get_run_script_statistics_by_month(db_session, is_user, month=month, start=start, limit=limit, order_by=order_by)
+    except Exception as e:
+        logger.error(e)
+        logger.exception(e)
+        return make_response(('Internal Server Error.', 500))
+    finally:
+        db_session.close()
+
+    return make_response(({'results': results, 'count': count}, 200))
+
+
+@app.route('/admin/statistics/scripts-running/by-user/', methods=['GET'])
+def user_run_python_statistics():
+    if not check_auth_token(request):
+        return make_response(('Forbidden', 403))
+
+    return get_scripts_running_statistics_by_request(request, is_user=True)
+
+
+@app.route('/admin/statistics/scripts-running/by-org/', methods=['GET'])
+def org_run_python_statistics():
+    if not check_auth_token(request):
+        return make_response(('Forbidden', 403))
+
+    return get_scripts_running_statistics_by_request(request, is_user=False)
+
 
 if __name__ == '__main__':
     http_server = WSGIServer(('0.0.0.0', 5055), app)

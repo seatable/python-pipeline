@@ -7,7 +7,7 @@ import requests
 import urllib.parse
 from datetime import datetime, timedelta
 
-from seaserv import seafile_api
+from seaserv import seafile_api, ccnet_api
 from faas_scheduler.models import Task, TaskLog, ScriptLog
 from faas_scheduler.constants import CONDITION_DAILY
 import faas_scheduler.settings as settings
@@ -81,6 +81,68 @@ def call_faas_func(script_url, temp_api_token, context_data):
         return None
 
 
+def update_statistics(db_session, dtable_uuid, owner, result):
+    if not isinstance(result, dict):
+        return
+    spend_time = result.get('spend_time')
+    if not spend_time:
+        return
+
+    sqls = ['''
+    INSERT INTO dtable_run_script_statistics(dtable_uuid, run_date, total_run_count, total_run_time, update_at) VALUES
+    (:dtable_uuid, :run_date, 1, :spend_time, :update_at)
+    ON DUPLICATE KEY UPDATE
+    total_run_count=total_run_count+1,
+    total_run_time=total_run_time+:spend_time,
+    update_at=:update_at;
+    ''']
+
+    org_id = -1
+    if owner:  # maybe some old tasks without owner, so user/org statistics only for valuable owner
+        if '@seafile_group' not in owner:
+            orgs = ccnet_api.get_orgs_by_user(owner)
+            if orgs:
+                org_id = orgs[0].org_id
+            else:
+                org_id = -1
+        else:
+            group_id = owner[:owner.find('@seafile_grpup')]
+            org_id = ccnet_api.get_org_id_by_group(int(group_id))
+
+        if org_id == -1:
+            sqls += ['''
+            INSERT INTO user_run_script_statistics(username, run_date, total_run_count, total_run_time, update_at) VALUES
+            (:username, :run_date, 1, :spend_time, :update_at)
+            ON DUPLICATE KEY UPDATE
+            total_run_count=total_run_count+1,
+            total_run_time=total_run_time+:spend_time,
+            update_at=:update_at;
+            ''']
+        else:
+            sqls += ['''
+            INSERT INTO org_run_script_statistics(org_id, run_date, total_run_count, total_run_time, update_at) VALUES
+            (:org_id, :run_date, 1, :spend_time, :update_at)
+            ON DUPLICATE KEY UPDATE
+            total_run_count=total_run_count+1,
+            total_run_time=total_run_time+:spend_time,
+            update_at=:update_at;
+            ''']
+
+    try:
+        for sql in sqls:
+            db_session.execute(sql, {
+                'dtable_uuid': dtable_uuid,
+                'username': owner,
+                'org_id': org_id,
+                'run_date': datetime.today(),
+                'spend_time': spend_time,
+                'update_at': datetime.now()
+            })
+        db_session.commit()
+    except Exception as e:
+        logger.exception('update statistics sql error: %s' % (e,))
+
+
 def get_task(db_session, dtable_uuid, script_name):
     task = db_session.query(
         Task).filter_by(dtable_uuid=dtable_uuid, script_name=script_name).first()
@@ -88,10 +150,10 @@ def get_task(db_session, dtable_uuid, script_name):
     return task
 
 
-def add_task(db_session, repo_id, dtable_uuid, script_name, context_data, trigger, is_active):
+def add_task(db_session, repo_id, dtable_uuid, owner, script_name, context_data, trigger, is_active):
     context_data = json.dumps(context_data) if context_data else None
     task = Task(
-        repo_id, dtable_uuid, script_name, context_data, json.dumps(trigger), is_active)
+        repo_id, dtable_uuid, owner, script_name, context_data, json.dumps(trigger), is_active)
     db_session.add(task)
     db_session.commit()
 
@@ -197,6 +259,7 @@ def run_task(task):
     task_id = task.id
     repo_id = task.repo_id
     dtable_uuid = task.dtable_uuid
+    owner = task.owner
     script_name = task.script_name
     context_data = json.dumps(task.context_data) if task.context_data else None
 
@@ -211,6 +274,7 @@ def run_task(task):
         #
         task_log = add_task_log(db_session, task_id)
         result = call_faas_func(script_url, temp_api_token, context_data)
+        update_statistics(db_session, dtable_uuid, owner, result)
 
         if not result:
             success = False
@@ -259,7 +323,7 @@ def update_script(db_session, script, success, return_code, output):
     return script
 
 
-def run_script(script_id, script_url, temp_api_token, context_data):
+def run_script(dtable_uuid, owner, script_id, script_url, temp_api_token, context_data):
     """ Only for server """
     from faas_scheduler import DBSession
     db_session = DBSession()  # for multithreading
@@ -278,9 +342,67 @@ def run_script(script_id, script_url, temp_api_token, context_data):
 
         script = get_script(db_session, script_id)
         update_script(db_session, script, success, return_code, output)
+        update_statistics(db_session, dtable_uuid, owner, result)
     except Exception as e:
         logger.exception('Run script %d error: %s' % (script_id, e))
     finally:
         db_session.close()
 
     return True
+
+
+def get_run_script_statistics_by_month(db_session, is_user=True, month=None, start=0, limit=25, order_by=None):
+    sql = '''
+    SELECT {column}, SUM(total_run_count) AS total_run_count, SUM(total_run_time) AS total_run_time
+    FROM {table_name}
+    WHERE DATE_FORMAT(run_date, '%%Y-%%m')=DATE_FORMAT(:month, '%%Y-%%m')
+    GROUP BY {column}
+    %(order_by)s
+    LIMIT :limit OFFSET :offset
+    '''
+
+    if not month:
+        month = datetime.today()
+    if is_user:
+        table_name = 'user_run_script_statistics'
+        column = 'username'
+    else:
+        table_name = 'org_run_script_statistics'
+        column = 'org_id'
+
+    sql = sql.format(table_name=table_name, column=column)
+
+    args = {
+        'month': month,
+        'limit': limit,
+        'offset': start,
+    }
+    if order_by:
+        sql = sql % {'order_by': 'ORDER BY %s' % (order_by,)}
+    else:
+        sql = sql % {'order_by': ''}
+
+    results = []
+    for temp in db_session.execute(sql, args).fetchall():
+        item = {
+            'total_run_count': int(temp[1]),
+            'total_run_time': int(temp[2])
+        }
+        if is_user:
+            item['username'] = temp[0]
+        else:
+            item['org_id'] = temp[0]
+        results.append(item)
+
+    if results:
+        count_sql = '''
+        SELECT COUNT(1) FROM
+            (SELECT DISTINCT {column} FROM {table_name}
+            WHERE DATE_FORMAT(run_date, '%Y-%m')=DATE_FORMAT(:month, '%Y-%m')
+            GROUP BY {column}) t
+        '''
+        count = db_session.execute(count_sql.format(table_name=table_name, column=column), args).fetchone()[0]
+    else:
+        count = 0
+
+    return results, count
