@@ -97,19 +97,19 @@ def update_statistics(db_session, dtable_uuid, owner, result):
     update_at=:update_at;
     ''']
 
-    org_id = -1
+    org_id, username = -1, None
     if owner:  # maybe some old tasks without owner, so user/org statistics only for valuable owner
         if '@seafile_group' not in owner:
             orgs = ccnet_api.get_orgs_by_user(owner)
             if orgs:
                 org_id = orgs[0].org_id
             else:
-                org_id = -1
+                org_id, username = -1, owner
         else:
-            group_id = owner[:owner.find('@seafile_grpup')]
+            group_id = owner[:owner.find('@seafile_group')]
             org_id = ccnet_api.get_org_id_by_group(int(group_id))
 
-        if org_id == -1:
+        if username and org_id == -1:      # user who is not an org user
             sqls += ['''
             INSERT INTO user_run_script_statistics(username, run_date, total_run_count, total_run_time, update_at) VALUES
             (:username, :run_date, 1, :spend_time, :update_at)
@@ -118,7 +118,7 @@ def update_statistics(db_session, dtable_uuid, owner, result):
             total_run_time=total_run_time+:spend_time,
             update_at=:update_at;
             ''']
-        else:
+        if not username and org_id != -1:  # org
             sqls += ['''
             INSERT INTO org_run_script_statistics(org_id, run_date, total_run_count, total_run_time, update_at) VALUES
             (:org_id, :run_date, 1, :spend_time, :update_at)
@@ -132,7 +132,7 @@ def update_statistics(db_session, dtable_uuid, owner, result):
         for sql in sqls:
             db_session.execute(sql, {
                 'dtable_uuid': dtable_uuid,
-                'username': owner,
+                'username': username,
                 'org_id': org_id,
                 'run_date': datetime.today(),
                 'spend_time': spend_time,

@@ -2,6 +2,7 @@ CREATE TABLE `task` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `repo_id` varchar(36) NOT NULL,
   `dtable_uuid` varchar(36) NOT NULL,
+  `owner` varchar(255),
   `script_name` varchar(255) NOT NULL,
   `context_data` longtext,
   `trigger` longtext NOT NULL,
@@ -37,4 +38,40 @@ CREATE TABLE `script_log` (
   `output` longtext,
   PRIMARY KEY (`id`),
   KEY `started_at_c6ns09vt` (`started_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+CREATE TABLE `dtable_run_script_statistics` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `dtable_uuid` varchar(36) NOT NULL,
+  `run_date` date NOT NULL,
+  `total_run_count` int(11) DEFAULT 0,
+  `total_run_time` float DEFAULT 0,
+  `update_at` datetime(6) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `dtable_uuid_run_date_k2n9j3p1_uniq_key` (`dtable_uuid`,`run_date`),
+  KEY `dtable_uuid_n3b5u4d1_key` (`dtable_uuid`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+CREATE TABLE `user_run_script_statistics` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `username` varchar(255) NOT NULL,
+  `run_date` date NOT NULL,
+  `total_run_count` int(11) DEFAULT 0,
+  `total_run_time` float DEFAULT 0,
+  `update_at` datetime(6) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `username_run_date_n3x0p2i8_uniq_key` (`username`,`run_date`),
+  KEY `username_m0o1g4d0_key` (`username`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+CREATE TABLE `org_run_script_statistics` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `org_id` int(11) NOT NULL,
+  `run_date` date NOT NULL,
+  `total_run_count` int(11) DEFAULT 0,
+  `total_run_time` float DEFAULT 0,
+  `update_at` datetime(6) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `org_id_run_date_a0g6y5r4_uniq_key` (`org_id`,`run_date`),
+  KEY `org_id_v4b5h2d9_key` (`org_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
