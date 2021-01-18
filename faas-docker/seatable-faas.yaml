@@ -1,0 +1,69 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: seatable-faas
+  name: seatable-faas-svc
+  namespace: "seatable-faas"
+spec:
+  type: LoadBalancer
+  ports:
+    - name: http
+      port: 8080
+      protocol: TCP
+      targetPort: 8080
+  selector:
+    app: faas
+---
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: seatable-faas
+  name: seatable-faas-dep
+  namespace: "seatable-faas"
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: faas
+  template:
+    metadata:
+      labels:
+        app: faas
+    spec:
+      containers:
+      - env:
+        - name: sub_proc_timeout
+          value: 55s
+        name: run-python
+        image: 571654986650.dkr.ecr.eu-central-1.amazonaws.com/seatable/run-python:latest
+        imagePullPolicy: IfNotPresent
+        livenessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /_/health
+            port: 8080
+            scheme: HTTP
+          periodSeconds: 1
+          successThreshold: 1
+          timeoutSeconds: 1
+        ports:
+        - containerPort: 8080
+          name: http
+          protocol: TCP
+        readinessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /_/health
+            port: 8080
+            scheme: HTTP
+          periodSeconds: 1
+          successThreshold: 1
+          timeoutSeconds: 1
+      volumes:
+        - name: data
+          emptyDir: {}
+---
