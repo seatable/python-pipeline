@@ -36,18 +36,8 @@ spec:
     spec:
       containers:
       - env:
-        - name: exec_timeout
-          value: 58s
-        - name: fprocess
-          value: python index.py
-        - name: read_timeout
-          value: 60s
         - name: sub_proc_timeout
           value: 55s
-        - name: thread_count
-          value: "20"
-        - name: write_timeout
-          value: 60s
         name: run-python
         image: 571654986650.dkr.ecr.eu-central-1.amazonaws.com/seatable/run-python:latest
         imagePullPolicy: IfNotPresent
