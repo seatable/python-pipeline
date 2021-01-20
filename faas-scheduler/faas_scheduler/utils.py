@@ -53,41 +53,36 @@ def get_temp_api_token(dtable_uuid, script_name):
     return temp_api_token
 
 
-def call_faas_func(script_url, temp_api_token, context_data):
+def call_faas_func(script_url, temp_api_token, context_data, script_id=None, task_log_id=None):
     try:
-        response = requests.post(faas_func_url, json={
+        data = {
             'script_url': script_url,
             'env': {
                 'dtable_web_url': settings.DTABLE_WEB_SERVICE_URL,
                 'api_token': temp_api_token,
             },
             'context_data': context_data,
-        })
+            'script_id': script_id,
+            'task_log_id': task_log_id
+        }
+        response = requests.post(faas_func_url, json=data)
+        logger.error('response: %s', response)
 
-        # No matter the success or failure of running script
-        # return 200 always
-        # if response status is not 200, it indicates that some internal error occurs
+        # script will be executed asynchronously, so there will be nothing in response
+        # so only check response
+
         if response.status_code != 200:
+            logging.error('url: %s', faas_func_url)
             logger.error('FAAS error: %d %s' % (response.status_code, response.text))
-            return None
-
-        # there is a `output`, normal output or error output, and a `return_code`, 0 success 1 fail, in response json
-        # just return it
-        result = response.json()
-        return result
 
     except Exception as e:
         logger.error(e)
         return None
 
 
-def update_statistics(db_session, dtable_uuid, owner, result):
-    if not isinstance(result, dict):
-        return
-    spend_time = result.get('spend_time')
+def update_statistics(db_session, dtable_uuid, owner, spend_time):
     if not spend_time:
         return
-
     sqls = ['''
     INSERT INTO dtable_run_script_statistics(dtable_uuid, run_date, total_run_count, total_run_time, update_at) VALUES
     (:dtable_uuid, :run_date, 1, :spend_time, :update_at)
@@ -259,7 +254,6 @@ def run_task(task):
     task_id = task.id
     repo_id = task.repo_id
     dtable_uuid = task.dtable_uuid
-    owner = task.owner
     script_name = task.script_name
     context_data = json.dumps(task.context_data) if task.context_data else None
 
@@ -273,21 +267,10 @@ def run_task(task):
         temp_api_token = get_temp_api_token(dtable_uuid, script_name)
         #
         task_log = add_task_log(db_session, task_id)
-        result = call_faas_func(script_url, temp_api_token, context_data)
-        update_statistics(db_session, dtable_uuid, owner, result)
+        call_faas_func(script_url, temp_api_token, context_data, task_log_id=task_log.id)
+        task = get_task(db_session, dtable_uuid, script_name)
+        update_task_trigger_time(db_session, task)
 
-        if not result:
-            success = False
-            return_code = None
-            output = None
-        else:
-            success = True
-            return_code = result.get('return_code')
-            output = result.get('output')
-            task = get_task(db_session, dtable_uuid, script_name)
-            update_task_trigger_time(db_session, task)
-
-        update_task_log(db_session, task_log, success, return_code, output)
     except Exception as e:
         logger.exception('Run task %d error: %s' % (task_id, e))
     finally:
@@ -303,10 +286,10 @@ def get_script(db_session, script_id):
     return script
 
 
-def add_script(db_session, repo_id, dtable_uuid, script_name, context_data):
+def add_script(db_session, repo_id, dtable_uuid, owner, script_name, context_data):
     context_data = json.dumps(context_data) if context_data else None
     script = ScriptLog(
-        repo_id, dtable_uuid, script_name, context_data, datetime.now())
+        repo_id, dtable_uuid, owner, script_name, context_data, datetime.now())
     db_session.add(script)
     db_session.commit()
 
@@ -323,32 +306,35 @@ def update_script(db_session, script, success, return_code, output):
     return script
 
 
-def run_script(dtable_uuid, owner, script_id, script_url, temp_api_token, context_data):
+def run_script(dtable_uuid, script_id, script_url, temp_api_token, context_data):
     """ Only for server """
     from faas_scheduler import DBSession
     db_session = DBSession()  # for multithreading
 
     try:
-        result = call_faas_func(script_url, temp_api_token, context_data)
-
-        if not result:
-            success = False
-            return_code = None
-            output = None
-        else:
-            success = True
-            return_code = result.get('return_code')
-            output = result.get('output')
-
-        script = get_script(db_session, script_id)
-        update_script(db_session, script, success, return_code, output)
-        update_statistics(db_session, dtable_uuid, owner, result)
+        call_faas_func(script_url, temp_api_token, context_data, script_id=script_id)
     except Exception as e:
         logger.exception('Run script %d error: %s' % (script_id, e))
     finally:
         db_session.close()
 
     return True
+
+
+def hook_update_script(db_session, script_id, success, return_code, output, spend_time):
+    script = db_session.query(ScriptLog).filter_by(id=script_id).first()
+    if script:
+        update_script(db_session, script, success, return_code, output)
+        update_statistics(db_session, script.dtable_uuid, script.owner, spend_time)
+
+
+def hook_update_task_log(db_session, task_log_id, success, return_code, output, spend_time):
+    task_log = db_session.query(TaskLog).filter_by(id=task_log_id).first()
+    if task_log:
+        update_task_log(db_session, task_log, success, return_code, output)
+        task = db_session.query(Task).filter_by(id=task_log.task_id).first()
+        if task:
+            update_statistics(db_session, task.dtable_uuid, task.owner, spend_time)
 
 
 def get_run_script_statistics_by_month(db_session, is_user=True, month=None, start=0, limit=25, order_by=None):

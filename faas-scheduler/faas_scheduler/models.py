@@ -73,6 +73,7 @@ class ScriptLog(Base):
     id = Column(Integer, primary_key=True)
     repo_id = Column(String(36))
     dtable_uuid = Column(String(36))
+    owner = Column(String(255))
     script_name = Column(String(255))
     context_data = Column(Text, nullable=True)
     started_at = Column(DateTime, index=True)
@@ -81,9 +82,10 @@ class ScriptLog(Base):
     return_code = Column(Integer, nullable=True)
     output = Column(Text, nullable=True)
 
-    def __init__(self, repo_id, dtable_uuid, script_name, context_data, started_at):
+    def __init__(self, repo_id, dtable_uuid, owner, script_name, context_data, started_at):
         self.repo_id = repo_id
         self.dtable_uuid = dtable_uuid
+        self.owner = owner
         self.script_name = script_name
         self.context_data = context_data
         self.started_at = started_at
@@ -92,6 +94,7 @@ class ScriptLog(Base):
         return {
             'id': self.id,
             'dtable_uuid': self.dtable_uuid,
+            'owner': self.owner,
             'script_name': self.script_name,
             'context_data': json.loads(self.context_data) if self.context_data else None,
             'started_at': self.started_at,
