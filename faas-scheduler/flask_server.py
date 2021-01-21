@@ -13,7 +13,7 @@ import faas_scheduler.settings as settings
 from faas_scheduler.utils import check_auth_token, get_asset_id, get_script_url, \
     get_temp_api_token, add_task, get_task, update_task, delete_task, list_task_logs, \
     get_task_log, run_script, get_script, add_script, delete_task_logs, \
-    get_run_script_statistics_by_month
+    get_run_script_statistics_by_month, hook_update_script, hook_update_task_log
 
 app = Flask(__name__)
 logger = logging.getLogger(__name__)
@@ -57,8 +57,8 @@ def scripts_api():
     # main
     db_session = DBSession()
     try:
-        script = add_script(db_session, repo_id, dtable_uuid, script_name, context_data)
-        executor.submit(run_script, dtable_uuid, owner, script.id, script_url, temp_api_token, context_data)
+        script = add_script(db_session, repo_id, dtable_uuid, owner, script_name, context_data)
+        executor.submit(run_script, dtable_uuid, script.id, script_url, temp_api_token, context_data)
 
         return make_response(({'script_id': script.id}, 200))
     except Exception as e:
@@ -246,6 +246,40 @@ def task_log_api(dtable_uuid, script_name, log_id):
         return make_response(('Internal server error', 500))
     finally:
         db_session.close()
+
+
+@app.route('/script-result/', methods=['POST'])
+def record_script_result():
+    """
+    Receive result of script
+    """
+    if not check_auth_token(request):
+        return make_response(('Forbidden', 403))
+    try:
+        data = request.get_json()
+    except:
+        return make_response('Bad Request.', 400)
+    success = data.get('success', False)
+    return_code = data.get('return_code')
+    output = data.get('output')
+    spend_time = data.get('spend_time')
+    script_id, task_log_id = data.get('script_id'), data.get('task_log_id')
+
+    db_session = DBSession()
+
+    # udpate script/task log and run-time statistics
+    try:
+        if script_id:
+            hook_update_script(db_session, script_id, success, return_code, output, spend_time)
+        elif task_log_id:
+            hook_update_task_log(db_session, task_log_id, success, return_code, output, spend_time)
+    except Exception as e:
+        logger.exception(e)
+        return make_response(('Internal server error', 500))
+    finally:
+        db_session.close()
+
+    return 'success'
 
 
 def get_scripts_running_statistics_by_request(request, is_user=True):

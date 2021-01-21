@@ -1,0 +1,9 @@
+uwsgi
+requests
+flask
+
+seatable-api
+dateutils
+pyOpenSSL
+
+
