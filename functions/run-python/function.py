@@ -26,9 +26,11 @@ executor = ThreadPoolExecutor(32)
 DEFAULT_SUB_PROCESS_TIMEOUT = 60 * 15  # 15 mins
 
 
-def hook_scheduler(success, return_code, output, spend_time, request_data):
+def send_to_scheduler(success, return_code, output, spend_time, request_data):
     """
-    success: is script running successfully
+    This function is used to send result of script to scheduler
+
+    success: whether script running successfully
     return_code: return-code of subprocess
     output: output of subprocess or error message
     spend_time: time subprocess took
@@ -37,17 +39,17 @@ def hook_scheduler(success, return_code, output, spend_time, request_data):
     url = os.environ.get('SCHEDULER_URL')
     token = os.environ.get('SCHEDULER_AUTH_TOKEN', '')
     if not url:
-        logging.error('no scheduler url')
+        logging.error('SCHEDULER_URL not set!')
         return
 
-    hook_data = {
+    result_data = {
         'success': success,
         'return_code': return_code,
         'output': output,
         'spend_time': spend_time
     }
 
-    hook_data.update({
+    result_data.update({
         'script_id': request_data.get('script_id'),
         'task_log_id': request_data.get('task_log_id')
     })
@@ -57,18 +59,19 @@ def hook_scheduler(success, return_code, output, spend_time, request_data):
     }
 
     try:
-        response = requests.post(url, json=hook_data, headers=headers)
+        response = requests.post(url, json=result_data, headers=headers)
     except Exception as e:
-        logging.error(e)
-    else:
-        if response.status_code != 200:
-            logging.error('hook scheduler response: %s, hook_data: %s', response, hook_data)
+        logging.error('send to scheduler: %s, error: %s, result_data: %s', url, e, result_data)
+        return
+
+    if response.status_code != 200:
+        logging.error('Fail to send to scheduler, response: %s, result_data: %s', response, result_data)
 
 
 def run_python(data):
     script_url = data.get('script_url')
     if not script_url:
-        hook_scheduler(False, None, 'No script url', None, data)
+        send_to_scheduler(False, None, 'Script URL is missing', None, data)
         return
 
     # env must be map
@@ -87,12 +90,12 @@ def run_python(data):
     try:
         resp = requests.get(script_url)
         if resp.status_code < 200 or resp.status_code >= 300:
-            logging.error('request %s status code: %s', script_url, resp.status_code)
-            hook_scheduler(False, None, 'Script URL error', None, data)
+            logging.error('Fail to get script: %s, response: %s', script_url, resp)
+            send_to_scheduler(False, None, 'Fail to get script', None, data)
             return
     except Exception as e:
-        logging.error('request %s error: %s', script_url, e)
-        hook_scheduler(False, None, 'URL error', None, data)
+        logging.error('Fail to get script %s, error: %s', script_url, e)
+        send_to_scheduler(False, None, 'Fail to get script', None, data)
         return
 
     dir_id = uuid4().hex
@@ -113,11 +116,11 @@ def run_python(data):
                                 cwd=dir_id,
                                 timeout=DEFAULT_SUB_PROCESS_TIMEOUT)
     except subprocess.TimeoutExpired as e:
-        hook_scheduler(False, -1, 'Script running for too long time!', DEFAULT_SUB_PROCESS_TIMEOUT, data)
+        send_to_scheduler(False, -1, 'Script running for too long time!', DEFAULT_SUB_PROCESS_TIMEOUT, data)
         return
     except Exception as e:
-        logging.error('run file %s error: %s', script_url, e)
-        hook_scheduler(False, None, None, None, data)
+        logging.error('Fail to run file %s error: %s', script_url, e)
+        send_to_scheduler(False, None, None, None, data)
         return
     else:
         return_code = result.returncode
@@ -129,7 +132,7 @@ def run_python(data):
         except:
             pass
 
-    hook_scheduler(return_code == 0, return_code, output, spend_time, data)
+    send_to_scheduler(return_code == 0, return_code, output, spend_time, data)
 
 
 @app.route("/", defaults={"path": ""}, methods=["POST", "GET"])
