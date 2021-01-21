@@ -249,7 +249,10 @@ def task_log_api(dtable_uuid, script_name, log_id):
 
 
 @app.route('/script-result/', methods=['POST'])
-def hook_api():
+def record_script_result():
+    """
+    Receive result of script
+    """
     if not check_auth_token(request):
         return make_response(('Forbidden', 403))
     try:

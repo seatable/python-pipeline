@@ -66,17 +66,15 @@ def call_faas_func(script_url, temp_api_token, context_data, script_id=None, tas
             'task_log_id': task_log_id
         }
         response = requests.post(faas_func_url, json=data)
-        logger.error('response: %s', response)
 
         # script will be executed asynchronously, so there will be nothing in response
         # so only check response
 
         if response.status_code != 200:
-            logging.error('url: %s', faas_func_url)
-            logger.error('FAAS error: %d %s' % (response.status_code, response.text))
+            logger.error('Fail to call FAAS: %s, data: %s, error response: %s, %s', faas_func_url, data, response.status_code, response.text)
 
     except Exception as e:
-        logger.error(e)
+        logger.error('Fail to call FAAS: %s, data: %s, error: %s', faas_func_url, data, e)
         return None
 
 
