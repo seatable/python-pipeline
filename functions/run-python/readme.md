@@ -1,30 +1,39 @@
 # Run Python
 
+
+## Image:
+
+- Aliyun: `registry.cn-beijing.aliyuncs.com/seatable/docker-python:latest`
+
+- Aws: `571654986650.dkr.ecr.eu-central-1.amazonaws.com/seatable/docker-python:latest`
+
+If there isn't one image on aliyun/aws, please build one and push it with Dockerfile
+
+```
+docker build -t="registry.cn-beijing.aliyuncs.com/seatable/docker-python:latest" -f Dockerfile .
+docker push registry.cn-beijing.aliyuncs.com/seatable/docker-python:latest
+```
+
 ## Deploy
 
-Image:
+What we need to do to deploy, including set flask and run script.
 
-- Aliyun: `registry.cn-beijing.aliyuncs.com/seatable/run-python:latest`
-
-- Aws: `571654986650.dkr.ecr.eu-central-1.amazonaws.com/seatable/run-python:latest`
-
-> Note: Both of URIs of images are the previous URIs.
-
-### K8S
-
-Set environ variables in deployment:
-
-* SCHEDULER_URL: the url of faas-scheduler
-* SCHEDULER_AUTH_TOKEN: auth-token of faas-scheduler
-
-And there is an optional variable `DEBUG` which indicates whether program is running in debug mode. Please set `DEBUG` `true` or `false`, default `false`.
-
-### Docker
-
-Please use docker-compose to deploy it.
-
-Before that, please set environ variables in docker-compose.yml file.
+First, go to path seatable-faas/functions/run-python, touch a new file local_settings.py to set some options such as scheduler url, sheduler token and so on.
 
 ```
-docker-compose up -d
+SCHEDULER_URL = ''
+SCHEDULER_AUTH_TOKEN = ''
+
+THREAD_COUNT = 32         # count of threads
+SUB_PROCESS_TIMEOUT = 60  # timeout of subprocess running
 ```
+
+Then, run start.sh script like following.
+
+```
+./start.sh -p [aliyun/aws]
+```
+
+If you are on an aliyun machine, `./start.sh -p aliyun`.
+
+Similarly, `./start.sh -p aws` if you are on an aws machine.
