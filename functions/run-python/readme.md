@@ -1,30 +1,46 @@
 # Run Python
 
+## Project description
+
+The project is for run-python, including run-python server and the definition of image which python scripts really run in.
+
+We use uwsgi to deploy run-python server which we develop with flask and run python script in container separately.
+
+Here is the introduction of the project files.
+
+- Dockerfile: definition of python-runner
+- function.py: flask app
+- settings.py: settings of functions
+- requirements.txt: requirements of python-runner
+- server_requirements.txt: requirements of function
+- start.sh: startup script
+- stop.sh: stop script
+
+
 ## Deploy
 
-Image:
+Enter seatable/functions/run-python.
 
-- Aliyun: `registry.cn-beijing.aliyuncs.com/seatable/run-python:latest`
-
-- Aws: `571654986650.dkr.ecr.eu-central-1.amazonaws.com/seatable/run-python:latest`
-
-> Note: Both of URIs of images are the previous URIs.
-
-### K8S
-
-Set environ variables in deployment:
-
-* SCHEDULER_URL: the url of faas-scheduler
-* SCHEDULER_AUTH_TOKEN: auth-token of faas-scheduler
-
-And there is an optional variable `DEBUG` which indicates whether program is running in debug mode. Please set `DEBUG` `true` or `false`, default `false`.
-
-### Docker
-
-Please use docker-compose to deploy it.
-
-Before that, please set environ variables in docker-compose.yml file.
+Install requirments flask app
 
 ```
-docker-compose up -d
+pip install -r server_requirements.txt
+```
+
+Modify settings.py or create a new `local_settings.py` to set your flask app and modify uwsgi.ini to set uwsgi according to your own needs.
+
+Run start.sh to deploy.
+
+```
+./start.sh
+```
+
+## Stop
+
+Actually, the serivce is consisted of uwsgi server and docker containers. So, if you want to stop the service, you need to stop uwsgi and related containers.
+
+You can do that by hand or run stop script to do it autimatically.
+
+```
+./stop.sh
 ```

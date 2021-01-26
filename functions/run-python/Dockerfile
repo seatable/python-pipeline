@@ -2,21 +2,12 @@ FROM python:3.7-alpine
 
 RUN apk add openssl-dev gcc musl-dev libxslt-dev libffi-dev
 
+VOLUME [ "/scripts" ]
 
-WORKDIR /root
+WORKDIR /scripts
 
 # install requirements
 COPY requirements.txt   .
 RUN pip install -r requirements.txt
 
-COPY function.py          .
-COPY start.sh             .
-COPY uwsgi.ini            .
-COPY entrypoint.sh        .
-
-
-
-RUN chmod +x start.sh
-RUN chmod +x entrypoint.sh
-
-ENTRYPOINT sh start.sh && sh entrypoint.sh
+ENTRYPOINT cat input | python index.py > output

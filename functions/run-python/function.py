@@ -11,8 +11,10 @@ from uuid import uuid4
 
 from flask import Flask, request, make_response
 
+import settings
 
-if os.environ.get('DEBUG', 'false').lower() != 'true':
+
+if not settings.DEBUG:
     logging.basicConfig(
         filename='/var/log/function.log',
         filemode='a',
@@ -21,9 +23,9 @@ if os.environ.get('DEBUG', 'false').lower() != 'true':
     )
 
 app = Flask(__name__)
-executor = ThreadPoolExecutor(32)
+executor = ThreadPoolExecutor(settings.THREAD_COUNT)
 
-DEFAULT_SUB_PROCESS_TIMEOUT = 60 * 15  # 15 mins
+DEFAULT_SUB_PROCESS_TIMEOUT = settings.SUB_PROCESS_TIMEOUT
 
 
 def send_to_scheduler(success, return_code, output, spend_time, request_data):
@@ -36,11 +38,12 @@ def send_to_scheduler(success, return_code, output, spend_time, request_data):
     spend_time: time subprocess took
     request_data: data from request
     """
-    url = os.environ.get('SCHEDULER_URL')
-    token = os.environ.get('SCHEDULER_AUTH_TOKEN', '')
-    if not url:
+    if not settings.SCHEDULER_URL:
         logging.error('SCHEDULER_URL not set!')
         return
+
+    url = settings.SCHEDULER_URL.strip('/') + '/script-result/'
+    token = settings.SCHEDULER_AUTH_TOKEN
 
     result_data = {
         'success': success,
@@ -79,13 +82,12 @@ def run_python(data):
     if env and not isinstance(env, dict):
         env = {}
     env['is_cloud'] = "1"
-    env.update(os.environ)
 
     # context_data must be map
     context_data = data.get('context_data')
     if context_data and not isinstance(context_data, dict):
         context_data = None
-    context_data = json.dumps(context_data).encode() if context_data else None
+    context_data = json.dumps(context_data) if context_data else None
 
     try:
         resp = requests.get(script_url)
@@ -99,38 +101,62 @@ def run_python(data):
         return
 
     dir_id = uuid4().hex
-    file_name = dir_id + '.py'
+    container_name = 'python-runner' + dir_id
+    file_name = 'index.py'
     os.makedirs(dir_id)
+    # save script
     with open(os.path.join(dir_id, file_name), 'wb') as f:
         f.write(resp.content)
+    # save env
+    env_file = os.path.join(dir_id, 'env.list')
+    with open(env_file, 'w') as f:
+        if env:
+            envs = '\n'.join(['%s=%s' % (key, value) for key, value in env.items()])
+            f.write(envs)
+    # save arguments as file to stdin
+    with open(os.path.join(dir_id, 'input'), 'w') as f:
+        if context_data:
+            f.write(context_data)
 
     return_code, output = None, None  # init output
 
     start_at = time.time()
     try:
-        result = subprocess.run(['python', file_name],
+        # mount volumes and set env
+        scripts_path = os.path.join(os.getcwd(), dir_id)
+        result = subprocess.run(['docker', 'run', '--name', container_name, '--env-file', env_file, '-v', '{}:/scripts'.format(scripts_path), settings.IMAGE],
                                 stdout=subprocess.PIPE,
                                 stderr=subprocess.STDOUT,
-                                input=context_data,
-                                env=env,
-                                cwd=dir_id,
                                 timeout=DEFAULT_SUB_PROCESS_TIMEOUT)
     except subprocess.TimeoutExpired as e:
+        try:  # stop container
+            subprocess.run(['docker', 'stop', container_name], stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
+        except Exception as e:
+            logging.warning('stop script: %s container: %s, error: %s', script_url, container_name, e)
         send_to_scheduler(False, -1, 'Script running for too long time!', DEFAULT_SUB_PROCESS_TIMEOUT, data)
         return
     except Exception as e:
+        logging.exception(e)
         logging.error('Fail to run file %s error: %s', script_url, e)
         send_to_scheduler(False, None, None, None, data)
         return
     else:
+        output_file_path = os.path.join(dir_id, 'output')
+        if os.path.isfile(output_file_path):
+            with open(output_file_path, 'r') as f:
+                output = f.read()
         return_code = result.returncode
-        output = result.stdout.decode()
+        output += result.stdout.decode()
     finally:
         spend_time = time.time() - start_at
         try:
             shutil.rmtree(dir_id)
-        except:
-            pass
+        except Exception as e:
+            logging.warning('Fail to remove script files error: %s', e)
+        try:
+            subprocess.run(['docker', 'container', 'rm', container_name], stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
+        except Exception as e:
+            logging.warning('Fail to remove container error: %s', e)
 
     send_to_scheduler(return_code == 0, return_code, output, spend_time, data)
 
