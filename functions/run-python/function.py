@@ -101,7 +101,7 @@ def run_python(data):
         return
 
     dir_id = uuid4().hex
-    container_name = 'run-python' + dir_id
+    container_name = 'python-runner' + dir_id
     file_name = 'index.py'
     os.makedirs(dir_id)
     # save script

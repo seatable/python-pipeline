@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# kill old uwsgi and stop/remove old containers
+sh stop.sh
+
 image="seatable/python-runner:latest"
 
 image_count=`docker image ls | awk -vt=: '{print $1t$2}' | grep $image | wc -l`
