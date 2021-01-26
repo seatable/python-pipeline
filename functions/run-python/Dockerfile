@@ -6,7 +6,7 @@ VOLUME [ "/scripts" ]
 
 WORKDIR /scripts
 
-# # install requirements
+# install requirements
 COPY requirements.txt   .
 RUN pip install -r requirements.txt
 

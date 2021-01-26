@@ -1,37 +1,16 @@
 #!/bin/bash
 
-helpFunction()
-{
-    echo "start.sh -p [aws/aliyun]"
-}
+image="seatable/python-runner:latest"
 
-while getopts p: opt;
-do
-    case $opt in
-        p) platform="$OPTARG"
-        ;;
-        ?) helpFunction
-        ;;
-    esac
-done
+image_count=`docker image ls | awk -vt=: '{print $1t$2}' | grep $image | wc -l`
 
-echo "platform: $platform"
 
-if [ "$platform" == "aws" ]; then
-    image="571654986650.dkr.ecr.eu-central-1.amazonaws.com/seatable/docker-python:latest"
-elif [ "$platform" == "aliyun" ]; then
-    image="registry.cn-beijing.aliyuncs.com/seatable/docker-python:latest"
-else
-    echo "platform invalid"
-    exit 1
+if [ $image_count -eq 0 ]; then
+    echo "$image"
+    docker pull $image
 fi
 
-echo "$image"
-
-docker pull $image
 export IMAGE=$image
-
-pip3 install -r server_requirements.txt
 
 if [ ! -d "/var/log" ]; then
     mkdir -p /var/log
