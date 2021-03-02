@@ -18,7 +18,7 @@ faas_func_url = settings.FAAS_URL.rstrip('/') + '/function/run-python'
 
 def check_auth_token(request):
     value = request.headers.get('Authorization', '')
-    if value == 'Token ' + settings.AUTH_TOKEN:
+    if value == 'Token ' + settings.SEATABLE_FAAS_AUTH_TOKEN:
         return True
 
     return False

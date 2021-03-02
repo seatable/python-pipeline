@@ -1,8 +1,6 @@
 #!/bin/bash
 
 function stop_server() {
-    pkill -9 -f ccnet-server
-    pkill -9 -f seaf-server
     pkill -9 -f flask_server.py
     pkill -9 -f scheduler.py
 
@@ -12,14 +10,7 @@ function stop_server() {
 }
 
 function set_env() {
-    export SRC_DIR=/opt/seatable-faas-scheduler/
-    export LD_LIBRARY_PATH=/opt/seatable-faas-scheduler/seafile/lib/
-    export PYTHONPATH=/opt/seatable-faas-scheduler/seafile/lib/python3.6/site-packages/:/usr/lib/python3.6/dist-packages:/usr/lib/python3.6/site-packages:/usr/local/lib/python3.6/dist-packages:/usr/local/lib/python3.6/site-packages
-    export PATH=/opt/seatable-faas-scheduler/seafile/bin/:$PATH
-
-    export CCNET_CONF_DIR=/opt/seatable-faas-scheduler/ccnet
-    export SEAFILE_CONF_DIR=/opt/seatable-faas-scheduler/seafile-data
-    export SEAFILE_CENTRAL_CONF_DIR=/opt/seatable-faas-scheduler/conf
+    export PYTHONPATH=/opt/seatable-faas-scheduler/faas-scheduler:/usr/lib/python3.6/dist-packages:/usr/lib/python3.6/site-packages:/usr/local/lib/python3.6/dist-packages:/usr/local/lib/python3.6/site-packages
 }
 
 function run_python_wth_env() {
@@ -42,12 +33,6 @@ function start_server() {
     sleep 0.5
 
     set_env
-
-    ccnet-server -F /opt/seatable-faas-scheduler/conf -c /opt/seatable-faas-scheduler/ccnet -f /opt/seatable-faas-scheduler/logs/ccnet.log -d -L /opt/seatable-faas-scheduler -P /opt/seatable-faas-scheduler/pids/ccnet.pid - &
-    sleep 0.2
-
-    seaf-server -F /opt/seatable-faas-scheduler/conf -c /opt/seatable-faas-scheduler/ccnet -d /opt/seatable-faas-scheduler/seafile-data -l /opt/seatable-faas-scheduler/logs/seafile.log -L /opt/seatable-faas-scheduler -P /opt/seatable-faas-scheduler/pids/seafile.pid - &
-    sleep 0.2
 
     cd /opt/seatable-faas-scheduler/faas-scheduler/
     python3 flask_server.py &>>/opt/seatable-faas-scheduler/logs/flask.log &

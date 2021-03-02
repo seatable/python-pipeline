@@ -1,56 +1,15 @@
 import os
+from uuid import uuid4
 
 DB_HOST = os.getenv('DB_HOST', 'db')
 DB_ROOT_PASSWD = os.getenv('DB_ROOT_PASSWD', '')
 SEATABLE_FAAS_SCHEDULER_SERVER_LETSENCRYPT = os.getenv(
-    'SEATABLE_FAAS_SCHEDULER_SERVER_LETSENCRYPT', 'True')
+    'SEATABLE_FAAS_SCHEDULER_SERVER_LETSENCRYPT', 'False')
 SEATABLE_FAAS_SCHEDULER_SERVER_HOSTNAME = os.getenv(
-    'SEATABLE_FAAS_SCHEDULER_SERVER_HOSTNAME', 'faas-scheduler.seatable.cn')
+    'SEATABLE_FAAS_SCHEDULER_SERVER_HOSTNAME', 'demo.faas-scheduler.seatable.cn')
 
 server_prefix = 'https://' if SEATABLE_FAAS_SCHEDULER_SERVER_LETSENCRYPT == 'True' else 'http://'
 SERVER_URL = server_prefix + SEATABLE_FAAS_SCHEDULER_SERVER_HOSTNAME
-
-
-# seafile
-seafile_config_path = '/opt/seatable-faas-scheduler/conf/seafile.conf'
-seafile_config = """
-[fileserver]
-port=8082
-
-[database]
-type = mysql
-host = host
-port = 3306
-user = user
-password = password
-db_name = db_name
-connection_charset = utf8
-"""
-
-if not os.path.exists(seafile_config_path):
-    with open(seafile_config_path, 'w') as f:
-        f.write(seafile_config)
-
-
-# ccnet
-ccnet_config_path = '/opt/seatable-faas-scheduler/conf/ccnet.conf'
-ccnet_config = """
-[General]
-SERVICE_URL = %s/
-
-[Database]
-ENGINE = mysql
-HOST = host
-PORT = 3306
-USER = user
-PASSWD = password
-DB = db_name
-CONNECTION_CHARSET = utf8
-""" % (SERVER_URL)
-
-if not os.path.exists(ccnet_config_path):
-    with open(ccnet_config_path, 'w') as f:
-        f.write(ccnet_config)
 
 
 # seatable-faas-scheduler
@@ -65,14 +24,15 @@ DATABASE_NAME = 'faas_scheduler'
 
 # faas
 FAAS_URL = ''
+SEATABLE_FAAS_AUTH_TOKEN = '%s'
 
 # seatable
 FILE_SERVER_ROOT = '%s/seafhttp/'
-DTABLE_WEB_SERVICE_URL = ''
+DTABLE_WEB_SERVICE_URL = '%s'
 DTABLE_PRIVATE_KEY = ''
-AUTH_TOKEN = ''
+SEATABLE_ADMIN_TOKEN = ''
 
-""" % (DB_ROOT_PASSWD, DB_HOST, SERVER_URL)
+""" % (DB_ROOT_PASSWD, DB_HOST, str(uuid4()), SERVER_URL, SERVER_URL)
 
 if not os.path.exists(seatable_faas_scheduler_config_path):
     with open(seatable_faas_scheduler_config_path, 'w') as f:
