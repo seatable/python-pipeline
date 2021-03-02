@@ -29,6 +29,7 @@ CREATE TABLE `script_log` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `repo_id` varchar(36) NOT NULL,
   `dtable_uuid` varchar(36) NOT NULL,
+  `owner` varchar(255),
   `script_name` varchar(255) NOT NULL,
   `context_data` longtext,
   `started_at` datetime(6) NOT NULL,

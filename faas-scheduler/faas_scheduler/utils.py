@@ -4,10 +4,8 @@ import time
 import json
 import logging
 import requests
-import urllib.parse
 from datetime import datetime, timedelta
 
-from seaserv import seafile_api, ccnet_api
 from faas_scheduler.models import Task, TaskLog, ScriptLog
 from faas_scheduler.constants import CONDITION_DAILY
 import faas_scheduler.settings as settings
@@ -24,23 +22,15 @@ def check_auth_token(request):
     return False
 
 
-def get_asset_id(repo_id, dtable_uuid, script_name):
-    script_path = os.path.join(
-        '/asset', str(dtable_uuid), 'scripts', script_name)
-    asset_id = seafile_api.get_file_id_by_path(repo_id, script_path)
+def get_script_file(dtable_uuid, script_name):
+    headers = {'Authorization': 'Token ' + settings.SEATABLE_FAAS_AUTH_TOKEN}
+    url = '%s/api/v2.1/dtable/%s/run-script/%s/task/file/' % (settings.DTABLE_WEB_SERVICE_URL.rstrip(), dtable_uuid, script_name)
+    response = requests.post(url, headers=headers)
+    if response.status_code != 200:
+        logger.error('Fail to get script file: %s %s, error response: %s, %s' % (dtable_uuid, script_name, response.status_code, response.text))
+        raise Exception
 
-    return asset_id
-
-
-def get_script_url(repo_id, asset_id, script_name):
-    token = seafile_api.get_fileserver_access_token(
-        repo_id, asset_id, 'download', '', use_onetime=True)
-    if not token:
-        return None
-    script_url = '%s/files/%s/%s' % (
-        settings.FILE_SERVER_ROOT.rstrip('/'), token, urllib.parse.quote(script_name))
-
-    return script_url
+    return response.json()
 
 
 def get_temp_api_token(dtable_uuid, script_name):
@@ -256,13 +246,10 @@ def run_task(task):
     context_data = json.dumps(task.context_data) if task.context_data else None
 
     try:
-        asset_id = get_asset_id(repo_id, dtable_uuid, script_name)
-        if not asset_id:
-            task = get_task(db_session, dtable_uuid, script_name)
-            update_task(db_session, task, None, None, False)
-            raise ValueError('script not found')
-        script_url = get_script_url(repo_id, asset_id, script_name)
-        temp_api_token = get_temp_api_token(dtable_uuid, script_name)
+        script_file = get_script_file(dtable_uuid, script_name)
+        script_url = script_file.get('script_url', '')
+        temp_api_token = script_file.get('temp_api_token', '')
+
         #
         task_log = add_task_log(db_session, task_id)
         call_faas_func(script_url, temp_api_token, context_data, task_log_id=task_log.id)
