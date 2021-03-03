@@ -2,6 +2,18 @@
 
 set -e
 
+# time zone
+if [[ $TIME_ZONE != "" ]]; then
+    time_zone=/usr/share/zoneinfo/$TIME_ZONE
+    if [[ ! -e $time_zone ]]; then
+        echo "invalid time zone"
+        exit 1
+    else
+        ln -snf $time_zone /etc/localtime
+        echo "$TIME_ZONE" > /etc/timezone
+    fi
+fi
+
 # check folder
 if [[ ! -e /shared ]]; then
     echo 'do not find /shared path'
@@ -22,18 +34,6 @@ fi
 
 if [[ ! -e /shared/seatable-faas-scheduler/conf ]]; then
     mkdir /shared/seatable-faas-scheduler/conf
-fi
-
-if [[ ! -e /shared/seatable-faas-scheduler/ccnet ]]; then
-    mkdir /shared/seatable-faas-scheduler/ccnet
-fi
-
-if [[ ! -e /shared/seatable-faas-scheduler/seafile-data && ! -e /opt/seatable-faas-scheduler/seafile-data ]]; then
-    mkdir /shared/seatable-faas-scheduler/seafile-data
-fi
-
-if [[ ! -e /shared/seatable-faas-scheduler/pids ]]; then
-    mkdir /shared/seatable-faas-scheduler/pids
 fi
 
 if [[ ! -e /shared/seatable-faas-scheduler/logs ]]; then

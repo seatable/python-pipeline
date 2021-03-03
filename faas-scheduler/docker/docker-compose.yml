@@ -12,7 +12,7 @@ services:
       - seatable-faas-scheduler-net
 
   seatable-faas-scheduler:
-    image: docker.seafile.top/seafile-dev/seatable-faas-scheduler:1.8.0
+    image: seatable/seatable-faas-scheduler:latest
     container_name: seatable-faas-scheduler
     ports:
       - "80:80"

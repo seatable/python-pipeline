@@ -1,6 +1,3 @@
-import os
-import jwt
-import time
 import json
 import logging
 import requests
@@ -25,22 +22,12 @@ def check_auth_token(request):
 def get_script_file(dtable_uuid, script_name):
     headers = {'Authorization': 'Token ' + settings.SEATABLE_FAAS_AUTH_TOKEN}
     url = '%s/api/v2.1/dtable/%s/run-script/%s/task/file/' % (settings.DTABLE_WEB_SERVICE_URL.rstrip(), dtable_uuid, script_name)
-    response = requests.post(url, headers=headers)
+    response = requests.get(url, headers=headers, timeout=30)
     if response.status_code != 200:
         logger.error('Fail to get script file: %s %s, error response: %s, %s' % (dtable_uuid, script_name, response.status_code, response.text))
-        raise Exception
+        raise ValueError('script not found')
 
     return response.json()
-
-
-def get_temp_api_token(dtable_uuid, script_name):
-    temp_api_token = jwt.encode({
-        'dtable_uuid': dtable_uuid,
-        'app_name': script_name,
-        'exp': int(time.time()) + 60 * 60,
-    }, settings.DTABLE_PRIVATE_KEY, algorithm='HS256').decode()
-
-    return temp_api_token
 
 
 def call_faas_func(script_url, temp_api_token, context_data, script_id=None, task_log_id=None):
@@ -240,6 +227,8 @@ def run_task(task):
         script_file = get_script_file(dtable_uuid, script_name)
         script_url = script_file.get('script_url', '')
         temp_api_token = script_file.get('temp_api_token', '')
+        if not script_url:
+            raise ValueError('script not found')
 
         #
         task_log = add_task_log(db_session, task_id)
@@ -282,7 +271,7 @@ def update_script(db_session, script, success, return_code, output):
     return script
 
 
-def run_script(dtable_uuid, script_id, script_url, temp_api_token, context_data):
+def run_script(script_id, script_url, temp_api_token, context_data):
     """ Only for server """
     from faas_scheduler import DBSession
     db_session = DBSession()  # for multithreading

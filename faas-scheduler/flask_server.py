@@ -49,7 +49,7 @@ def scripts_api():
     db_session = DBSession()
     try:
         script = add_script(db_session, dtable_uuid, owner, org_id, script_name, context_data)
-        executor.submit(run_script, dtable_uuid, script.id, script_url, temp_api_token, context_data)
+        executor.submit(run_script, script.id, script_url, temp_api_token, context_data)
 
         return make_response(({'script_id': script.id}, 200))
     except Exception as e:

@@ -1,5 +1,5 @@
 FROM phusion/baseimage:0.11
-# docker.seafile.top/seafile-dev/seatable-faas-scheduler:1.x.x
+# seatable/seatable-faas-scheduler:1.x.x
 
 # Aliyun ubuntu source
 RUN rm -rf /etc/apt/sources.list
@@ -9,8 +9,6 @@ COPY scripts/my-ubuntu-source.list /etc/apt/sources.list
 RUN apt-get update --fix-missing
 
 # Time zone
-RUN ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
-RUN echo "Asia/Shanghai" > /etc/timezone
 RUN export DEBIAN_FRONTEND=noninteractive && apt-get install -y tzdata
 
 # Nginx
@@ -38,13 +36,7 @@ RUN pip3 install flask gevent pyjwt pymysql sqlalchemy future requests \
 # seatable-faas-scheduler
 RUN mkdir -p /opt/seatable-faas-scheduler
 WORKDIR /opt/seatable-faas-scheduler
-COPY src/seafile /opt/seatable-faas-scheduler/seafile
 COPY src/faas-scheduler /opt/seatable-faas-scheduler/faas-scheduler
-
-RUN ln -sf /opt/seatable-faas-scheduler/seafile/lib/libsearpc.so.1.0.2 /opt/seatable-faas-scheduler/seafile/lib/libsearpc.so.1
-RUN ln -sf /opt/seatable-faas-scheduler/seafile/lib/libsearpc.so.1.0.2 /opt/seatable-faas-scheduler/seafile/lib/libsearpc.so
-RUN ln -sf /opt/seatable-faas-scheduler/seafile/lib/libccnet.so.0.0.0 /opt/seatable-faas-scheduler/seafile/lib/libccnet.so.0
-RUN ln -sf /opt/seatable-faas-scheduler/seafile/lib/libccnet.so.0.0.0 /opt/seatable-faas-scheduler/seafile/lib/libccnet.so
 
 
 # scripts
