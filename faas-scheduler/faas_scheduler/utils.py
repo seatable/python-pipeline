@@ -68,9 +68,10 @@ def call_faas_func(script_url, temp_api_token, context_data, script_id=None, tas
         return None
 
 
-def update_statistics(db_session, dtable_uuid, owner, spend_time):
+def update_statistics(db_session, dtable_uuid, owner, org_id, spend_time):
     if not spend_time:
         return
+    username = owner
     sqls = ['''
     INSERT INTO dtable_run_script_statistics(dtable_uuid, run_date, total_run_count, total_run_time, update_at) VALUES
     (:dtable_uuid, :run_date, 1, :spend_time, :update_at)
@@ -80,31 +81,22 @@ def update_statistics(db_session, dtable_uuid, owner, spend_time):
     update_at=:update_at;
     ''']
 
-    org_id, username = -1, None
     if owner:  # maybe some old tasks without owner, so user/org statistics only for valuable owner
-        if '@seafile_group' not in owner:
-            orgs = ccnet_api.get_orgs_by_user(owner)
-            if orgs:
-                org_id = orgs[0].org_id
-            else:
-                org_id, username = -1, owner
-        else:
-            group_id = owner[:owner.find('@seafile_group')]
-            org_id = ccnet_api.get_org_id_by_group(int(group_id))
 
-        if username and org_id == -1:      # user who is not an org user
+        if org_id != -1:  # org
             sqls += ['''
-            INSERT INTO user_run_script_statistics(username, run_date, total_run_count, total_run_time, update_at) VALUES
-            (:username, :run_date, 1, :spend_time, :update_at)
+            INSERT INTO org_run_script_statistics(org_id, run_date, total_run_count, total_run_time, update_at) VALUES
+            (:org_id, :run_date, 1, :spend_time, :update_at)
             ON DUPLICATE KEY UPDATE
             total_run_count=total_run_count+1,
             total_run_time=total_run_time+:spend_time,
             update_at=:update_at;
             ''']
-        if not username and org_id != -1:  # org
+
+        elif org_id == -1 and '@seafile_group' not in username:      # user who is not an org user
             sqls += ['''
-            INSERT INTO org_run_script_statistics(org_id, run_date, total_run_count, total_run_time, update_at) VALUES
-            (:org_id, :run_date, 1, :spend_time, :update_at)
+            INSERT INTO user_run_script_statistics(username, run_date, total_run_count, total_run_time, update_at) VALUES
+            (:username, :run_date, 1, :spend_time, :update_at)
             ON DUPLICATE KEY UPDATE
             total_run_count=total_run_count+1,
             total_run_time=total_run_time+:spend_time,
@@ -133,10 +125,10 @@ def get_task(db_session, dtable_uuid, script_name):
     return task
 
 
-def add_task(db_session, repo_id, dtable_uuid, owner, script_name, context_data, trigger, is_active):
+def add_task(db_session, dtable_uuid, owner, org_id, script_name, context_data, trigger, is_active):
     context_data = json.dumps(context_data) if context_data else None
     task = Task(
-        repo_id, dtable_uuid, owner, script_name, context_data, json.dumps(trigger), is_active)
+        dtable_uuid, owner, org_id, script_name, context_data, json.dumps(trigger), is_active)
     db_session.add(task)
     db_session.commit()
 
@@ -240,7 +232,6 @@ def run_task(task):
     db_session = DBSession()  # for multithreading
 
     task_id = task.id
-    repo_id = task.repo_id
     dtable_uuid = task.dtable_uuid
     script_name = task.script_name
     context_data = json.dumps(task.context_data) if task.context_data else None
@@ -271,10 +262,10 @@ def get_script(db_session, script_id):
     return script
 
 
-def add_script(db_session, repo_id, dtable_uuid, owner, script_name, context_data):
+def add_script(db_session, dtable_uuid, owner, org_id, script_name, context_data):
     context_data = json.dumps(context_data) if context_data else None
     script = ScriptLog(
-        repo_id, dtable_uuid, owner, script_name, context_data, datetime.now())
+        dtable_uuid, owner, org_id, script_name, context_data, datetime.now())
     db_session.add(script)
     db_session.commit()
 
@@ -310,7 +301,7 @@ def hook_update_script(db_session, script_id, success, return_code, output, spen
     script = db_session.query(ScriptLog).filter_by(id=script_id).first()
     if script:
         update_script(db_session, script, success, return_code, output)
-        update_statistics(db_session, script.dtable_uuid, script.owner, spend_time)
+        update_statistics(db_session, script.dtable_uuid, script.owner, script.org_id, spend_time)
 
 
 def hook_update_task_log(db_session, task_log_id, success, return_code, output, spend_time):
@@ -319,7 +310,7 @@ def hook_update_task_log(db_session, task_log_id, success, return_code, output, 
         update_task_log(db_session, task_log, success, return_code, output)
         task = db_session.query(Task).filter_by(id=task_log.task_id).first()
         if task:
-            update_statistics(db_session, task.dtable_uuid, task.owner, spend_time)
+            update_statistics(db_session, task.dtable_uuid, task.owner, task.org_id, spend_time)
 
 
 def get_run_script_statistics_by_month(db_session, is_user=True, month=None, start=0, limit=25, order_by=None):

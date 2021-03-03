@@ -1,8 +1,8 @@
 CREATE TABLE `task` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
-  `repo_id` varchar(36) NOT NULL,
   `dtable_uuid` varchar(36) NOT NULL,
   `owner` varchar(255),
+  `org_id` int(11),
   `script_name` varchar(255) NOT NULL,
   `context_data` longtext,
   `trigger` longtext NOT NULL,
@@ -27,9 +27,9 @@ CREATE TABLE `task_log` (
 
 CREATE TABLE `script_log` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
-  `repo_id` varchar(36) NOT NULL,
   `dtable_uuid` varchar(36) NOT NULL,
   `owner` varchar(255),
+  `org_id` int(11),
   `script_name` varchar(255) NOT NULL,
   `context_data` longtext,
   `started_at` datetime(6) NOT NULL,

@@ -32,23 +32,23 @@ def scripts_api():
     except Exception as e:
         return make_response(('Bad request', 400))
 
-    repo_id = data.get('repo_id')
     dtable_uuid = data.get('dtable_uuid')
     script_name = data.get('script_name')
     context_data = data.get('context_data')
     owner = data.get('owner')
+    org_id = data.get('org_id')
     script_url = data.get('script_url')
     temp_api_token = data.get('temp_api_token')
-    if not script_url \
-            or not dtable_uuid \
+    if not dtable_uuid \
             or not script_name \
-            or not owner:
+            or not owner \
+            or not script_url:
         return make_response(('Parameters invalid', 400))
 
     # main
     db_session = DBSession()
     try:
-        script = add_script(db_session, repo_id, dtable_uuid, owner, script_name, context_data)
+        script = add_script(db_session, dtable_uuid, owner, org_id, script_name, context_data)
         executor.submit(run_script, dtable_uuid, script.id, script_url, temp_api_token, context_data)
 
         return make_response(({'script_id': script.id}, 200))
@@ -104,15 +104,14 @@ def tasks_api():
     except Exception as e:
         return make_response(('Bad request', 400))
 
-    repo_id = data.get('repo_id')
     dtable_uuid = data.get('dtable_uuid')
     script_name = data.get('script_name')
     context_data = data.get('context_data')
     trigger = data.get('trigger')
     is_active = data.get('is_active', True)
     owner = data.get('owner')
-    if not repo_id \
-            or not dtable_uuid \
+    org_id = data.get('org_id')
+    if not dtable_uuid \
             or not script_name \
             or not trigger \
             or not owner:
@@ -126,7 +125,7 @@ def tasks_api():
             return make_response(('task exists', 400))
 
         task = add_task(
-            db_session, repo_id, dtable_uuid, owner, script_name, context_data, trigger, is_active)
+            db_session, dtable_uuid, owner, org_id, script_name, context_data, trigger, is_active)
         return make_response(({'task': task.to_dict()}, 200))
 
     except Exception as e:
