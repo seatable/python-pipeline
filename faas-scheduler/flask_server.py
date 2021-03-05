@@ -10,8 +10,8 @@ from concurrent.futures import ThreadPoolExecutor
 
 from faas_scheduler import DBSession
 import faas_scheduler.settings as settings
-from faas_scheduler.utils import check_auth_token, get_asset_id, get_script_url, \
-    get_temp_api_token, add_task, get_task, update_task, delete_task, list_task_logs, \
+from faas_scheduler.utils import check_auth_token, \
+    add_task, get_task, update_task, delete_task, list_task_logs, \
     get_task_log, run_script, get_script, add_script, delete_task_logs, \
     get_run_script_statistics_by_month, hook_update_script, hook_update_task_log
 
@@ -32,33 +32,24 @@ def scripts_api():
     except Exception as e:
         return make_response(('Bad request', 400))
 
-    repo_id = data.get('repo_id')
     dtable_uuid = data.get('dtable_uuid')
     script_name = data.get('script_name')
     context_data = data.get('context_data')
     owner = data.get('owner')
-    if not repo_id \
-            or not dtable_uuid \
+    org_id = data.get('org_id')
+    script_url = data.get('script_url')
+    temp_api_token = data.get('temp_api_token')
+    if not dtable_uuid \
             or not script_name \
-            or not owner:
+            or not owner \
+            or not script_url:
         return make_response(('Parameters invalid', 400))
-
-    # check
-    asset_id = get_asset_id(repo_id, dtable_uuid, script_name)
-    if not asset_id:
-        return make_response(('Not found', 404))
-
-    script_url = get_script_url(repo_id, asset_id, script_name)
-    if not script_url:
-        return make_response(('Not found', 404))
-
-    temp_api_token = get_temp_api_token(dtable_uuid, script_name)
 
     # main
     db_session = DBSession()
     try:
-        script = add_script(db_session, repo_id, dtable_uuid, owner, script_name, context_data)
-        executor.submit(run_script, dtable_uuid, script.id, script_url, temp_api_token, context_data)
+        script = add_script(db_session, dtable_uuid, owner, org_id, script_name, context_data)
+        executor.submit(run_script, script.id, script_url, temp_api_token, context_data)
 
         return make_response(({'script_id': script.id}, 200))
     except Exception as e:
@@ -113,15 +104,14 @@ def tasks_api():
     except Exception as e:
         return make_response(('Bad request', 400))
 
-    repo_id = data.get('repo_id')
     dtable_uuid = data.get('dtable_uuid')
     script_name = data.get('script_name')
     context_data = data.get('context_data')
     trigger = data.get('trigger')
     is_active = data.get('is_active', True)
     owner = data.get('owner')
-    if not repo_id \
-            or not dtable_uuid \
+    org_id = data.get('org_id')
+    if not dtable_uuid \
             or not script_name \
             or not trigger \
             or not owner:
@@ -135,7 +125,7 @@ def tasks_api():
             return make_response(('task exists', 400))
 
         task = add_task(
-            db_session, repo_id, dtable_uuid, owner, script_name, context_data, trigger, is_active)
+            db_session, dtable_uuid, owner, org_id, script_name, context_data, trigger, is_active)
         return make_response(({'task': task.to_dict()}, 200))
 
     except Exception as e:

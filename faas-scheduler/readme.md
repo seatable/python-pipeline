@@ -1,3 +1,5 @@
 # faas-scheduler
 
-`uvicorn main:app  --host 127.0.0.1 --port 5055 --reload`
+`python3 flask_server.py`
+
+`python3 scheduler.py`

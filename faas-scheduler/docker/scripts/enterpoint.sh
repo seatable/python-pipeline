@@ -39,7 +39,11 @@ fi
 
 # letsencrypt renew cert 86400*30
 if [[ -f /shared/ssl/renew_cert ]]; then
-    ln -sf /shared/ssl/renew_cert /var/spool/cron/crontabs/root
+    env > /opt/dockerenv
+    sed -i '1,3d' /opt/dockerenv
+
+    cp /shared/ssl/renew_cert /var/spool/cron/crontabs/root
+    chmod 600 /var/spool/cron/crontabs/root
 
     openssl x509 -checkend 2592000 -noout -in /opt/ssl/$SEATABLE_FAAS_SCHEDULER_SERVER_HOSTNAME.crt
     if [[ $? != "0" ]]; then
