@@ -15,12 +15,8 @@ fi
 
 export IMAGE=$image
 
-if [ ! -d "logs" ]; then
-    mkdir -p logs
+if [ ! -f "conf/seatable_python_runner.ini" ]; then
+    ./init.sh
 fi
 
-if [ ! -f "logs/seatable-python-runner.log" ]; then
-    touch logs/seatable-python-runner.log
-fi
-
-uwsgi --ini uwsgi.ini
+uwsgi --ini conf/seatable_python_runner.ini

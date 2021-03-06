@@ -48,5 +48,5 @@ You can do that by hand or run stop script to do it autimatically.
 
 ## Zip
 
-1. copy `function.py`, `server_requirements.txt`, `settings.py`, `start.sh`, `stop.sh`, `uwsgi.ini` to seatable-python-runner/
-2. zip -r seatable-python-runner.zip seatable-python-runner -x ".DS_Store"
+1. copy files to seatable-python-runner/
+2. zip -r seatable-python-runner.zip seatable-python-runner -x "/seatable-python-runner/.DS_Store" -x "/seatable-python-runner/local_settings.py" -x "/seatable-python-runner/Dockerfile" -x "/seatable-python-runner/requirements.txt" -x "/seatable-python-runner/readme.md" -x "/seatable-python-runner/conf/*" -x "/seatable-python-runner/logs/*"

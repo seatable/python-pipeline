@@ -12,6 +12,7 @@ __pycache__
 local_settings.py
 
 logs/
+conf/
 
 seatable-python-runner/
 seatable-python-runner.zip
