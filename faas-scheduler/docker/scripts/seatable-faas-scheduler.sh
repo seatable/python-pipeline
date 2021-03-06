@@ -43,7 +43,8 @@ function start_server() {
 
     /scripts/monitor.sh &>>/opt/seatable-faas-scheduler/logs/monitor.log &
 
-    echo "SeaTable-faas-scheduler started"
+    echo
+    echo "SeaTable FAAS Scheduler started"
     echo
 
 }
