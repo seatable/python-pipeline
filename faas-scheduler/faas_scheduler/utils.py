@@ -42,7 +42,7 @@ def call_faas_func(script_url, temp_api_token, context_data, script_id=None, tas
             'script_id': script_id,
             'task_log_id': task_log_id
         }
-        response = requests.post(faas_func_url, json=data)
+        response = requests.post(faas_func_url, json=data, timeout=30)
 
         # script will be executed asynchronously, so there will be nothing in response
         # so only check response

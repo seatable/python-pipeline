@@ -53,6 +53,18 @@ if [[ -f /shared/ssl/renew_cert ]]; then
 fi
 
 
+# autorun
+echo
+echo "Starting SeaTable FAAS Scheduler"
+echo
+
+/scripts/seatable-faas-scheduler.sh start
+
+wait
+
+sleep 1
+
+
 #
 log "This is a idle script (infinite loop) to keep container running."
 
