@@ -15,12 +15,12 @@ fi
 
 export IMAGE=$image
 
-if [ ! -d "/var/log" ]; then
-    mkdir -p /var/log
+if [ ! -d "logs" ]; then
+    mkdir -p logs
 fi
 
-if [ ! -f "/var/log/uwsgi.log" ]; then
-    touch /var/log/uwsgi.log
+if [ ! -f "logs/seatable-python-runner.log" ]; then
+    touch logs/seatable-python-runner.log
 fi
 
 uwsgi --ini uwsgi.ini

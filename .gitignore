@@ -10,3 +10,8 @@ __pycache__
 .vscode
 
 local_settings.py
+
+logs/
+
+seatable-python-runner/
+seatable-python-runner.zip

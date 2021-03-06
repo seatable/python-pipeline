@@ -44,3 +44,9 @@ You can do that by hand or run stop script to do it autimatically.
 ```
 ./stop.sh
 ```
+
+
+## Zip
+
+1. copy `function.py`, `server_requirements.txt`, `settings.py`, `start.sh`, `stop.sh`, `uwsgi.ini` to seatable-python-runner/
+2. zip -r seatable-python-runner.zip seatable-python-runner -x ".DS_Store"
