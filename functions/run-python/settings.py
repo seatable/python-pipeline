@@ -2,7 +2,7 @@ import os
 
 
 SCHEDULER_URL = ''
-SCHEDULER_AUTH_TOKEN = ''
+
 DEBUG = False
 IMAGE = os.environ.get('IMAGE')
 

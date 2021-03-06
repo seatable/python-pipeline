@@ -32,7 +32,6 @@ def get_script_file(dtable_uuid, script_name):
 
 def call_faas_func(script_url, temp_api_token, context_data, script_id=None, task_log_id=None):
     try:
-        headers = {'Authorization': 'Token ' + settings.SEATABLE_FAAS_AUTH_TOKEN}
         data = {
             'script_url': script_url,
             'env': {
@@ -43,7 +42,7 @@ def call_faas_func(script_url, temp_api_token, context_data, script_id=None, tas
             'script_id': script_id,
             'task_log_id': task_log_id
         }
-        response = requests.post(faas_func_url, json=data, headers=headers, timeout=30)
+        response = requests.post(faas_func_url, json=data, timeout=30)
 
         # script will be executed asynchronously, so there will be nothing in response
         # so only check response

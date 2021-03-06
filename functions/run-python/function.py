@@ -43,7 +43,6 @@ def send_to_scheduler(success, return_code, output, spend_time, request_data):
         return
 
     url = settings.SCHEDULER_URL.strip('/') + '/script-result/'
-    token = settings.SCHEDULER_AUTH_TOKEN
 
     result_data = {
         'success': success,
@@ -57,12 +56,8 @@ def send_to_scheduler(success, return_code, output, spend_time, request_data):
         'task_log_id': request_data.get('task_log_id')
     })
 
-    headers = {
-        'Authorization': 'Token ' + token
-    }
-
     try:
-        response = requests.post(url, json=result_data, headers=headers)
+        response = requests.post(url, json=result_data, timeout=30)
     except Exception as e:
         logging.error('send to scheduler: %s, error: %s, result_data: %s', url, e, result_data)
         return
