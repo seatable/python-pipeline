@@ -213,6 +213,57 @@ def list_tasks_to_run(db_session):
     return tasks
 
 
+def get_run_scripts_count_monthly(username, org_id, db_session):
+    sql = '''
+    SELECT SUM(total_run_count) FROM %s
+    WHERE DATE_FORMAT(run_date, '%%Y-%%m')=:month
+    AND %s=:owner_username
+    '''
+    if org_id and org_id != -1:
+        sql = sql % ('org_run_script_statistics', 'org_id')
+        owner_username = org_id
+    else:
+        sql = sql % ('user_run_script_statistics', 'username')
+        owner_username = username
+    count = db_session.execute(sql, {
+        'month': datetime.strftime(datetime.now(), '%Y-%m'),
+        'owner_username': owner_username
+    }).fetchone()[0]
+    return int(count)
+
+
+def can_run_task(owner, org_id, db_session, scripts_running_limit=None):
+    """
+    whether can run task
+    """
+    if org_id == -1 and '@seafile_group' in owner:
+        return True
+
+    # check run-scripts count/limit
+    if not scripts_running_limit:
+        url = '%s/api/v2.1/scripts-running-limit/' % (settings.DTABLE_WEB_SERVICE_URL.strip('/'),)
+        headers = {'Authorization': 'Token ' + settings.SEATABLE_FAAS_AUTH_TOKEN}
+        if org_id and org_id != -1:
+            params = {'org_id': org_id}
+        else:
+            params = {'username': owner}
+        scripts_running_limit = -1
+        try:
+            response = requests.get(url, headers=headers, params=params)
+        except Exception as e:
+            logger.error('request run-scripts-limit error: %s', e)
+            return False
+        if response.status_code != 200:
+            logger.error('request run-scripts-limit error response status code: %s', response.status_code)
+            return False
+        scripts_running_limit = response.json()['scripts_running_limit']
+    if scripts_running_limit == -1:  # no limit
+        return True
+
+    count = get_run_scripts_count_monthly(owner, org_id, db_session)
+    return count < scripts_running_limit
+
+
 def run_task(task):
     """ Only for scheduler """
     from faas_scheduler import DBSession
@@ -224,6 +275,8 @@ def run_task(task):
     context_data = json.dumps(task.context_data) if task.context_data else None
 
     try:
+        if not can_run_task(task, db_session):
+            return True
         script_file = get_script_file(dtable_uuid, script_name)
         script_url = script_file.get('script_url', '')
         temp_api_token = script_file.get('temp_api_token', '')
