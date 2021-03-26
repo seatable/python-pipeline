@@ -13,7 +13,8 @@ import faas_scheduler.settings as settings
 from faas_scheduler.utils import check_auth_token, \
     add_task, get_task, update_task, delete_task, list_task_logs, \
     get_task_log, run_script, get_script, add_script, delete_task_logs, \
-    get_run_script_statistics_by_month, hook_update_script, hook_update_task_log
+    get_run_script_statistics_by_month, hook_update_script, hook_update_task_log, \
+    can_run_task
 
 app = Flask(__name__)
 logger = logging.getLogger(__name__)
@@ -39,6 +40,7 @@ def scripts_api():
     org_id = data.get('org_id')
     script_url = data.get('script_url')
     temp_api_token = data.get('temp_api_token')
+    scripts_running_limit = data.get('scripts_running_limit', -1)
     if not dtable_uuid \
             or not script_name \
             or not owner \
@@ -48,6 +50,8 @@ def scripts_api():
     # main
     db_session = DBSession()
     try:
+        if scripts_running_limit != -1 and not can_run_task(owner, org_id, db_session, scripts_running_limit=scripts_running_limit):
+            return make_response(('The number of runs exceeds the limit'), 400)
         script = add_script(db_session, dtable_uuid, owner, org_id, script_name, context_data)
         executor.submit(run_script, script.id, script_url, temp_api_token, context_data)
 
