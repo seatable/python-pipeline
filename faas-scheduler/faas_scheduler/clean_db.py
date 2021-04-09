@@ -12,11 +12,13 @@ if __name__ == '__main__':
     db_session = DBSession()
     try:
         result = db_session.execute(clean_script_logs)
+        db_session.commit()
         msg = '[%s] Clean %d script logs' % (datetime.now(), result.rowcount)
         logger.info(msg)
         print(msg)
 
         result = db_session.execute(clean_task_logs)
+        db_session.commit()
         msg = '[%s] Clean %d task logs' % (datetime.now(), result.rowcount)
         logger.info(msg)
         print(msg)
