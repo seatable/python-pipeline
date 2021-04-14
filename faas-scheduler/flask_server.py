@@ -14,9 +14,12 @@ from faas_scheduler.utils import check_auth_token, \
     add_task, get_task, update_task, delete_task, list_task_logs, \
     get_task_log, run_script, get_script, add_script, delete_task_logs, \
     get_run_script_statistics_by_month, hook_update_script, hook_update_task_log, \
-    can_run_task
+    can_run_task, get_run_scripts_count_monthly
 
 app = Flask(__name__)
+logging.basicConfig(
+    format='%(asctime)s [%(levelname)s] %(name)s:%(lineno)s %(funcName)s %(message)s'
+)
 logger = logging.getLogger(__name__)
 executor = ThreadPoolExecutor(max_workers=settings.SCRIPT_WORKERS)
 
@@ -240,6 +243,36 @@ def task_log_api(dtable_uuid, script_name, log_id):
         return make_response(('Internal server error', 500))
     finally:
         db_session.close()
+
+
+@app.route('/scripts-running-count/', methods=['GET'])
+def scripts_running_count():
+    if not check_auth_token(request):
+        return make_response(('Forbidden', 403))
+    username = request.args.get('username')
+    org_id = request.args.get('org_id')
+
+    if not username and not org_id:
+        return make_response(('username or org_id invalid.', 400))
+
+    if org_id:
+        try:
+            org_id = int(org_id)
+        except:
+            return make_response(('org_id invalid.', 400))
+        if org_id == -1:
+            return make_response(('org_id invalid.', 400))
+
+    db_session = DBSession()
+    try:
+        count = get_run_scripts_count_monthly(username, org_id, db_session)
+    except Exception as e:
+        logger.error(e)
+        return make_response(('Internal server error', 500))
+    finally:
+        db_session.close()
+
+    return make_response(({'count': count}, 200))
 
 
 @app.route('/script-result/', methods=['POST'])

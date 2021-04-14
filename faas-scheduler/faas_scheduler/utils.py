@@ -229,7 +229,7 @@ def get_run_scripts_count_monthly(username, org_id, db_session):
         'month': datetime.strftime(datetime.now(), '%Y-%m'),
         'owner_username': owner_username
     }).fetchone()[0]
-    return int(count)
+    return int(count) if count else 0
 
 
 def can_run_task(owner, org_id, db_session, scripts_running_limit=None):
