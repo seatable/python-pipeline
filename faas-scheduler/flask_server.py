@@ -251,6 +251,14 @@ def scripts_running_count():
         return make_response(('Forbidden', 403))
     username = request.args.get('username')
     org_id = request.args.get('org_id')
+    raw_month = request.args.get('month')
+    if raw_month:
+        try:
+            month = datetime.strptime(raw_month, '%Y-%m').strftime('%Y-%m')
+        except:
+            return make_response(('month invalid.', 400))
+    else:
+        month = None
 
     if not username and not org_id:
         return make_response(('username or org_id invalid.', 400))
@@ -265,7 +273,7 @@ def scripts_running_count():
 
     db_session = DBSession()
     try:
-        count = get_run_scripts_count_monthly(username, org_id, db_session)
+        count = get_run_scripts_count_monthly(username, org_id, db_session, month=month)
     except Exception as e:
         logger.error(e)
         return make_response(('Internal server error', 500))

@@ -213,7 +213,7 @@ def list_tasks_to_run(db_session):
     return tasks
 
 
-def get_run_scripts_count_monthly(username, org_id, db_session):
+def get_run_scripts_count_monthly(username, org_id, db_session, month=None):
     sql = '''
     SELECT SUM(total_run_count) FROM %s
     WHERE DATE_FORMAT(run_date, '%%Y-%%m')=:month
@@ -225,8 +225,12 @@ def get_run_scripts_count_monthly(username, org_id, db_session):
     else:
         sql = sql % ('user_run_script_statistics', 'username')
         owner_username = username
+    if not month:
+        month = datetime.strftime(datetime.now(), '%Y-%m')
+    else:
+        month = month
     count = db_session.execute(sql, {
-        'month': datetime.strftime(datetime.now(), '%Y-%m'),
+        'month': month,
         'owner_username': owner_username
     }).fetchone()[0]
     return int(count) if count else 0
