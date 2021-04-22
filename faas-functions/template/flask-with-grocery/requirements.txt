@@ -1,5 +1,0 @@
-flask
-waitress
-flask-cors
-# office convert
-unoconv
