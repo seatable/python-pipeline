@@ -279,7 +279,7 @@ def run_task(task):
     context_data = json.dumps(task.context_data) if task.context_data else None
 
     try:
-        if not can_run_task(task, db_session):
+        if not can_run_task(task.owner, task.org_id, db_session):
             return True
         script_file = get_script_file(dtable_uuid, script_name)
         script_url = script_file.get('script_url', '')
