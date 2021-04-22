@@ -187,9 +187,14 @@ def task_logs_api(dtable_uuid, script_name):
     try:
         current_page = int(request.args.get('page', '1'))
         per_page = int(request.args.get('per_page', '20'))
+        order_by = request.args.get('org_by', '-id')
     except ValueError:
         current_page = 1
         per_page = 20
+
+    if order_by.strip('-') not in ('id',):
+        return make_response(('order_by invalid.', 400))
+
     start = per_page * (current_page - 1)
     end = start + per_page
 
@@ -202,7 +207,7 @@ def task_logs_api(dtable_uuid, script_name):
                 'count': 0,
             }, 200))
 
-        task_logs = list_task_logs(db_session, task.id)
+        task_logs = list_task_logs(db_session, task.id, order_by)
         count = task_logs.count()
         task_logs = task_logs[start: end]
         task_log_list = [task_log.to_dict() for task_log in task_logs]
