@@ -213,7 +213,7 @@ def list_tasks_to_run(db_session):
     return tasks
 
 
-def get_run_scripts_count_monthly(username, org_id, db_session):
+def get_run_scripts_count_monthly(username, org_id, db_session, month=None):
     sql = '''
     SELECT SUM(total_run_count) FROM %s
     WHERE DATE_FORMAT(run_date, '%%Y-%%m')=:month
@@ -225,11 +225,15 @@ def get_run_scripts_count_monthly(username, org_id, db_session):
     else:
         sql = sql % ('user_run_script_statistics', 'username')
         owner_username = username
+    if not month:
+        month = datetime.strftime(datetime.now(), '%Y-%m')
+    else:
+        month = month
     count = db_session.execute(sql, {
-        'month': datetime.strftime(datetime.now(), '%Y-%m'),
+        'month': month,
         'owner_username': owner_username
     }).fetchone()[0]
-    return int(count)
+    return int(count) if count else 0
 
 
 def can_run_task(owner, org_id, db_session, scripts_running_limit=None):
@@ -275,7 +279,7 @@ def run_task(task):
     context_data = json.dumps(task.context_data) if task.context_data else None
 
     try:
-        if not can_run_task(task, db_session):
+        if not can_run_task(task.owner, task.org_id, db_session):
             return True
         script_file = get_script_file(dtable_uuid, script_name)
         script_url = script_file.get('script_url', '')
