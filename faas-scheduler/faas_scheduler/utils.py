@@ -3,6 +3,8 @@ import logging
 import requests
 from datetime import datetime, timedelta
 
+from sqlalchemy import desc
+
 from faas_scheduler.models import Task, TaskLog, ScriptLog
 from faas_scheduler.constants import CONDITION_DAILY
 import faas_scheduler.settings as settings
@@ -166,8 +168,10 @@ def update_task_log(db_session, task_log, success, return_code, output):
     return task_log
 
 
-def list_task_logs(db_session, task_id):
-    task_logs = db_session.query(TaskLog).filter_by(task_id=task_id)
+def list_task_logs(db_session, task_id, order_by='-id'):
+    if '-' in order_by:
+        order_by = desc(order_by.strip('-'))
+    task_logs = db_session.query(TaskLog).filter_by(task_id=task_id).order_by(order_by)
 
     return task_logs
 

@@ -1,4 +1,0 @@
-requests
-seatable-api
-dateutils
-pyOpenSSL
