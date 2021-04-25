@@ -7,8 +7,11 @@ SCHEDULER_URL = ''
 DEBUG = False
 IMAGE = os.environ.get('IMAGE')
 
-THREAD_COUNT = 32
+THREAD_COUNT = 10
 SUB_PROCESS_TIMEOUT = 60 * 15  # 15 mins
+
+CONTAINER_MEMORY = '2g'  # default 2G memory for each container/script
+CONTAINER_CPUS = ''
 
 #
 CONF_DIR = 'conf/'
