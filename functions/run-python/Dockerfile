@@ -5,9 +5,9 @@ RUN apk add openssl-dev gcc musl-dev python3-dev libxslt-dev libffi-dev cargo
 # such as pyOpenSSL, depending on cryptography, which needs 'gcc musl-dev python3-dev libffi-dev openssl-dev cargo', saying in its docs
 # https://cryptography.io/en/latest/installation.html#alpine
 
-VOLUME [ "/scripts" ]
+VOLUME [ "/scripts", '/settings' ]
 
-WORKDIR /scripts
+WORKDIR /settings
 
 # install requirements
 COPY requirements.txt   .
@@ -15,4 +15,9 @@ COPY requirements.txt   .
 RUN pip install --upgrade pip
 RUN pip install -r requirements.txt
 
-ENTRYPOINT cat input | python index.py > output
+# copy entrypoint.sh
+COPY entrypoint.sh .
+
+RUN chmod +x entrypoint.sh
+
+ENTRYPOINT ["/bin/sh", "./entrypoint.sh"]

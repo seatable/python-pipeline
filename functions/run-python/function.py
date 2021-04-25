@@ -115,11 +115,23 @@ def run_python(data):
 
     return_code, output = None, None  # init output
 
+    # generate command
+    scripts_path = os.path.join(os.getcwd(), dir_id)
+    # mount volumes and set env
+    command = ['docker', 'run', '--name', container_name,
+               '--env-file', env_file,
+               '-v', '{}:/scripts'.format(scripts_path)]
+    # limit memory and cpus
+    if settings.CONTAINER_MEMORY:
+        command.append('--memory={}'.format(settings.CONTAINER_MEMORY))
+    if settings.CONTAINER_CPUS:
+        command.append('--cpus={}'.format(settings.CONTAINER_CPUS))
+    command.append(settings.IMAGE)
+    command.append('run')  # override command
+
     start_at = time.time()
     try:
-        # mount volumes and set env
-        scripts_path = os.path.join(os.getcwd(), dir_id)
-        result = subprocess.run(['docker', 'run', '--name', container_name, '--env-file', env_file, '-v', '{}:/scripts'.format(scripts_path), settings.IMAGE],
+        result = subprocess.run(command,
                                 stdout=subprocess.PIPE,
                                 stderr=subprocess.STDOUT,
                                 timeout=DEFAULT_SUB_PROCESS_TIMEOUT)
@@ -141,6 +153,8 @@ def run_python(data):
             with open(output_file_path, 'r') as f:
                 output = f.read()
         return_code = result.returncode
+        if return_code == 137:  # OOM
+            output += 'out-of-memory(OOM) error!\n'
         output += result.stdout.decode()
     finally:
         spend_time = time.time() - start_at
