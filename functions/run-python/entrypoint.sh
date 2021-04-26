@@ -1,6 +1,6 @@
 custom=$1
 
-if [ $custom != 'custom' ]; then
+if [[ $custom != 'custom' ]]; then
     cd /scripts
     cat input | python index.py > output
     exit 0
