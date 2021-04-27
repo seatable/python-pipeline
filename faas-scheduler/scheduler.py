@@ -8,6 +8,9 @@ from faas_scheduler import DBSession
 import faas_scheduler.settings as settings
 from faas_scheduler.utils import list_tasks_to_run, run_task
 
+logging.basicConfig(
+    format='[%(asctime)s] [%(levelname)s] %(name)s:%(lineno)s %(funcName)s %(message)s'
+)
 logger = logging.getLogger(__name__)
 
 

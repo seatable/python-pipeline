@@ -72,7 +72,7 @@ def update_statistics(db_session, dtable_uuid, owner, org_id, spend_time):
 
     if owner:  # maybe some old tasks without owner, so user/org statistics only for valuable owner
 
-        if org_id != -1:  # org
+        if org_id and org_id != -1:  # org
             sqls += ['''
             INSERT INTO org_run_script_statistics(org_id, run_date, total_run_count, total_run_time, update_at) VALUES
             (:org_id, :run_date, 1, :spend_time, :update_at)
@@ -82,7 +82,7 @@ def update_statistics(db_session, dtable_uuid, owner, org_id, spend_time):
             update_at=:update_at;
             ''']
 
-        elif org_id == -1 and '@seafile_group' not in username:      # user who is not an org user
+        elif org_id and org_id == -1 and '@seafile_group' not in username:      # user who is not an org user
             sqls += ['''
             INSERT INTO user_run_script_statistics(username, run_date, total_run_count, total_run_time, update_at) VALUES
             (:username, :run_date, 1, :spend_time, :update_at)

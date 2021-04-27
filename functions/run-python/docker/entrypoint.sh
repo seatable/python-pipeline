@@ -1,6 +1,6 @@
-custom=$1
+#!/bin/sh
 
-if [[ $custom != 'custom' ]]; then
+if [[ "$1" != 'custom' ]]; then
     cd /scripts
     cat input | python index.py > output
     exit 0

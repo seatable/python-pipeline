@@ -18,7 +18,7 @@ from faas_scheduler.utils import check_auth_token, \
 
 app = Flask(__name__)
 logging.basicConfig(
-    format='%(asctime)s [%(levelname)s] %(name)s:%(lineno)s %(funcName)s %(message)s'
+    format='[%(asctime)s] [%(levelname)s] %(name)s:%(lineno)s %(funcName)s %(message)s'
 )
 logger = logging.getLogger(__name__)
 executor = ThreadPoolExecutor(max_workers=settings.SCRIPT_WORKERS)

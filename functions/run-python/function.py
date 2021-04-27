@@ -15,10 +15,11 @@ import settings
 
 
 if not settings.DEBUG:
+    log_dir = os.path.join(os.path.dirname(__file__), 'logs')
     logging.basicConfig(
-        filename='/var/log/function.log',
+        filename=os.path.join(log_dir, 'seatable-python-runner.log'),
         filemode='a',
-        format="%(asctime)s-%(name)s-%(levelname)s-%(message)s",
+        format="[%(asctime)s] [%(levelname)s] %(name)s:%(lineno)s %(funcName)s %(message)s",
         level=logging.WARNING
     )
 
