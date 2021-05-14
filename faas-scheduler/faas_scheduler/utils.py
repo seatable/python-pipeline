@@ -23,7 +23,7 @@ def check_auth_token(request):
 
 def get_script_file(dtable_uuid, script_name):
     headers = {'Authorization': 'Token ' + settings.SEATABLE_FAAS_AUTH_TOKEN}
-    url = '%s/api/v2.1/dtable/%s/run-script/%s/task/file/' % (settings.DTABLE_WEB_SERVICE_URL.rstrip(), dtable_uuid, script_name)
+    url = '%s/api/v2.1/dtable/%s/run-script/%s/task/file/' % (settings.DTABLE_WEB_SERVICE_URL.rstrip('/'), dtable_uuid, script_name)
     response = requests.get(url, headers=headers, timeout=30)
     if response.status_code != 200:
         logger.error('Fail to get script file: %s %s, error response: %s, %s' % (dtable_uuid, script_name, response.status_code, response.text))
