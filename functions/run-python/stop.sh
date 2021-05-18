@@ -5,7 +5,7 @@
 grep_uwsgi_count=`ps aux | grep 'run-pythonuWSGI' | wc -l`
 
 if [ $grep_uwsgi_count -gt 1 ]; then
-    ps aux | grep 'run-pythonuWSGI' | sed -n '1, 1p' | awk '{print $2}' | xargs kill -9
+    ps aux | grep 'run-pythonuWSGI' | grep -v grep | awk '{print $2}' | xargs kill -9
 fi
 
 # stop/remove python-runner containers
