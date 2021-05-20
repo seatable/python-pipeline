@@ -14,7 +14,7 @@ from faas_scheduler.utils import check_auth_token, \
     add_task, get_task, update_task, delete_task, list_task_logs, \
     get_task_log, run_script, get_script, add_script, delete_task_logs, \
     get_run_script_statistics_by_month, hook_update_script, hook_update_task_log, \
-    can_run_task, get_run_scripts_count_monthly
+    can_run_task, get_run_scripts_count_monthly, list_tasks
 
 app = Flask(__name__)
 logging.basicConfig(
@@ -372,6 +372,24 @@ def org_run_python_statistics():
         return make_response(('Forbidden', 403))
 
     return get_scripts_running_statistics_by_request(request, is_user=False)
+
+
+@app.route('/time-run-task/', methods=['GET'])
+def time_run_task():
+    if not check_auth_token(request):
+        return make_response(('Forbidden', 403))
+    db_session = DBSession()
+    try:
+        tasks = list_tasks(db_session)
+    except Exception as e:
+        logger.error(e)
+        logger.exception(e)
+        return make_response(('Internal Server Error.', 500))
+    finally:
+        db_session.close()
+    task_list = [task.to_dict() for task in tasks]
+
+    return make_response(({'task_list': task_list}, 200))
 
 
 if __name__ == '__main__':
