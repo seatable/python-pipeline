@@ -150,6 +150,15 @@ def list_tasks(db_session, is_active=True):
     return tasks
 
 
+def list_tasks_by_page(db_session, start, end, is_active=True):
+    tasks = db_session.query(
+        Task).filter_by(is_active=is_active)[start:end]
+    script_count = db_session.query(
+        Task).filter_by(is_active=is_active).count()
+
+    return tasks, script_count
+
+
 def add_task_log(db_session, task_id):
     task_log = TaskLog(task_id, datetime.now())
     db_session.add(task_log)

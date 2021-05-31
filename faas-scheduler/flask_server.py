@@ -14,7 +14,7 @@ from faas_scheduler.utils import check_auth_token, \
     add_task, get_task, update_task, delete_task, list_task_logs, \
     get_task_log, run_script, get_script, add_script, delete_task_logs, \
     get_run_script_statistics_by_month, hook_update_script, hook_update_task_log, \
-    can_run_task, get_run_scripts_count_monthly, list_tasks
+    can_run_task, get_run_scripts_count_monthly, list_tasks, list_tasks_by_page
 
 app = Flask(__name__)
 logging.basicConfig(
@@ -374,22 +374,42 @@ def org_run_python_statistics():
     return get_scripts_running_statistics_by_request(request, is_user=False)
 
 
-@app.route('/time-run-task/', methods=['GET'])
+@app.route('/admin/tasks/', methods=['GET'])
 def time_run_task():
     if not check_auth_token(request):
         return make_response(('Forbidden', 403))
-    db_session = DBSession()
+
     try:
-        tasks = list_tasks(db_session)
+        current_page = int(request.args.get('current_page', 1))
+        per_page = int(request.args.get('per_page', 25))
+    except ValueError:
+        current_page, per_page = 1, 25
+
+    start = (current_page - 1) * per_page
+    end = start + per_page
+    db_session = DBSession()
+
+    try:
+        tasks_info = list_tasks_by_page(db_session, start, end)
     except Exception as e:
         logger.error(e)
         logger.exception(e)
         return make_response(('Internal Server Error.', 500))
     finally:
         db_session.close()
-    task_list = [task.to_dict() for task in tasks]
 
-    return make_response(({'task_list': task_list}, 200))
+    tasks, tasks_count = tasks_info
+    if tasks_count > end:
+        has_next_page = True
+    else:
+        has_next_page = False
+    page_info = {
+        'has_next_page': has_next_page,
+        'current_page': current_page
+    }
+    results = [task.to_dict() for task in tasks], page_info
+
+    return make_response(({'results': results}, 200))
 
 
 if __name__ == '__main__':
