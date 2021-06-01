@@ -379,22 +379,22 @@ def admin_tasks_api():
     if not check_auth_token(request):
         return make_response(('Forbidden', 403))
     try:
-        current_page = int(request.args.get('current_page', 1))
+        page = int(request.args.get('page', 1))
         per_page = int(request.args.get('per_page', 25))
     except ValueError:
-        current_page, per_page = 1, 25
+        page, per_page = 1, 25
 
-    start = (current_page - 1) * per_page
+    start = (page - 1) * per_page
     end = start + per_page
     db_session = DBSession()
 
     try:
         tasks_info = list_tasks(db_session)
         tasks, tasks_count = tasks_info[start: end], tasks_info.count()
-        tasks_list = [task.to_dict() for task in tasks]
+        task_list = [task.to_dict() for task in tasks]
         return make_response(({
-            'tasks': tasks_list,
-            'tasks_count': tasks_count,
+            'task_list': task_list,
+            'count': tasks_count,
         }, 200))
     except Exception as e:
         logger.exception(e)
