@@ -403,6 +403,23 @@ def admin_tasks_api():
         db_session.close()
 
 
+@app.route('/dtables/<dtable_uuid>/tasks/', methods=['DELETE'])
+def dtable_tasks(dtable_uuid):
+    if not check_auth_token(request):
+        return make_response(('Forbidden', 403))
+
+    db_session = DBSession()
+    try:
+        list_tasks(db_session).filter_by(dtable_uuid=dtable_uuid).delete()
+        db_session.commit()
+    except Exception as e:
+        logger.error(e)
+        return make_response(('Internal server error', 500))
+    finally:
+        db_session.close()
+    return make_response(({'success': True}, 200))
+
+
 if __name__ == '__main__':
     http_server = WSGIServer(('0.0.0.0', 5055), app)
     http_server.serve_forever()
