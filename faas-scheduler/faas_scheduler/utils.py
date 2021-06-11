@@ -337,13 +337,13 @@ def remove_invalid_tasks(db_session):
         # and their logs
         task_ids = []
         for user, permission_dict in user_script_permissions.items():
-            if permission_dict.get('can_run_script_task') is False:
+            if permission_dict.get('can_schedule_run_script') is False:
                 tasks = db_session.query(Task).filter_by(owner=user)
                 for task in tasks:
                     task_ids.append(task.id)
                 tasks.delete()
         for org_id, permission_dict in org_script_permissions.items():
-            if permission_dict.get('can_run_script_task') is False:
+            if permission_dict.get('can_schedule_run_script') is False:
                 tasks = db_session.query(Task).filter_by(org_id=org_id)
                 for task in tasks:
                     task_ids.append(task.id)

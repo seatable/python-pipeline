@@ -51,7 +51,7 @@ class FAASTaskCleaner(Thread):
 
     def __init__(self):
         super(FAASTaskCleaner, self).__init__()
-        self.interval = 60 * 60
+        self.interval = 60 * 60 * 24
         self.logfile = os.path.join(settings.LOG_DIR, 'scheduler.log')
 
     def run(self):
