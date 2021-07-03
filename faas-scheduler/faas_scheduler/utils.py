@@ -3,14 +3,17 @@ import logging
 import requests
 from datetime import datetime, timedelta
 
-from sqlalchemy import desc
-
+from sqlalchemy import desc, distinct
 from faas_scheduler.models import Task, TaskLog, ScriptLog
 from faas_scheduler.constants import CONDITION_DAILY
 import faas_scheduler.settings as settings
 
 logger = logging.getLogger(__name__)
 faas_func_url = settings.FAAS_URL.rstrip('/') + '/function/run-python'
+
+
+class ScriptInvalidException(Exception):
+    pass
 
 
 def check_auth_token(request):
@@ -25,6 +28,8 @@ def get_script_file(dtable_uuid, script_name):
     headers = {'Authorization': 'Token ' + settings.SEATABLE_FAAS_AUTH_TOKEN}
     url = '%s/api/v2.1/dtable/%s/run-script/%s/task/file/' % (settings.DTABLE_WEB_SERVICE_URL.rstrip('/'), dtable_uuid, script_name)
     response = requests.get(url, headers=headers, timeout=30)
+    if response.status_code == 404:  # script file not found
+        raise ScriptInvalidException('dtable: %s, script: %s invalid' % (dtable_uuid, script_name))
     if response.status_code != 200:
         logger.error('Fail to get script file: %s %s, error response: %s, %s' % (dtable_uuid, script_name, response.status_code, response.text))
         raise ValueError('script not found')
@@ -297,12 +302,59 @@ def run_task(task):
         task = get_task(db_session, dtable_uuid, script_name)
         update_task_trigger_time(db_session, task)
 
+    except ScriptInvalidException as e:
+        logger.info(e)
+        db_session.query(Task).filter(Task.id==task.id).delete()
+        db_session.commit()
+
     except Exception as e:
         logger.exception('Run task %d error: %s' % (task_id, e))
     finally:
         db_session.close()
 
     return True
+
+
+def remove_invalid_tasks(db_session):
+    try:
+        # select all users and org_ids
+        users = [t[0] for t in db_session.query(distinct(Task.owner)).filter(Task.org_id==-1)]
+        org_ids = [t[0] for t in db_session.query(distinct(Task.org_id)).filter(Task.org_id!=-1)]
+
+        # request user/org script/task permissions
+        permission_url = settings.DTABLE_WEB_SERVICE_URL.strip()+ '/api/v2.1/script-permissions/'
+        headers = {'Authorization': 'Token ' + settings.SEATABLE_FAAS_AUTH_TOKEN}
+        response = requests.get(permission_url, headers=headers, json={'users': users, 'org_ids': org_ids})
+        if response.status_code != 200:
+            logger.error('request script permissions error status code: %s', response.status_code)
+            return
+
+        # retrieve user/org permissions from response
+        user_script_permissions = response.json().get('user_script_permissions', {})
+        org_script_permissions = response.json().get('org_script_permissions', {})
+
+        # remove tasks that belong to owner/org who has no permission to run task
+        # and their logs
+        task_ids = []
+        for user, permission_dict in user_script_permissions.items():
+            if permission_dict.get('can_schedule_run_script') is False:
+                tasks = db_session.query(Task).filter_by(owner=user)
+                for task in tasks:
+                    task_ids.append(task.id)
+                tasks.delete()
+        for org_id, permission_dict in org_script_permissions.items():
+            if permission_dict.get('can_schedule_run_script') is False:
+                tasks = db_session.query(Task).filter_by(org_id=org_id)
+                for task in tasks:
+                    task_ids.append(task.id)
+                tasks.delete()
+
+        # clean task logs
+        db_session.query(TaskLog).filter(TaskLog.task_id.in_(task_ids)).delete()
+
+        db_session.commit()
+    except Exception as e:
+        logger.exception(e)
 
 
 def get_script(db_session, script_id):
