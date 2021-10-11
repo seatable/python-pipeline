@@ -24,6 +24,7 @@ DATABASE_NAME = 'faas_scheduler'
 
 # faas
 FAAS_URL = ''
+RUNNER_URL = ''
 
 # seatable
 DTABLE_WEB_SERVICE_URL = ''
