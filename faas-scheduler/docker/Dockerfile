@@ -1,5 +1,6 @@
 FROM phusion/baseimage:0.11
 # seatable/seatable-faas-scheduler:1.x.x
+ENV SCHEDULER_VERSION=
 
 # Aliyun ubuntu source
 RUN rm -rf /etc/apt/sources.list
@@ -37,6 +38,8 @@ RUN pip3 install flask gevent pyjwt pymysql sqlalchemy future requests \
 RUN mkdir -p /opt/seatable-faas-scheduler
 WORKDIR /opt/seatable-faas-scheduler
 COPY src/faas-scheduler /opt/seatable-faas-scheduler/faas-scheduler
+RUN pip3 install -r /opt/seatable-faas-scheduler/faas-scheduler/requirements.txt \
+    -i https://mirrors.aliyun.com/pypi/simple && rm -r /root/.cache/pip
 
 
 # scripts
