@@ -203,14 +203,7 @@ def task_logs_api(dtable_uuid, script_name):
 
     db_session = DBSession()
     try:
-        task = get_task(db_session, dtable_uuid, script_name)
-        if not task:
-            return make_response(({
-                'task_logs': [],
-                'count': 0,
-            }, 200))
-
-        task_logs = list_task_logs(db_session, task.id, order_by)
+        task_logs = list_task_logs(db_session, dtable_uuid, script_name, order_by)
         count = task_logs.count()
         task_logs = task_logs[start: end]
         task_log_list = [task_log.to_dict() for task_log in task_logs]
@@ -232,15 +225,9 @@ def task_log_api(dtable_uuid, script_name, log_id):
 
     db_session = DBSession()
     try:
-        task = get_task(db_session, dtable_uuid, script_name)
-        if not task:
-            return make_response(({'task_log': None}, 200))
         task_log = get_task_log(db_session, log_id)
-        if not task_log or task_log.task_id != task.id:
-            return make_response(({'task_log': None}, 200))
-
         task_log_info= task_log.to_dict()
-        task_log_info['output'] = task_log.output
+
         return make_response(({'task_log': task_log_info}, 200))
 
     except Exception as e:
@@ -301,7 +288,7 @@ def record_script_result():
     return_code = data.get('return_code')
     output = data.get('output')
     spend_time = data.get('spend_time')
-    script_id, task_log_id = data.get('script_id'), data.get('task_log_id')
+    script_id = data.get('script_id')
 
     db_session = DBSession()
 
@@ -309,8 +296,8 @@ def record_script_result():
     try:
         if script_id:
             hook_update_script(db_session, script_id, success, return_code, output, spend_time)
-        elif task_log_id:
-            hook_update_task_log(db_session, task_log_id, success, return_code, output, spend_time)
+            hook_update_task_log(db_session, script_id, success, return_code, output, spend_time)
+
     except Exception as e:
         logger.exception(e)
         return make_response(('Internal server error', 500))

@@ -1,6 +1,8 @@
 import json
 import logging
 import requests
+import pytz
+import os
 from datetime import datetime, timedelta
 
 from sqlalchemy import desc, distinct
@@ -51,7 +53,7 @@ def call_faas_func(script_url, temp_api_token, context_data, script_id=None, tas
             },
             'context_data': context_data,
             'script_id': script_id,
-            'task_log_id': task_log_id
+            # 'task_log_id': task_log_id
         }
         response = requests.post(faas_func_url, json=data, timeout=30)
 
@@ -160,12 +162,17 @@ def list_tasks(db_session, is_active=True):
 
 
 def add_task_log(db_session, task_id):
-    task_log = TaskLog(task_id, datetime.now())
-    db_session.add(task_log)
+    task = db_session.query(Task).filter_by(id=task_id).first()
+    dtable_uuid = task.dtable_uuid
+    script_name = task.script_name
+    context_data = json.dumps(task.context_data) if task.context_data else None
+    owner = task.owner
+    org_id = task.org_id
+    script = ScriptLog(
+        dtable_uuid, owner, org_id, script_name, context_data, datetime.now(), 'task')
+    db_session.add(script)
     db_session.commit()
-
-    return task_log
-
+    return script
 
 def update_task_log(db_session, task_log, success, return_code, output):
     task_log.finished_at = datetime.now()
@@ -177,10 +184,10 @@ def update_task_log(db_session, task_log, success, return_code, output):
     return task_log
 
 
-def list_task_logs(db_session, task_id, order_by='-id'):
+def list_task_logs(db_session, dtable_uuid, script_name, order_by='-id'):
     if '-' in order_by:
         order_by = desc(order_by.strip('-'))
-    task_logs = db_session.query(TaskLog).filter_by(task_id=task_id).order_by(order_by)
+    task_logs = db_session.query(ScriptLog).filter_by(dtable_uuid=dtable_uuid, script_name=script_name).order_by(order_by)
 
     return task_logs
 
@@ -193,7 +200,7 @@ def delete_task_logs(db_session, task_id):
 
 
 def get_task_log(db_session, log_id):
-    task_log = db_session.query(TaskLog).filter_by(id=log_id).first()
+    task_log = db_session.query(ScriptLog).filter_by(id=log_id).first()
 
     return task_log
 
@@ -302,7 +309,7 @@ def run_task(task):
 
         #
         task_log = add_task_log(db_session, task_id)
-        call_faas_func(script_url, temp_api_token, context_data, task_log_id=task_log.id)
+        call_faas_func(script_url, temp_api_token, context_data, script_id=task_log.id)
         task = get_task(db_session, dtable_uuid, script_name)
         update_task_trigger_time(db_session, task)
 
@@ -371,7 +378,7 @@ def get_script(db_session, script_id):
 def add_script(db_session, dtable_uuid, owner, org_id, script_name, context_data):
     context_data = json.dumps(context_data) if context_data else None
     script = ScriptLog(
-        dtable_uuid, owner, org_id, script_name, context_data, datetime.now())
+        dtable_uuid, owner, org_id, script_name, context_data, datetime.now(), 'manually')
     db_session.add(script)
     db_session.commit()
 
@@ -411,10 +418,10 @@ def hook_update_script(db_session, script_id, success, return_code, output, spen
 
 
 def hook_update_task_log(db_session, task_log_id, success, return_code, output, spend_time):
-    task_log = db_session.query(TaskLog).filter_by(id=task_log_id).first()
+    task_log = db_session.query(ScriptLog).filter_by(id=task_log_id).first()
     if task_log:
         update_task_log(db_session, task_log, success, return_code, output)
-        task = db_session.query(Task).filter_by(id=task_log.task_id).first()
+        task = db_session.query(Task).filter_by(dtable_uuid=task_log.dtable_uuid, script_name=task_log.script_name).first()
         if task:
             update_statistics(db_session, task.dtable_uuid, task.owner, task.org_id, spend_time)
 
@@ -474,3 +481,16 @@ def get_run_script_statistics_by_month(db_session, is_user=True, month=None, sta
         count = 0
 
     return results, count
+
+def datetime_to_isoformat_timestr(datetime):
+    if not datetime:
+        return ''
+    try:
+        datetime = datetime.replace(microsecond=0)
+        time_zone = os.environ.get('TIME_ZONE', 'UTC')
+        current_timezone = pytz.timezone(time_zone)
+        isoformat_timestr = current_timezone.localize(datetime).isoformat()
+        return isoformat_timestr
+    except Exception as e:
+        logger.error(e)
+        return ''
