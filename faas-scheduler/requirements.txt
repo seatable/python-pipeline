@@ -6,3 +6,4 @@ future  # seaf-server
 requests
 pyjwt
 pytz
+tzlocal

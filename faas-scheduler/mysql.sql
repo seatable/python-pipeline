@@ -28,17 +28,19 @@ CREATE TABLE `task_log` (
 CREATE TABLE `script_log` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `dtable_uuid` varchar(36) NOT NULL,
-  `owner` varchar(255),
-  `org_id` int(11),
+  `owner` varchar(255) DEFAULT NULL,
+  `org_id` int(11) DEFAULT NULL,
   `script_name` varchar(255) NOT NULL,
-  `context_data` longtext,
+  `context_data` longtext DEFAULT NULL,
   `started_at` datetime(6) NOT NULL,
-  `finished_at` datetime(6),
-  `success` tinyint(1),
-  `return_code` int(11),
-  `output` longtext,
+  `finished_at` datetime(6) DEFAULT NULL,
+  `success` tinyint(1) DEFAULT NULL,
+  `return_code` int(11) DEFAULT NULL,
+  `output` longtext DEFAULT NULL,
+  `operate_from` varchar(50) DEFAULT NULL COMMENT 'manualy, automation-rule...etc',
   PRIMARY KEY (`id`),
-  KEY `started_at_c6ns09vt` (`started_at`)
+  KEY `started_at_c6ns09vt` (`started_at`),
+  KEY `dtable_uuid_script_name_l0j7h5f2_union_key` (`dtable_uuid`,`script_name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 CREATE TABLE `dtable_run_script_statistics` (

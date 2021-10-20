@@ -1,10 +1,9 @@
 import json
 import logging
 import requests
-import pytz
-import os
 from datetime import datetime, timedelta
 
+from tzlocal import get_localzone
 from sqlalchemy import desc, distinct
 from faas_scheduler.models import Task, TaskLog, ScriptLog
 from faas_scheduler.constants import CONDITION_DAILY
@@ -269,8 +268,10 @@ def can_run_task(owner, org_id, db_session, scripts_running_limit=None):
         headers = {'Authorization': 'Token ' + settings.SEATABLE_FAAS_AUTH_TOKEN}
         if org_id and org_id != -1:
             params = {'org_id': org_id}
-        else:
+        elif owner:
             params = {'username': owner}
+        else:
+            return True
         scripts_running_limit = -1
         try:
             response = requests.get(url, headers=headers, params=params)
@@ -375,10 +376,10 @@ def get_script(db_session, script_id):
     return script
 
 
-def add_script(db_session, dtable_uuid, owner, org_id, script_name, context_data):
+def add_script(db_session, dtable_uuid, owner, org_id, script_name, context_data, operate_from='manualy'):
     context_data = json.dumps(context_data) if context_data else None
     script = ScriptLog(
-        dtable_uuid, owner, org_id, script_name, context_data, datetime.now(), 'manually')
+        dtable_uuid, owner, org_id, script_name, context_data, datetime.now(), operate_from)
     db_session.add(script)
     db_session.commit()
 
@@ -487,8 +488,7 @@ def datetime_to_isoformat_timestr(datetime):
         return ''
     try:
         datetime = datetime.replace(microsecond=0)
-        time_zone = os.environ.get('TIME_ZONE', 'UTC')
-        current_timezone = pytz.timezone(time_zone)
+        current_timezone = get_localzone()
         isoformat_timestr = current_timezone.localize(datetime).isoformat()
         return isoformat_timestr
     except Exception as e:

@@ -44,6 +44,7 @@ def scripts_api():
     script_url = data.get('script_url')
     temp_api_token = data.get('temp_api_token')
     scripts_running_limit = data.get('scripts_running_limit', -1)
+    operate_from = data.get('operate_from', 'manualy')
     if not dtable_uuid \
             or not script_name \
             or not owner \
@@ -55,7 +56,7 @@ def scripts_api():
     try:
         if scripts_running_limit != -1 and not can_run_task(owner, org_id, db_session, scripts_running_limit=scripts_running_limit):
             return make_response(('The number of runs exceeds the limit'), 400)
-        script = add_script(db_session, dtable_uuid, owner, org_id, script_name, context_data)
+        script = add_script(db_session, dtable_uuid, owner, org_id, script_name, context_data, operate_from)
         executor.submit(run_script, script.id, script_url, temp_api_token, context_data)
 
         return make_response(({'script_id': script.id}, 200))
@@ -296,7 +297,7 @@ def record_script_result():
     try:
         if script_id:
             hook_update_script(db_session, script_id, success, return_code, output, spend_time)
-            hook_update_task_log(db_session, script_id, success, return_code, output, spend_time)
+            # hook_update_task_log(db_session, script_id, success, return_code, output, spend_time)
 
     except Exception as e:
         logger.exception(e)
