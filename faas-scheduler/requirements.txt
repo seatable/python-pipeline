@@ -6,4 +6,4 @@ future  # seaf-server
 requests
 pyjwt
 pytz
-tzlocal
+tzlocal~=2.0
