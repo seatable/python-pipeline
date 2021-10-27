@@ -69,6 +69,12 @@ function init() {
 
 }
 
+
+function upgrade_sql() {
+    mysql -h $DB_HOST -p$DB_ROOT_PASSWD faas_scheduler </opt/seatable-faas-scheduler/faas-scheduler/upgrade/${*:2}.sql
+}
+
+
 case $1 in
 "start")
     start_server
@@ -84,6 +90,9 @@ case $1 in
     ;;
 "init")
     init
+    ;;
+"upgrade-sql")
+    upgrade_sql "$@"
     ;;
 *)
     start_server

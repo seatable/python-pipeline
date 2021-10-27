@@ -14,6 +14,8 @@ if [ "`ls -A /opt/seatable-faas-scheduler/conf`" = "" ]; then
     /scripts/seatable-faas-scheduler.sh init-sql &>> /opt/seatable-faas-scheduler/logs/init.log
 
     /scripts/seatable-faas-scheduler.sh init &>> /opt/seatable-faas-scheduler/logs/init.log
+
+    echo $SCHEDULER_VERSION > /opt/seatable-faas-scheduler/conf/current_version
 else
     log "Conf exists"
 fi
@@ -51,6 +53,10 @@ if [[ -f /shared/ssl/renew_cert ]]; then
         /scripts/renew_cert.sh &>> /opt/seatable-faas-scheduler/logs/init.log
     fi
 fi
+
+
+# upgrade
+/scripts/upgrade.py
 
 
 # autorun
