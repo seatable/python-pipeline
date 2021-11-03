@@ -30,6 +30,8 @@ def check_auth_token(request):
 
 
 def get_script_file(dtable_uuid, script_name):
+    if not script_name or not dtable_uuid:
+        raise ScriptInvalidException('dtable: %s script: %s invalid' % (dtable_uuid, script_name))
     headers = {'Authorization': 'Token ' + settings.SEATABLE_FAAS_AUTH_TOKEN}
     url = '%s/api/v2.1/dtable/%s/run-script/%s/task/file/' % (settings.DTABLE_WEB_SERVICE_URL.rstrip('/'), dtable_uuid, script_name)
     response = requests.get(url, headers=headers, timeout=30)
@@ -315,7 +317,7 @@ def run_task(task):
         update_task_trigger_time(db_session, task)
 
     except ScriptInvalidException as e:
-        logger.info(e)
+        logger.info('task: %s script: %s invalid info: %s', task.id, task.script_name, e)
         db_session.query(Task).filter(Task.id==task.id).delete()
         db_session.commit()
 
