@@ -2,6 +2,7 @@ import json
 import logging
 import requests
 from datetime import datetime, timedelta
+from uuid import UUID
 
 from tzlocal import get_localzone
 from sqlalchemy import desc, distinct
@@ -32,6 +33,7 @@ def check_auth_token(request):
 def get_script_file(dtable_uuid, script_name):
     if not script_name or not dtable_uuid:
         raise ScriptInvalidException('dtable: %s script: %s invalid' % (dtable_uuid, script_name))
+    dtable_uuid = str(UUID(dtable_uuid))
     headers = {'Authorization': 'Token ' + settings.SEATABLE_FAAS_AUTH_TOKEN}
     url = '%s/api/v2.1/dtable/%s/run-script/%s/task/file/' % (settings.DTABLE_WEB_SERVICE_URL.rstrip('/'), dtable_uuid, script_name)
     response = requests.get(url, headers=headers, timeout=30)
@@ -398,12 +400,15 @@ def update_script(db_session, script, success, return_code, output):
     return script
 
 
-def run_script(script_id, script_url, temp_api_token, context_data):
-    """ Only for server """
+def run_script(script_id, dtable_uuid, script_name, script_url, temp_api_token, context_data):
+    """ Only for flask-server """
     from faas_scheduler import DBSession
     db_session = DBSession()  # for multithreading
 
     try:
+        if not script_url:
+            script_file = get_script_file(dtable_uuid, script_name)
+            script_url = script_file.get('script_url', '')
         call_faas_func(script_url, temp_api_token, context_data, script_id=script_id)
     except Exception as e:
         logger.exception('Run script %d error: %s' % (script_id, e))

@@ -47,8 +47,7 @@ def scripts_api():
     operate_from = data.get('operate_from', 'manualy')
     if not dtable_uuid \
             or not script_name \
-            or not owner \
-            or not script_url:
+            or not owner:
         return make_response(('Parameters invalid', 400))
 
     # main
@@ -57,7 +56,7 @@ def scripts_api():
         if scripts_running_limit != -1 and not can_run_task(owner, org_id, db_session, scripts_running_limit=scripts_running_limit):
             return make_response(('The number of runs exceeds the limit'), 400)
         script = add_script(db_session, dtable_uuid, owner, org_id, script_name, context_data, operate_from)
-        executor.submit(run_script, script.id, script_url, temp_api_token, context_data)
+        executor.submit(run_script, script.id, dtable_uuid, script_name, script_url, temp_api_token, context_data)
 
         return make_response(({'script_id': script.id}, 200))
     except Exception as e:
