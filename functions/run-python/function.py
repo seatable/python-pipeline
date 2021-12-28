@@ -127,6 +127,20 @@ def run_python(data):
         command.append('--memory={}'.format(settings.CONTAINER_MEMORY))
     if settings.CONTAINER_CPUS:
         command.append('--cpus={}'.format(settings.CONTAINER_CPUS))
+    user_operation = ''
+    # check user
+    if settings.USER:
+        user_operation += str(settings.USER)
+    elif settings.UID:
+        user_operation += str(settings.UID)
+    # check group
+    if user_operation:
+        if settings.GROUP:
+            user_operation += ':' + str(settings.GROUP)
+        elif settings.GID:
+            user_operation += ':' + str(settings.GID)
+    if user_operation:
+        command.extend(['-u', user_operation])
     command.append(settings.IMAGE)
     command.append('run')  # override command
 
