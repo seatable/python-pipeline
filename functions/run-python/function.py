@@ -43,6 +43,9 @@ def send_to_scheduler(success, return_code, output, spend_time, request_data):
         logging.error('SCHEDULER_URL not set!')
         return
 
+    if output:
+        output = output[:settings.OUTPUT_LIMIT]
+
     url = settings.SCHEDULER_URL.strip('/') + '/script-result/'
 
     result_data = {
@@ -178,7 +181,7 @@ def run_python(data):
         except Exception as e:
             logging.warning('Fail to remove script files error: %s', e)
         try:
-            subprocess.run(['docker', 'container', 'rm', container_name], stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
+            subprocess.run(['docker', 'container', 'rm', '-f', container_name], stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
         except Exception as e:
             logging.warning('Fail to remove container error: %s', e)
 

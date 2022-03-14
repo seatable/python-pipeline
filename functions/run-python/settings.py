@@ -13,6 +13,8 @@ SUB_PROCESS_TIMEOUT = 60 * 15  # 15 mins
 CONTAINER_MEMORY = '2g'  # default 2G memory for each container/script
 CONTAINER_CPUS = ''
 
+OUTPUT_LIMIT = 1000000
+
 UID = ''
 GID = ''
 
