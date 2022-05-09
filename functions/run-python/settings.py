@@ -10,6 +10,9 @@ IMAGE = os.environ.get('IMAGE')
 THREAD_COUNT = 10
 SUB_PROCESS_TIMEOUT = 60 * 15  # 15 mins
 
+# Time zone in script container, default UTC
+TIME_ZONE = ''
+
 CONTAINER_MEMORY = '2g'  # default 2G memory for each container/script
 CONTAINER_CPUS = ''
 
@@ -20,6 +23,25 @@ GID = ''
 
 USER = ''
 GROUP = ''
+
+# VALID_OPTIONS and OTHER_OPTIONS are experimental, may cause failure to start script
+# Eg: if you want script container link to link a network xxx, set "--network=xxx" in OTHER_OPTIONS
+# OTHER_OPTIONS = ["--network=xxx"]
+# Please note, options in OTHER_OPTIONS, need in VALID_OPTIONS
+VALID_OPTIONS = [
+    "--add-host",
+    "--dns",
+    "--dns-opt",
+    "--dns-option",
+    "--dns-search",
+    "--net",
+    "--net-alias",
+    "--network",
+    "--ipc",
+    "--label"
+]
+
+OTHER_OPTIONS = []
 
 #
 CONF_DIR = 'conf/'

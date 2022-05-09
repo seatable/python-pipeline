@@ -28,6 +28,20 @@ executor = ThreadPoolExecutor(settings.THREAD_COUNT)
 
 DEFAULT_SUB_PROCESS_TIMEOUT = settings.SUB_PROCESS_TIMEOUT
 
+# timezone command
+SYSTEM_TIMEZONE_COMMAND = None
+if os.path.isfile('/etc/localtime'):
+    SYSTEM_TIMEZONE_COMMAND = ['-v', '/etc/localtime:/etc/localtime']
+elif os.path.isfile('/etc/timezone'):
+    try:
+        with open('/etc/timezone', 'r') as f:
+            time_zone_str = f.readline()
+    except Exception as e:
+        pass
+    else:
+        time_zone_str = time_zone_str.strip()
+        SYSTEM_TIMEZONE_COMMAND = ['-e', 'TZ=%s' % time_zone_str]
+
 
 def send_to_scheduler(success, return_code, output, spend_time, request_data):
     """
@@ -82,6 +96,13 @@ def run_python(data):
         env = {}
     env['is_cloud'] = "1"
 
+    timezone_command = None
+    # about timezone
+    if settings.TIME_ZONE:
+        env['TZ'] = settings.TIME_ZONE
+    else:
+        timezone_command = SYSTEM_TIMEZONE_COMMAND
+
     # context_data must be map
     context_data = data.get('context_data')
     if context_data and not isinstance(context_data, dict):
@@ -125,6 +146,9 @@ def run_python(data):
     command = ['docker', 'run', '--name', container_name,
                '--env-file', env_file,
                '-v', '{}:/scripts'.format(scripts_path)]
+    # timezone, if not set TIME_ZONE in settings then set time zone use timezone_command
+    if timezone_command:
+        command.extend(timezone_command)
     # limit memory and cpus
     if settings.CONTAINER_MEMORY:
         command.append('--memory={}'.format(settings.CONTAINER_MEMORY))
@@ -144,6 +168,16 @@ def run_python(data):
             user_operation += ':' + str(settings.GID)
     if user_operation:
         command.extend(['-u', user_operation])
+    # other options
+    ## this options are experimental, may cause failure to start script
+    if settings.OTHER_OPTIONS and isinstance(settings.OTHER_OPTIONS, list):
+        for option in settings.OTHER_OPTIONS:
+            if '=' not in option:
+                continue
+            option_name = option.split('=')[0]
+            if option_name not in settings.VALID_OPTIONS:
+                continue
+            command.append(option)
     command.append(settings.IMAGE)
     command.append('run')  # override command
 
