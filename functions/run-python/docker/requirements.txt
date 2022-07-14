@@ -2,3 +2,5 @@ requests
 seatable-api
 dateutils
 pyOpenSSL
+pandas
+python-barcode[images]
