@@ -1,10 +1,12 @@
 import os
 import sys
+import logging
 
 
 SCHEDULER_URL = ''
 
 DEBUG = False
+LOG_LEVEL = logging.WARNING
 IMAGE = os.environ.get('IMAGE')
 
 THREAD_COUNT = 10
@@ -42,6 +44,9 @@ VALID_OPTIONS = [
 ]
 
 OTHER_OPTIONS = []
+
+ALTERNATIVE_FILE_SERVER_ROOT = ''
+USE_ALTERNATIVE_FILE_SERVER_ROOT = False
 
 #
 CONF_DIR = 'conf/'

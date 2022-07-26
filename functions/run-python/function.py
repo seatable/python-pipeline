@@ -1,7 +1,7 @@
 import json
 import logging
 import os
-import random
+import re
 import requests
 import shutil
 import subprocess
@@ -20,7 +20,7 @@ if not settings.DEBUG:
         filename=os.path.join(log_dir, 'seatable-python-runner.log'),
         filemode='a',
         format="[%(asctime)s] [%(levelname)s] %(name)s:%(lineno)s %(funcName)s %(message)s",
-        level=logging.WARNING
+        level=settings.LOG_LEVEL
     )
 
 app = Flask(__name__)
@@ -89,6 +89,10 @@ def run_python(data):
     if not script_url:
         send_to_scheduler(False, None, 'Script URL is missing', None, data)
         return
+    if settings.USE_ALTERNATIVE_FILE_SERVER_ROOT and settings.ALTERNATIVE_FILE_SERVER_ROOT:
+        logging.info('old script_url: %s', script_url)
+        script_url = re.sub(r'https?://.*?/', settings.ALTERNATIVE_FILE_SERVER_ROOT.strip('/') + '/', script_url)
+        logging.info('new script_url: %s', script_url)
 
     # env must be map
     env = data.get('env')
