@@ -176,10 +176,11 @@ def run_python(data):
     ## this options are experimental, may cause failure to start script
     if settings.OTHER_OPTIONS and isinstance(settings.OTHER_OPTIONS, list):
         for option in settings.OTHER_OPTIONS:
+            if not isinstance(option, str):
+                continue
             if '=' not in option:
                 continue
-            option_name = option.split('=')[0]
-            if option_name not in settings.VALID_OPTIONS:
+            if 'volume' in option and ':/scripts' in option:
                 continue
             command.append(option)
     command.append(settings.IMAGE)
