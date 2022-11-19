@@ -7,7 +7,7 @@ from uuid import UUID
 from tzlocal import get_localzone
 from sqlalchemy import desc, distinct
 from faas_scheduler.models import Task, TaskLog, ScriptLog
-from faas_scheduler.constants import CONDITION_DAILY
+from faas_scheduler.constants import CONDITION_DAILY, TIMEOUT_OUTPUT
 import faas_scheduler.settings as settings
 
 logger = logging.getLogger(__name__)
@@ -368,6 +368,23 @@ def remove_invalid_tasks(db_session):
         # clean task logs
         db_session.query(TaskLog).filter(TaskLog.task_id.in_(task_ids)).delete()
 
+        db_session.commit()
+    except Exception as e:
+        logger.exception(e)
+
+
+def check_and_set_tasks_timeout(db_session):
+    now = datetime.now()
+    sql = '''
+        UPDATE script_log SET success=0, return_code=-1, output=:timeout_output, finished_at=:now
+        WHERE success IS NULL AND TIMESTAMPDIFF(SECOND, started_at, :now) > :timeout_interval
+    '''
+    try:
+        db_session.execute(sql, {
+            'now': now,
+            'timeout_interval': settings.SUB_PROCESS_TIMEOUT,
+            'timeout_output': TIMEOUT_OUTPUT
+        })
         db_session.commit()
     except Exception as e:
         logger.exception(e)

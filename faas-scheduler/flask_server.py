@@ -8,8 +8,9 @@ from flask import Flask, request, make_response
 from gevent.pywsgi import WSGIServer
 from concurrent.futures import ThreadPoolExecutor
 
-from faas_scheduler import DBSession
 import faas_scheduler.settings as settings
+from faas_scheduler import DBSession
+from faas_scheduler.constants import TIMEOUT_OUTPUT
 from faas_scheduler.utils import check_auth_token, \
     add_task, get_task, update_task, delete_task, list_task_logs, \
     get_task_log, run_script, get_script, add_script, delete_task_logs, \
@@ -89,6 +90,16 @@ def script_api(script_id):
         if dtable_uuid != script.dtable_uuid \
                 or script_name != script.script_name:
             return make_response(('Bad request', 400))
+
+        if settings.SUB_PROCESS_TIMEOUT and isinstance(settings.SUB_PROCESS_TIMEOUT, int):
+            now = datetime.now()
+            duration_seconds = (now - script.started_at).seconds
+            if duration_seconds > settings.SUB_PROCESS_TIMEOUT:
+                script.success = False
+                script.return_code = -1
+                script.finished_at = now
+                script.output = TIMEOUT_OUTPUT
+                db_session.commit()
 
         return make_response(({'script': script.to_dict()}, 200))
 

@@ -28,6 +28,9 @@ SEATABLE_FAAS_AUTH_TOKEN = ''
 CONF_DIR = '/opt/seatable-faas-scheduler/conf/'
 LOG_DIR = '/opt/seatable-faas-scheduler/logs/'
 
+# sub process timeout, need to be same as that in run python package settings
+SUB_PROCESS_TIMEOUT = 60 * 15  # 15 mins
+
 # ======================== local settings ======================== #
 try:
     from local_settings import *
