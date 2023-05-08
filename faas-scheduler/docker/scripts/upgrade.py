@@ -69,9 +69,17 @@ def update_version_stamp(version, fn=version_stamp_file):
 def wait_for_mysql():
     DB_HOST = os.getenv('DB_HOST', 'db')
     DB_ROOT_PASSWD = os.getenv('DB_ROOT_PASSWD', '')
+    DB_USER = os.getenv('DB_USER', '')
+    DB_USER_PASSWD = os.getenv('DB_USER_PASSWD', '')
+    if DB_USER and DB_USER_PASSWD:
+        user = DB_USER
+        passwd = DB_USER_PASSWD
+    else:
+        user = 'root'
+        passwd = DB_ROOT_PASSWD
     while True:
         try:
-            pymysql.connect(host=DB_HOST, port=3306, user='root', passwd=DB_ROOT_PASSWD)
+            pymysql.connect(host=DB_HOST, port=3306, user=user, passwd=passwd)
         except Exception as e:
             print ('waiting for mysql server to be ready: %s', e)
             time.sleep(2)
