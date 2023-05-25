@@ -3,7 +3,7 @@
 if [[ "$1" != 'custom' ]]; then
     cd /scripts
     cat input | python index.py > output
-    exit 0
+    exit $?
 fi
 
 function cleanup() {

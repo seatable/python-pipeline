@@ -1,7 +1,7 @@
 flask
 gevent
 pymysql
-sqlalchemy
+sqlalchemy==1.4.48
 future  # seaf-server
 requests
 pyjwt

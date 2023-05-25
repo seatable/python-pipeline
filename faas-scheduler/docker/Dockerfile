@@ -30,7 +30,7 @@ RUN rm -f /usr/bin/python && \
     ln -s /usr/local/bin/pip3.6 /usr/bin/pip && \
     ln -s /usr/local/bin/pip3.6 /usr/bin/pip3
 
-RUN pip3 install flask gevent pyjwt pymysql sqlalchemy future requests \
+RUN pip3 install flask gevent pyjwt pymysql sqlalchemy==1.4.48 future requests \
     -i https://mirrors.aliyun.com/pypi/simple && rm -r /root/.cache/pip
 
 
