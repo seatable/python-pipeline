@@ -96,10 +96,6 @@ class FAASTaskTimeoutSetter(Thread):
 
 
 if __name__ == '__main__':
-    scheduler = FAASScheduler()
-    task_cleaner = FAASTaskCleaner()
     task_timeout_setter = FAASTaskTimeoutSetter()
 
-    scheduler.start()
-    task_cleaner.start()
     task_timeout_setter.start()
