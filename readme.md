@@ -110,6 +110,7 @@ The Dockerfile of the image for running script is in `./functions/run-python/doc
 - dateutils
 - pyOpenSSL
 - pandas
-- python-barcode[images]
+- Pillow
+- python-barcode
 
 Every time we update [seatable-api](https://pypi.org/project/seatable-api/), we update the runner image so that seatable-api version is the latest.
