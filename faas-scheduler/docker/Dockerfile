@@ -1,4 +1,4 @@
-FROM phusion/baseimage:0.11
+FROM phusion/baseimage:jammy-1.0.1
 # seatable/seatable-faas-scheduler:1.x.x
 ENV SCHEDULER_VERSION=
 
@@ -18,18 +18,8 @@ RUN apt-get install -y nginx
 # Mysql
 RUN apt-get install -y mysql-client
 
-# set python3.6 global
-RUN apt-get install -y python3 python3-pip
-RUN python3.6 -m pip install --upgrade pip -i https://mirrors.aliyun.com/pypi/simple && rm -r /root/.cache/pip
-RUN rm -f /usr/bin/python && \
-    rm -f /usr/bin/python3 && \
-    rm -f /usr/bin/pip && \
-    rm -f /usr/bin/pip3 && \
-    ln -s /usr/bin/python3.6 /usr/bin/python && \
-    ln -s /usr/bin/python3.6 /usr/bin/python3 && \
-    ln -s /usr/local/bin/pip3.6 /usr/bin/pip && \
-    ln -s /usr/local/bin/pip3.6 /usr/bin/pip3
 
+RUN apt-get install -y python3-pip
 RUN pip3 install flask gevent pyjwt pymysql sqlalchemy==1.4.48 future requests \
     -i https://mirrors.aliyun.com/pypi/simple && rm -r /root/.cache/pip
 

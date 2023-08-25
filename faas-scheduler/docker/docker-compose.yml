@@ -25,6 +25,8 @@ services:
       - SEATABLE_FAAS_SCHEDULER_SERVER_LETSENCRYPT=False # Default is False. Whether to use let's encrypt certificate.
       - SEATABLE_FAAS_SCHEDULER_SERVER_HOSTNAME=demo.faas-scheduler.seatable.cn # Specifies your host name.
       - TIME_ZONE=Etc/UTC # Optional, default is UTC. Should be uncomment and set to your local time zone.
+    # security_opt:  # If Docker version <= 20.10.9, please open this
+    #   - seccomp:unconfined
     depends_on:
       - db
     networks:

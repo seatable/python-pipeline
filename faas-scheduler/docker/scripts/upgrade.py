@@ -18,6 +18,18 @@ conf_dir = top_dir + 'conf/'
 sql_dir = top_dir + 'faas-scheduler/upgrade/'
 version_stamp_file = conf_dir + 'current_version'
 
+# mysql user and passwd
+DB_HOST = os.getenv('DB_HOST', 'db')
+DB_ROOT_PASSWD = os.getenv('DB_ROOT_PASSWD', '')
+DB_USER = os.getenv('DB_USER', '')
+DB_USER_PASSWD = os.getenv('DB_USER_PASSWD', '')
+if DB_USER and DB_USER_PASSWD:
+    db_user = DB_USER
+    db_passwd = DB_USER_PASSWD
+else:
+    db_user = 'root'
+    db_passwd = DB_ROOT_PASSWD
+
 
 def collect_upgrade_scripts(from_version, to_version):
     """
@@ -49,7 +61,12 @@ def parse_upgrade_script_version(script):
 
 
 def run_script_and_update_version_stamp(script, new_version):
-    os.system('mysql -h $DB_HOST -p$DB_ROOT_PASSWD faas_scheduler <%s' % script)
+    os.system('mysql -h %(db_host)s -u%(db_user)s -p%(db_passwd)s faas_scheduler <%(script)s' % {
+        'db_host': DB_HOST,
+        'db_user': db_user,
+        'db_passwd': db_passwd,
+        'script': script
+    })
     update_version_stamp(new_version)
 
 
@@ -67,19 +84,9 @@ def update_version_stamp(version, fn=version_stamp_file):
 
 
 def wait_for_mysql():
-    DB_HOST = os.getenv('DB_HOST', 'db')
-    DB_ROOT_PASSWD = os.getenv('DB_ROOT_PASSWD', '')
-    DB_USER = os.getenv('DB_USER', '')
-    DB_USER_PASSWD = os.getenv('DB_USER_PASSWD', '')
-    if DB_USER and DB_USER_PASSWD:
-        user = DB_USER
-        passwd = DB_USER_PASSWD
-    else:
-        user = 'root'
-        passwd = DB_ROOT_PASSWD
     while True:
         try:
-            pymysql.connect(host=DB_HOST, port=3306, user=user, passwd=passwd)
+            pymysql.connect(host=DB_HOST, port=3306, user=db_user, passwd=db_passwd)
         except Exception as e:
             print ('waiting for mysql server to be ready: %s', e)
             time.sleep(2)
