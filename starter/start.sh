@@ -1,5 +1,5 @@
 #!/bin/bash
-
+#
 # kill old uwsgi and stop/remove old containers
 sh stop.sh
 
@@ -20,3 +20,18 @@ if [ ! -f "conf/seatable_python_runner.ini" ]; then
 fi
 
 uwsgi --ini conf/seatable_python_runner.ini
+
+#
+echo "This is a idle script (infinite loop) to keep container running."
+
+function cleanup() {
+    kill -s SIGTERM $!
+    exit 0
+}
+
+trap cleanup SIGINT SIGTERM
+
+while [ 1 ]; do
+    sleep 60 &
+    wait $!
+done
