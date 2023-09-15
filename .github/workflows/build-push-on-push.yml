@@ -13,13 +13,13 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # - dockerfile: ./runner/Dockerfile
-          #   image: seatable/python-runner-cicd
-          #   context: ./runner
+          - dockerfile: ./runner/Dockerfile
+            image: seatable/python-runner-cicd
+            context: ./runner
 
-          # - dockerfile: ./starter/Dockerfile
-          #   image: seatable/python-starter-cicd
-          #   context: ./starter
+          - dockerfile: ./starter/Dockerfile
+            image: seatable/python-starter-cicd
+            context: ./starter
 
           - dockerfile: ./scheduler/Dockerfile
             image: seatable/python-scheduler-cicd
@@ -46,16 +46,14 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Docker metadata
-        id: meta
-        uses: docker/metadata-action@v5
+      - name: Docker Hub Description
+        uses: peter-evans/dockerhub-description@v3
         with:
-          images: ${{ matrix.image }}
-
-      - name: Debug Dockerfile Paths
-        run: |
-          ls -R
-        working-directory: .
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          repository: ${{ matrix.image }}
+          short-description: ${{ github.event.repository.description }}
+          enable-url-completion: true
 
       - name: Build and push
         uses: docker/build-push-action@v5
@@ -63,5 +61,4 @@ jobs:
           context: ${{ matrix.context }}
           push: true
           file: ${{ matrix.dockerfile }}
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+          tags: ${{ matrix.image }}:latest , ${{ matrix.image }}:${{ github.run_number }}

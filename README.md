@@ -1,6 +1,6 @@
 # Seatable Python Pipeline
 
-This repository contains the definition of three container images (Scheduler, Starter, Runner) designed to securely run Python code, retrieve and deliver the output in the context of Seatable.
+This repository contains the definition of three container images (Scheduler, Starter, Runner) designed to securely run Python code, retrieve and deliver the output in the context of Seatable. These images are meant to be used in conjunction with a dcoker-compose.yml. Please refer to admin.seatable.io for more information.
 
 
 ```mermaid
@@ -39,11 +39,15 @@ flowchart LR
  Access Tokens are always user bound / personal accounts should be avoided for this use case
 
 - [ ] remove current limitation / seatable-python-starter container working dir and mount on host has to be identical
-- [ ] change location of scheduler Dockerfile to top level inside scheduler folder
-(Dockerhub Token / set inside repo / github action)
+
 - [ ] set up branch protection (no direct push to main)
 
+- [ ] versioning, tags, naming (versioning tags from a file? are git tags used ?)
+  - [x] currrently every github action run produces images with the latest and the github run number tags
+
 -- done
+- [x] change location of scheduler Dockerfile to top level inside scheduler folder
+(Dockerhub Token / set inside repo / github action)
 - [x] evaluate connection to dockerhub (separate user ?) and exposure in github secrets manager
 (for now the connection uses anconrads personal docker hub account)
 - [x] changed repo setting to allow github actions
