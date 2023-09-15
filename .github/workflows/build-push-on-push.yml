@@ -67,5 +67,5 @@ jobs:
           file: ${{ matrix.dockerfile }}
           tags: >
             ${{ matrix.image }}:latest ,
-            ${{ matrix.image }}:build_${{ github.run_number }}
+            ${{ matrix.image }}:build_${{ github.run_number }} ,
             ${{ matrix.image }}:commit_${{ steps.vars.outputs.sha_short }}
