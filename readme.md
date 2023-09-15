@@ -30,6 +30,8 @@ flowchart LR
 
 ## Todo
 
+- [x] changed repo setting to allow github actions
+
 - [ ] A separate docker.com user in the seafile organisation is recommended:
  Access Tokens are always user bound / personal accounts should be avoided for this use case
 - [x] evaluate connection to dockerhub (own user ?) and exposure in github secrets manager
