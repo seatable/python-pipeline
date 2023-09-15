@@ -30,22 +30,23 @@ flowchart LR
 
 ## Todo
 
-- [x] changed repo setting to allow github actions
-
-- [ ] A separate docker.com user in the seafile organisation is recommended:
- Access Tokens are always user bound / personal accounts should be avoided for this use case
-- [x] evaluate connection to dockerhub (own user ?) and exposure in github secrets manager
-(for now the connection uses anconrads personal docker hub account)
-
 - [ ] finish and test github action and container image push
-  - [ ] on push
+  - [x] on push
   - [ ] on base image change
   - [ ] on pypi package change (seatable api)
 
-- [ ] fix current limitation / seatable-python-starter container working dir and mount on host has to be identical
+- [ ] A separate docker.com user in the seatable organisation is recommended:
+ Access Tokens are always user bound / personal accounts should be avoided for this use case
+
+- [ ] remove current limitation / seatable-python-starter container working dir and mount on host has to be identical
 - [ ] change location of scheduler Dockerfile to top level inside scheduler folder
 (Dockerhub Token / set inside repo / github action)
 - [ ] set up branch protection (no direct push to main)
+
+-- done
+- [x] evaluate connection to dockerhub (separate user ?) and exposure in github secrets manager
+(for now the connection uses anconrads personal docker hub account)
+- [x] changed repo setting to allow github actions
 
 ## Container-Images
 
