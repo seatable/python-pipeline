@@ -13,15 +13,15 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - dockerfile: ./runner/Dockerfile
-            image: seatable/python-runner-cicd
-            context: ./runner
+          # - dockerfile: ./runner/Dockerfile
+          #   image: seatable/python-runner-cicd
+          #   context: ./runner
 
-          - dockerfile: ./starter/Dockerfile
-            image: seatable/python-starter-cicd
-            context: ./starter
+          # - dockerfile: ./starter/Dockerfile
+          #   image: seatable/python-starter-cicd
+          #   context: ./starter
 
-          - dockerfile: ./scheduler/docker/Dockerfile
+          - dockerfile: ./scheduler/Dockerfile
             image: seatable/python-scheduler-cicd
             context: ./scheduler
 
