@@ -13,13 +13,13 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - dockerfile: ./runner/Dockerfile
+          - dockerfile: runner/Dockerfile
             image: seatable/python-runner-cicd
 
-          - dockerfile: ./starter/Dockerfile
-            image: seatable/python-runner-cicd
+          - dockerfile: starter/Dockerfile
+            image: seatable/python-starter-cicd
 
-          - dockerfile: ./scheduler/docker/Dockerfile
+          - dockerfile: scheduler/docker/Dockerfile
             image: seatable/python-scheduler-cicd
 
     permissions:
@@ -39,7 +39,7 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Docker meta
+      - name: Docker metadata
         id: meta
         uses: docker/metadata-action@v5
         with:
