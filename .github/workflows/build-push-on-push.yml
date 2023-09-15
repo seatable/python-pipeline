@@ -9,21 +9,24 @@ on:
 jobs:
   build-and-push-image:
     runs-on: ubuntu-latest
-    # strategy:
-    #   fail-fast: false
-    #   matrix:
-    #     include:
-          # - dockerfile: ./runner/Dockerfile
-          #   image: seatable/python-runner-cicd
-          #   context: ./runner
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - dockerfile: ./runner/Dockerfile
+            image: seatable/python-runner-cicd
+            context: ./runner
+            short-description: "Runner image for SeaTable Python scripts"
 
-          # - dockerfile: ./starter/Dockerfile
-          #   image: seatable/python-starter-cicd
-          #   context: ./starter
+          - dockerfile: ./starter/Dockerfile
+            image: seatable/python-starter-cicd
+            context: ./starter
+            short-description: "Starter image for SeaTable Python scripts"
 
-          # - dockerfile: ./scheduler/Dockerfile
-          #   image: seatable/python-scheduler-cicd
-          #   context: ./scheduler
+          - dockerfile: ./scheduler/Dockerfile
+            image: seatable/python-scheduler-cicd
+            context: ./scheduler
+            short-description: "Scheduler image for SeaTable Python scripts"
 
     permissions:
       contents: read
@@ -33,9 +36,6 @@ jobs:
 
       - name: Add SHORT_SHA env property with commit short sha
         run: echo "SHORT_SHA=`echo ${GITHUB_SHA} | cut -c1-8`" >> $GITHUB_ENV
-
-      - name: My step
-        run: echo ${SHORT_SHA}
 
       - name: Check out the repo
         uses: actions/checkout@v3
@@ -60,6 +60,7 @@ jobs:
           repository: ${{ matrix.image }}
           enable-url-completion: true
           readme-filepath: ./dockerhub-description.md
+          short-description: ${{ matrix.short-description }}
 
       - name: Build and push
         uses: docker/build-push-action@v5
@@ -70,4 +71,4 @@ jobs:
           tags: >
             ${{ matrix.image }}:latest ,
             ${{ matrix.image }}:build_${{ github.run_number }} ,
-            ${{ matrix.image }}:commit_${{ steps.vars.outputs.sha_short }}
+            ${{ matrix.image }}:commit_${SHORT_SHA}
