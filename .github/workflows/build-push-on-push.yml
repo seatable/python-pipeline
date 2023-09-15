@@ -35,6 +35,7 @@ jobs:
     steps:
 
       - name: Add SHORT_SHA env property with commit short sha
+        id: set_short_sha
         run: echo "SHORT_SHA=`echo ${GITHUB_SHA} | cut -c1-8`" >> $GITHUB_ENV
 
       - name: Check out the repo
@@ -71,4 +72,4 @@ jobs:
           tags: >
             ${{ matrix.image }}:latest ,
             ${{ matrix.image }}:build_${{ github.run_number }} ,
-            ${{ matrix.image }}:commit_${SHORT_SHA}
+            ${{ matrix.image }}:commit_${{ steps.set_short_sha.outputs.SHORT_SHA }}
