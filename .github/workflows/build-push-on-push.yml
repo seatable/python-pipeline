@@ -31,6 +31,12 @@ jobs:
 
     steps:
 
+      - name: Set short git commit SHA
+        id: vars
+        run: |
+          calculatedSha=$(git rev-parse --short ${{ github.sha }})
+          echo "::set-output name=short_sha::$calculatedSha"
+
       - name: Check out the repo
         uses: actions/checkout@v3
 
@@ -52,8 +58,8 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
           repository: ${{ matrix.image }}
-          short-description: ${{ github.event.repository.description }}
           enable-url-completion: true
+          readme-filepath: ./dockerhub-description.md
 
       - name: Build and push
         uses: docker/build-push-action@v5
@@ -61,4 +67,7 @@ jobs:
           context: ${{ matrix.context }}
           push: true
           file: ${{ matrix.dockerfile }}
-          tags: ${{ matrix.image }}:latest , ${{ matrix.image }}:${{ github.run_number }}
+          tags: >
+            ${{ matrix.image }}:latest ,
+            ${{ matrix.image }}:build_number_${{ github.run_number }}
+            ${{ matrix.image }}:commit_sha_${{ steps.vars.outputs.short_sha }}

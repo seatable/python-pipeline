@@ -43,7 +43,7 @@ flowchart LR
 - [ ] set up branch protection (no direct push to main)
 
 - [ ] versioning, tags, naming (versioning tags from a file? are git tags used ?)
-  - [x] currrently every github action run produces images with the latest and the github run number tags
+  - [x] currrently every github action run produces images with the latest, the github run number (build_number) and commit sha tags
 
 -- done
 - [x] change location of scheduler Dockerfile to top level inside scheduler folder
