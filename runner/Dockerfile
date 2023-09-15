@@ -32,13 +32,13 @@ VOLUME [ "/scripts", "/settings" ]
 WORKDIR /settings
 
 # install requirements
-COPY requirements.txt .
+COPY ./requirements.txt .
 
 RUN pip install --upgrade pip
 RUN pip install -r requirements.txt --upgrade --no-cache-dir
 
 # copy entrypoint.sh
-COPY entrypoint.sh .
+COPY ./entrypoint.sh .
 
 RUN chmod +x entrypoint.sh
 

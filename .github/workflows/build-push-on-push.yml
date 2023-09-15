@@ -15,12 +15,15 @@ jobs:
         include:
           - dockerfile: ./runner/Dockerfile
             image: seatable/python-runner-cicd
+            context: ./runner
 
           - dockerfile: ./starter/Dockerfile
             image: seatable/python-starter-cicd
+            context: ./starter
 
           - dockerfile: ./scheduler/docker/Dockerfile
             image: seatable/python-scheduler-cicd
+            context: ./scheduler
 
     permissions:
       contents: read
@@ -57,7 +60,7 @@ jobs:
       - name: Build and push
         uses: docker/build-push-action@v5
         with:
-          context: .
+          context: ${{ matrix.context }}
           push: true
           file: ${{ matrix.dockerfile }}
           tags: ${{ steps.meta.outputs.tags }}
