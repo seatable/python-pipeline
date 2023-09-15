@@ -13,13 +13,13 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - dockerfile: runner/Dockerfile
+          - dockerfile: ./runner/Dockerfile
             image: seatable/python-runner-cicd
 
-          - dockerfile: starter/Dockerfile
+          - dockerfile: ./starter/Dockerfile
             image: seatable/python-starter-cicd
 
-          - dockerfile: scheduler/docker/Dockerfile
+          - dockerfile: ./scheduler/docker/Dockerfile
             image: seatable/python-scheduler-cicd
 
     permissions:
@@ -57,7 +57,7 @@ jobs:
       - name: Build and push
         uses: docker/build-push-action@v5
         with:
-          #context: .
+          context: .
           push: true
           file: ${{ matrix.dockerfile }}
           tags: ${{ steps.meta.outputs.tags }}
