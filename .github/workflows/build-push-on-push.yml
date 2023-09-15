@@ -13,17 +13,17 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - dockerfile: ./runner/Dockerfile
-            image: seatable/python-runner-cicd
-            context: ./runner
+          # - dockerfile: ./runner/Dockerfile
+          #   image: seatable/python-runner-cicd
+          #   context: ./runner
 
-          - dockerfile: ./starter/Dockerfile
-            image: seatable/python-starter-cicd
-            context: ./starter
+          # - dockerfile: ./starter/Dockerfile
+          #   image: seatable/python-starter-cicd
+          #   context: ./starter
 
-          - dockerfile: ./scheduler/Dockerfile
-            image: seatable/python-scheduler-cicd
-            context: ./scheduler
+          # - dockerfile: ./scheduler/Dockerfile
+          #   image: seatable/python-scheduler-cicd
+          #   context: ./scheduler
 
     permissions:
       contents: read
@@ -31,9 +31,11 @@ jobs:
 
     steps:
 
-      - name: Set outputs
-        id: vars
-        run: echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+      - name: Add SHORT_SHA env property with commit short sha
+        run: echo "SHORT_SHA=`echo ${GITHUB_SHA} | cut -c1-8`" >> $GITHUB_ENV
+
+      - name: My step
+        run: echo ${SHORT_SHA}
 
       - name: Check out the repo
         uses: actions/checkout@v3
