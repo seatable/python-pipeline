@@ -1,6 +1,7 @@
 # Seatable Python Pipeline
 
-This repository contains the Definition of three Containers (Scheduler, Starter, Runner) designed to run Python Scripts safely in the context of Seatable.
+This repository contains the definition of three container images (Scheduler, Starter, Runner) designed to securely run Python code, retrieve and deliver the output in the context of Seatable.
+
 
 ```mermaid
 flowchart LR
@@ -16,25 +17,33 @@ flowchart LR
     Docker_Deamon --> Python_Runner
 
     note1["Docker Socket mounted via Volume
-    **priviliged** to control docker daemon
-    Receives python script via uswgi"] -.- Python_Starter
+    priviliged to control the docker daemon
+    receives python script via uswgi/function.py"] -.- Python_Starter
 
-    note2["network_exposed
-            mager / receiver / bridge
-            formerly FAAS_SCheduler"] -.- Python_Scheduler
+    note2["Network exposed or mapped
+    Manager / own maria DB Instance / receiver / bridge
+    formerly FAAS_SCheduler"] -.- Python_Scheduler
 
     note3["temporary / ephermal
-            User Code
-            Payload"] -.- Python_Runner
+    contains user code / payload"] -.- Python_Runner
 ```
 
 ## Todo
 
-- [ ] finish and test github action and image push
-- [ ] fix current limitation / seatable-python-starter container working dir and mount on host has to be the same
+- [ ] A separate docker.com user in the seafile organisation is recommended:
+ Access Tokens are always user bound / personal accounts should be avoided for this use case
+- [x] evaluate connection to dockerhub (own user ?) and exposure in github secrets manager
+(for now the connection uses anconrads personal docker hub account)
+
+- [ ] finish and test github action and container image push
+  - [ ] on push
+  - [ ] on base image change
+  - [ ] on pypi package change (seatable api)
+
+- [ ] fix current limitation / seatable-python-starter container working dir and mount on host has to be identical
 - [ ] change location of scheduler Dockerfile to top level inside scheduler folder
 (Dockerhub Token / set inside repo / github action)
-- [ ] branch protection
+- [ ] set up branch protection (no direct push to main)
 
 ## Container-Images
 
