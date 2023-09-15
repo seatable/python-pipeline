@@ -45,10 +45,15 @@ jobs:
         with:
           images: ${{ matrix.image }}
 
+      - name: Debug Dockerfile Paths
+        run: |
+          ls -R
+        working-directory: .
+
       - name: Build and push
         uses: docker/build-push-action@v5
         with:
-          context: .
+          #context: .
           push: true
           file: ${{ matrix.dockerfile }}
           tags: ${{ steps.meta.outputs.tags }}
