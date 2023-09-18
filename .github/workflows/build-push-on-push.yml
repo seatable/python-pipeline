@@ -40,7 +40,7 @@ jobs:
         ## debug / shortsha
       - name: Set short git commit SHA
         id: get_commit
-        run: echo "short_sha=$(git rev-parse --short ${{ github.sha }})"" >> $GITHUB_OUTPUT
+        run: echo "short_sha=$(git rev-parse --short ${{ github.sha }})" >> $GITHUB_OUTPUT
 
       - name: Confirm git commit SHA output
         run: echo ${{ steps.get_commit.outputs.short_sha }}
