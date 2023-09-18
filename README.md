@@ -30,20 +30,20 @@ flowchart LR
 
 ## Todo
 
-- [ ] finish and test github action and container image push
-  - [x] on push
-  - [ ] on base image change
-  - [ ] on pypi package change (seatable api)
-
 - [ ] A separate docker.com user in the seatable organisation is recommended:
  Access Tokens are always user bound / personal accounts should be avoided for this use case
 
 - [ ] remove current limitation / seatable-python-starter container working dir and mount on host has to be identical
 
-- [ ] set up branch protection (no direct push to main)
+- [ ] finish and test github action and container image push
+  - [x] on push
+  - [ ] on base image change
+  - [ ] on pypi package change (seatable api)
 
-- [ ] versioning, tags, naming (versioning tags from a file? are git tags used ?)
-  - [x] currrently every github action run produces images with the latest, the github run number (build_number) and commit sha tags
+- [x] activate dockerhub security screening (evaluate dockerscout)
+  - [ ] evaulate needed actions based on results
+
+- [ ] set up branch protection (no direct push to main)
 
 -- done
 - [x] change location of scheduler Dockerfile to top level inside scheduler folder
@@ -51,6 +51,9 @@ flowchart LR
 - [x] evaluate connection to dockerhub (separate user ?) and exposure in github secrets manager
 (for now the connection uses anconrads personal docker hub account)
 - [x] changed repo setting to allow github actions
+- [x] versioning, tags, naming (versioning tags from a file? are git tags used ?)
+  - [x] short_sha tag debugged, version from file in component subfolder is read as tag
+  - [x] currrently every github action run produces images with the latest, the github run number (build_number) and commit sha tags
 
 ## Container-Images
 
