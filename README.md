@@ -37,11 +37,13 @@ flowchart LR
 
 - [ ] finish and test github action and container image push
   - [x] on push
-  - [ ] on base image change
-  - [ ] on pypi package change (seatable api)
+  - [x] on base image change
+  - [wip] on pypi (seatable-api) package change
 
 - [x] activate dockerhub security screening (evaluate dockerscout free for 3 repos in free tier)
-  - [ ] evaulate needed actions based on results
+  - [x] evaulate needed actions based on results
+  - [ ] change phusion base image / outdated? concept with slow releases ->
+  If PID is |=1 tini can be used with a standard language specific base image (e.g. gcc, golang, python, .. or debian slim) (https://github.com/krallin/tini#using-tini)
 
 - [ ] set up branch protection (no direct push to main)
 
