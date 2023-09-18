@@ -2,7 +2,7 @@ FROM phusion/baseimage:jammy-1.0.1
 # seatable/seatable-faas-scheduler:1.x.x
 ENV SCHEDULER_VERSION=
 
-# Aliyun ubuntu source
+# custom ubuntu source
 RUN rm -rf /etc/apt/sources.list
 COPY scripts/my-ubuntu-source.list /etc/apt/sources.list
 
@@ -17,7 +17,6 @@ RUN apt-get install -y nginx
 
 # Mysql
 RUN apt-get install -y mysql-client
-
 
 RUN apt-get install -y python3-pip
 RUN pip3 install flask gevent pyjwt pymysql sqlalchemy==1.4.48 future requests \
