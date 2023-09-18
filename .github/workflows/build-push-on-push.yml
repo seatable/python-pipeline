@@ -9,10 +9,10 @@ on:
 jobs:
   build-and-push-image:
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
+    # strategy:
+    #   fail-fast: false
+    #   matrix:
+    #     include:
           # - dockerfile: ./runner/Dockerfile
           #   image: seatable/python-runner-cicd
           #   context: ./runner
