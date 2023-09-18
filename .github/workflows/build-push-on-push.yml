@@ -9,24 +9,24 @@ on:
 jobs:
   build-and-push-image:
     runs-on: ubuntu-latest
-    # strategy:
-    #   fail-fast: false
-    #   matrix:
-    #     include:
-          # - dockerfile: ./runner/Dockerfile
-          #   image: seatable/python-runner-cicd
-          #   context: ./runner
-          #   short-description: "Runner image for SeaTable Python scripts"
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - dockerfile: ./runner/Dockerfile
+            image: seatable/python-runner-cicd
+            context: ./runner
+            short-description: "Runner image for SeaTable Python scripts"
 
-          # - dockerfile: ./starter/Dockerfile
-          #   image: seatable/python-starter-cicd
-          #   context: ./starter
-          #   short-description: "Starter image for SeaTable Python scripts"
+          - dockerfile: ./starter/Dockerfile
+            image: seatable/python-starter-cicd
+            context: ./starter
+            short-description: "Starter image for SeaTable Python scripts"
 
-          # - dockerfile: ./scheduler/Dockerfile
-          #   image: seatable/python-scheduler-cicd
-          #   context: ./scheduler
-          #   short-description: "Scheduler image for SeaTable Python scripts"
+          - dockerfile: ./scheduler/Dockerfile
+            image: seatable/python-scheduler-cicd
+            context: ./scheduler
+            short-description: "Scheduler image for SeaTable Python scripts"
 
     permissions:
       contents: read
@@ -37,23 +37,24 @@ jobs:
       - name: Check out the repo
         uses: actions/checkout@v3
 
-        ## debug / shortsha
+
       - name: Set short git commit SHA
         id: get_commit
         run: echo "short_sha=$(git rev-parse --short ${{ github.sha }})" >> $GITHUB_OUTPUT
 
-      - name: Confirm git commit SHA output
-        run: echo ${{ steps.get_commit.outputs.short_sha }}
-        ##
+      #   ## debug / shortsha
+      # - name: Confirm git commit SHA output
+      #   run: echo ${{ steps.get_commit.outputs.short_sha }}
+      #   ##
 
-        ## debug / version file
       - name: Read version file
-        id: get_version
-        run: echo "version=$(cat ./version)" >> $GITHUB_OUTPUT
+        id: "get_version"
+        run: echo "version=$(cat ./${{ matrix.context }}/version)" >> $GITHUB_OUTPUT
 
-      - name: Confirm version output
-        run: echo ${{ steps.get_version.outputs.version }}
-        ##
+      #   ## debug / version file
+      # - name: Confirm version output
+      #   run: echo ${{ steps.get_version.outputs.version }}
+      #   ##
 
 
       - name: Set up QEMU
@@ -86,5 +87,6 @@ jobs:
           file: ${{ matrix.dockerfile }}
           tags: >
             ${{ matrix.image }}:latest ,
-            ${{ matrix.image }}:build_${{ github.run_number }} ,
-            ${{ matrix.image }}:commit_${{ steps.set_short_sha.outputs.SHORT_SHA }}
+            ${{ matrix.image }}:build_onpush_${{ github.run_number }} ,
+            ${{ matrix.image }}:commit_${{ steps.get_commit.outputs.short_sha }} ,
+            ${{ matrix.image }}:${{ steps.get_version.outputs.version }}
