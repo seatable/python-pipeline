@@ -49,10 +49,10 @@ jobs:
         ## debug / version file
       - name: Read version file
         id: get_version
-        run: echo "version=$(cat version)" >> $GITHUB_OUTPUT
+        run: echo "version=$(cat ./version)" >> $GITHUB_OUTPUT
 
       - name: Confirm version output
-        run: echo ${{ steps.getversion.outputs.version }}
+        run: echo ${{ steps.get_version.outputs.version }}
         ##
 
 
