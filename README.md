@@ -40,7 +40,7 @@ flowchart LR
   - [ ] on base image change
   - [ ] on pypi package change (seatable api)
 
-- [x] activate dockerhub security screening (evaluate dockerscout)
+- [x] activate dockerhub security screening (evaluate dockerscout free for 3 repos in free tier)
   - [ ] evaulate needed actions based on results
 
 - [ ] set up branch protection (no direct push to main)
