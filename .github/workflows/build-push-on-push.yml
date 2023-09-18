@@ -13,20 +13,20 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - dockerfile: ./runner/Dockerfile
-            image: seatable/python-runner-cicd
-            context: ./runner
-            short-description: "Runner image for SeaTable Python scripts"
+          # - dockerfile: ./runner/Dockerfile
+          #   image: seatable/python-runner-cicd
+          #   context: ./runner
+          #   short-description: "Runner image for SeaTable Python scripts"
 
-          - dockerfile: ./starter/Dockerfile
-            image: seatable/python-starter-cicd
-            context: ./starter
-            short-description: "Starter image for SeaTable Python scripts"
+          # - dockerfile: ./starter/Dockerfile
+          #   image: seatable/python-starter-cicd
+          #   context: ./starter
+          #   short-description: "Starter image for SeaTable Python scripts"
 
-          - dockerfile: ./scheduler/Dockerfile
-            image: seatable/python-scheduler-cicd
-            context: ./scheduler
-            short-description: "Scheduler image for SeaTable Python scripts"
+          # - dockerfile: ./scheduler/Dockerfile
+          #   image: seatable/python-scheduler-cicd
+          #   context: ./scheduler
+          #   short-description: "Scheduler image for SeaTable Python scripts"
 
     permissions:
       contents: read
@@ -34,12 +34,29 @@ jobs:
 
     steps:
 
-      - name: Add SHORT_SHA env property with commit short sha
-        id: set_short_sha
-        run: echo "SHORT_SHA=`echo ${GITHUB_SHA} | cut -c1-8`" >> $GITHUB_ENV
-
       - name: Check out the repo
         uses: actions/checkout@v3
+
+        ## debug / shortsha
+      - name: Set short git commit SHA
+        id: vars
+        run: |
+          calculatedSha=$(git rev-parse --short ${{ github.sha }})
+          echo "::set-output name=short_sha::$calculatedSha"
+
+      - name: Confirm git commit SHA output
+        run: echo ${{ steps.vars.outputs.short_sha }}
+        ##
+
+        ## debug / version file
+      - name: Read version file
+        id: getversion
+        run: echo "version=$(cat version)" >> $GITHUB_OUTPUT
+
+      - name: Confirm version output
+        run: echo ${{ steps.vars.outputs.version }}
+        ##
+
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
