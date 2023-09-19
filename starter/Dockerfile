@@ -17,8 +17,8 @@ COPY ./server_requirements.txt /server_requirements.txt
 RUN pip install -r /server_requirements.txt
 
 COPY ["./function.py", "./init.sh", "./settings.py", \
- "./start.sh", "./stop.sh", "./uwsgi.ini", "./version", "/init/"]
+ "./start.sh", "./stop.sh", "./uwsgi.ini", "./version", "./"]
 
-RUN /init/init.sh
+RUN ./init.sh
 
-ENTRYPOINT ["/init/start.sh"]
+ENTRYPOINT ["./start.sh"]

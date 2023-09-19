@@ -1,13 +1,12 @@
 #!/bin/bash
 #
 # kill old uwsgi and stop/remove old containers
-cp -rn /init/* /opt/seatable-python-starter
-
-cd /opt/seatable-python-starter
+cp -rn ./* /opt/seatable-python-starter
+chmod -R 755 /opt/seatable-python-starter
 
 sh stop.sh
 
-image="seatable/python-runner-cicd"
+image="seatable/python-runner:latest"
 
 image_count=`docker image ls | awk -vt=: '{print $1t$2}' | grep $image | wc -l`
 
@@ -20,7 +19,7 @@ fi
 export IMAGE=$image
 
 if [ ! -f "conf/seatable_python_runner.ini" ]; then
-    /init/init.sh
+    ./init.sh
 fi
 
 uwsgi --ini conf/seatable_python_runner.ini
