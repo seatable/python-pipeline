@@ -5,10 +5,6 @@ if [ ! -d "conf" ]; then
     mkdir -p conf
 fi
 
-if [ ! -f "conf/seatable_python_runner_settings.py" ]; then
-    echo "SCHEDULER_URL = ''" >> conf/seatable_python_runner_settings.py
-fi
-
 if [ ! -f "conf/seatable_python_runner.ini" ]; then
     cp uwsgi.ini conf/seatable_python_runner.ini
 fi
