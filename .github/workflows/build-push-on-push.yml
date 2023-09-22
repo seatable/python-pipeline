@@ -23,9 +23,9 @@ jobs:
             context: ./starter
             short-description: "Starter image for SeaTable Python scripts"
 
-          - dockerfile: ./scheduler/Dockerfile
+          - dockerfile: ./scheduler/faas-scheduler/docker/Dockerfile
             image: seatable/python-scheduler-cicd
-            context: ./scheduler
+            context: ./scheduler/faas-scheduler/docker
             short-description: "Scheduler image for SeaTable Python scripts"
 
     permissions:

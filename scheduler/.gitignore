@@ -1,5 +1,18 @@
+build
+
+env
+
+__pycache__
+
+.DS_Store
+
+.idea
+.vscode
+
 local_settings.py
 
 logs/
+conf/
 
-docker/src/
+seatable-python-runner/
+seatable-python-runner.zip

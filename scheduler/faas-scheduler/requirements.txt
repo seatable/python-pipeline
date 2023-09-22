@@ -1,9 +1,0 @@
-flask
-gevent
-pymysql
-sqlalchemy==1.4.48
-future  # seaf-server
-requests
-pyjwt
-pytz
-tzlocal~=2.0
