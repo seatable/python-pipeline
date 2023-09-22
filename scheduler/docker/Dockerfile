@@ -21,7 +21,7 @@ RUN apt-get install -y mysql-client
 
 RUN apt-get install -y python3-pip
 RUN pip3 install flask gevent pyjwt pymysql sqlalchemy==1.4.48 future requests \
-    && rm -r /root/.cache/pip
+    -i https://mirrors.aliyun.com/pypi/simple && rm -r /root/.cache/pip
 
 
 # seatable-faas-scheduler
@@ -29,7 +29,7 @@ RUN mkdir -p /opt/seatable-faas-scheduler
 WORKDIR /opt/seatable-faas-scheduler
 COPY src/faas-scheduler /opt/seatable-faas-scheduler/faas-scheduler
 RUN pip3 install -r /opt/seatable-faas-scheduler/faas-scheduler/requirements.txt \
-    && rm -r /root/.cache/pip
+    -i https://mirrors.aliyun.com/pypi/simple && rm -r /root/.cache/pip
 
 
 # scripts
