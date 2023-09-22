@@ -30,10 +30,17 @@ flowchart LR
 
 ## Todo
 
+- [ ] finish and test github action and container image push
+  - [x] on push
+  - [x] on base image change
+  - [ ] on pypi package change (seatable api)
+
 - [ ] A separate docker.com user in the seatable organisation is recommended:
  Access Tokens are always user bound / personal accounts should be avoided for this use case
 
-- [ ] remove current limitation / seatable-python-starter container working dir and mount on host has to be identical
+- [ ] remove python-starter limitation
+  - seatable-python-starter named volume in docker-compose has to be present in the docker host before docker compose up
+  - seatable-python-starter container working dir and volume on host has to be identical
 
 - [ ] finish and test github action and container image push
   - [x] on push
