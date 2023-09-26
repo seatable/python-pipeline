@@ -1,10 +1,13 @@
 # Seatable Python Pipeline
 
-This repository contains the definition of three container images (Scheduler, Starter, Runner) designed to securely run Python code, retrieve and deliver the output in the context of Seatable. These images are meant to be used in conjunction with a dcoker-compose.yml. Please refer to admin.seatable.io for more information.
+This repository contains the definition of three container images (Scheduler, Starter, Runner) designed to securely run Python code, retrieve and deliver the output in the context of Seatable. 
+These Image are built by Github Actions and pushed to Docker Hub.
+During a Seatable Deployment these images are then pulled from Docker Hub by Docker Compose.
+These are meant to be used in conjunction with a dcoker-compose.yml. Please refer to admin.seatable.io for more information.
 
 
 ```mermaid
-
+flowchart
     subgraph Python_Script_Pipeline
         Python_Scheduler --> Python_Starter
         Python_Runner
@@ -29,38 +32,16 @@ This repository contains the definition of three container images (Scheduler, St
 
 ## Todo
 
-- [ ] escalate: A separate docker.com user in the seatable organisation is recommended:
+- [ ] **escalate:** A separate docker.com user in the seatable organisation is recommended:
  Access Tokens are always user bound / personal accounts should be avoided for this use case
-- [ ] escalate: set up branch protection (no direct push to main) (!not possible without github team)
+- [ ] **escalate:** set up branch protection (no direct push to main) (!not possible without github team)
 
 - [ ] remove python-starter limitation
   - seatable-python-starter named volume in docker-compose has to be present in the docker host before "docker compose up -d" is called
   - seatable-python-starter container working dir and volume on host has to be identical
 
-- [x] activate dockerhub security screening (evaluate dockerscout free for 3 repos in free tier)
-  - [x] evaulate needed actions based on results
-  - [ ] change phusion base image / outdated? concept with slow releases ->
+- [ ] change phusion base image / outdated? concept with slow releases ->
   If PID is |=1 tini can be used with a standard language specific base image (e.g. gcc, golang, python, .. or debian slim) (https://github.com/krallin/tini#using-tini)
-
--- done
-
-- [x] finish and test github action and container image push
-  - [x] on push
-  - [finished-but-removed] on base image change *due to lack of automated testing*
-  - [removed] on pypi package change (seatable api) *due to lack of automated testing*
-- [x] change location of scheduler Dockerfile to top level inside scheduler folder
-(Dockerhub Token / set inside repo / github action)
-- [x] evaluate connection to dockerhub (separate user ?) and exposure in github secrets manager
-(for now the connection uses anconrads personal docker hub account)
-- [x] changed repo setting to allow github actions
-- [x] versioning, tags, naming (versioning tags from a file? are git tags used ?)
-  - [x] short_sha tag debugged, version from file in component subfolder is read as tag
-  - [x] currrently every github action run produces images with the latest, the github run number (build_number) and commit sha tags
-
-## Container-Images
-
-These Image are built by Github Actions and pushed to Docker Hub.
-During a Seatable Deployment these images are then pulled from Docker Hub by Docker Compose.
 
 
 ## Scheduler
