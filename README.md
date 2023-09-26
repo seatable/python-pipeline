@@ -4,7 +4,6 @@ This repository contains the definition of three container images (Scheduler, St
 
 
 ```mermaid
-flowchart LR
 
     subgraph Python_Script_Pipeline
         Python_Scheduler --> Python_Starter
@@ -30,31 +29,25 @@ flowchart LR
 
 ## Todo
 
-- [ ] finish and test github action and container image push
-  - [x] on push
-  - [x] on base image change
-  - [ ] on pypi package change (seatable api)
-
-- [ ] A separate docker.com user in the seatable organisation is recommended:
+- [ ] escalate: A separate docker.com user in the seatable organisation is recommended:
  Access Tokens are always user bound / personal accounts should be avoided for this use case
+- [ ] escalate: set up branch protection (no direct push to main) (!not possible without github team)
 
 - [ ] remove python-starter limitation
-  - seatable-python-starter named volume in docker-compose has to be present in the docker host before docker compose up
+  - seatable-python-starter named volume in docker-compose has to be present in the docker host before "docker compose up -d" is called
   - seatable-python-starter container working dir and volume on host has to be identical
-
-- [ ] finish and test github action and container image push
-  - [x] on push
-  - [x] on base image change
-  - [wip] on pypi (seatable-api) package change
 
 - [x] activate dockerhub security screening (evaluate dockerscout free for 3 repos in free tier)
   - [x] evaulate needed actions based on results
   - [ ] change phusion base image / outdated? concept with slow releases ->
   If PID is |=1 tini can be used with a standard language specific base image (e.g. gcc, golang, python, .. or debian slim) (https://github.com/krallin/tini#using-tini)
 
-- [ ] set up branch protection (no direct push to main)
-
 -- done
+
+- [x] finish and test github action and container image push
+  - [x] on push
+  - [finished-but-removed] on base image change *due to lack of automated testing*
+  - [removed] on pypi package change (seatable api) *due to lack of automated testing*
 - [x] change location of scheduler Dockerfile to top level inside scheduler folder
 (Dockerhub Token / set inside repo / github action)
 - [x] evaluate connection to dockerhub (separate user ?) and exposure in github secrets manager
@@ -67,7 +60,7 @@ flowchart LR
 ## Container-Images
 
 These Image are built by Github Actions and pushed to Docker Hub.
-In a Seatable Deployment these images are then pulled from Docker Hub by Docker Compose.
+During a Seatable Deployment these images are then pulled from Docker Hub by Docker Compose.
 
 
 ## Scheduler
