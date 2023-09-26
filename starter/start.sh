@@ -21,6 +21,8 @@ if [ ! -f "conf/seatable_python_runner_settings.py" ]; then
     echo "IMAGE = '$IMAGE'" >> conf/seatable_python_runner_settings.py
 fi
 
+ln -sn /opt/seatable-python-starter/* /shared
+
 uwsgi --ini conf/seatable_python_runner.ini
 
 #

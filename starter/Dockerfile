@@ -21,4 +21,6 @@ COPY ["./function.py", "./init.sh", "./settings.py", \
 
 RUN ./init.sh
 
+RUN chmod +x ./*.sh
+
 ENTRYPOINT ["./start.sh"]
