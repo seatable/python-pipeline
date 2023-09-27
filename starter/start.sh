@@ -16,14 +16,14 @@ sh stop.sh
 
 # export IMAGE=$image
 
-if [ ! -f "/shared/conf/seatable_python_runner_settings.py" ]; then
-    echo "SCHEDULER_URL = '$PYTHON_SCHEDULER_SCHEME$PYTHON_SCHEDULER_HOSTNAME:$PYTHON_SCHEDULER_PORT'" >> /shared/conf/seatable_python_runner_settings.py
-    echo "IMAGE = '$IMAGE'" >> /shared/conf/seatable_python_runner_settings.py
+if [ ! -f "/shared/seatable-python-starter/conf/seatable_python_runner_settings.py" ]; then
+    echo "SCHEDULER_URL = '$PYTHON_SCHEDULER_SCHEME$PYTHON_SCHEDULER_HOSTNAME:$PYTHON_SCHEDULER_PORT'" >> /shared/seatable-python-starter/conf/seatable_python_runner_settings.py
+    echo "IMAGE = '$IMAGE'" >> /shared/seatable-python-starter/conf/seatable_python_runner_settings.py
 fi
 
-ln -sn /shared/* /opt/seatable-python-starter
+ln -sn /shared/seatable-python-starter/* /opt/seatable-python-starter
 
-uwsgi --ini /shared/conf/seatable_python_runner.ini
+uwsgi --ini /shared/seatable-python-starter/conf/seatable_python_runner.ini
 
 #
 echo "This is a idle script (infinite loop) to keep container running."
@@ -39,4 +39,3 @@ while [ 1 ]; do
     sleep 60 &
     wait $!
 done
-
