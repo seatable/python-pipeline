@@ -32,9 +32,9 @@ flowchart
 
 ## Todo
 
-- [ ] **escalate:** A separate docker.com user in the seatable organisation is recommended:
- Access Tokens are always user bound / personal accounts should be avoided for this use case
 - [ ] **escalate:** set up branch protection (no direct push to main) (!not possible without github team)
+
+- [ ] split github action docker description from the container build push action
 
 - [ ] remove python-starter limitation
   - seatable-python-starter named volume in docker-compose has to be present in the docker host before "docker compose up -d" is called
@@ -50,6 +50,13 @@ flowchart
 
 - [ ] change phusion base image / outdated? concept with slow releases ->
   If PID is |=1 tini can be used with a standard language specific base image (e.g. gcc, golang, python, .. or debian slim) (https://github.com/krallin/tini#using-tini)
+
+
+## done
+
+- [x] **escalate:** A separate docker.com user in the seatable organisation is recommended:
+ Access Tokens are always user bound / personal accounts should be avoided for this use case
+- github@seatable.io user and PSA is used to authenticate github actions with dockerhub
 
 
 ## Scheduler
