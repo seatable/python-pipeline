@@ -4,7 +4,12 @@ name: Build & publish containers
 on:
   push:
     branches:
-      - 'main'
+      - main
+    paths:
+      - './scheduler/**'
+      - './starter/**'
+      - './runner/**'
+      - '.dockerhub-description'
 
 jobs:
   build-and-push-image:

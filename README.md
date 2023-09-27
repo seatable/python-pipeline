@@ -40,6 +40,14 @@ flowchart
   - seatable-python-starter named volume in docker-compose has to be present in the docker host before "docker compose up -d" is called
   - seatable-python-starter container working dir and volume on host has to be identical
 
+- [ ] add feature to python-scheduler
+  - currently the seatable_faas_scheduler_settings.py is needed to configure the scheduler
+  make it possible to configure the scheduler via environment variables
+
+- [ ] reduce image sizes trough multistage build (python wheel or venv)
+[mutlistage python / venv](https://pythonspeed.com/articles/multi-stage-docker-python/)
+[multistage wheel](https://www.it-ps.at/multi-stage-python/)
+
 - [ ] change phusion base image / outdated? concept with slow releases ->
   If PID is |=1 tini can be used with a standard language specific base image (e.g. gcc, golang, python, .. or debian slim) (https://github.com/krallin/tini#using-tini)
 
