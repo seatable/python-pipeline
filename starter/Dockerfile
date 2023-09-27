@@ -17,10 +17,10 @@ COPY ./server_requirements.txt /server_requirements.txt
 RUN pip install -r /server_requirements.txt
 
 COPY ["./function.py", "./init.sh", "./settings.py", \
- "./start.sh", "./stop.sh", "./uwsgi.ini", "./version", "./"]
+ "./start.sh", "./stop.sh", "./uwsgi.ini", "./version", "/shared/"]
 
-RUN ./init.sh
+RUN /shared/init.sh
 
-RUN chmod +x ./*.sh
+RUN chmod +x /shared/*.sh
 
-ENTRYPOINT ["./start.sh"]
+ENTRYPOINT ["/shared/start.sh"]
