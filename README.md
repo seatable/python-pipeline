@@ -45,8 +45,8 @@ flowchart
   make it possible to configure the scheduler via environment variables
 
 - [ ] reduce image sizes trough multistage build (python wheel or venv)
-[mutlistage python / venv](https://pythonspeed.com/articles/multi-stage-docker-python/)
-[multistage wheel](https://www.it-ps.at/multi-stage-python/)
+- [mutlistage python / venv](https://pythonspeed.com/articles/multi-stage-docker-python/)
+- [multistage wheel](https://www.it-ps.at/multi-stage-python/)
 
 - [ ] change phusion base image / outdated? concept with slow releases ->
   If PID is |=1 tini can be used with a standard language specific base image (e.g. gcc, golang, python, .. or debian slim) (https://github.com/krallin/tini#using-tini)
