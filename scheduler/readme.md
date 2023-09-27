@@ -4,4 +4,3 @@
 
 `python3 scheduler.py`
 
-just a github action trigger
