@@ -1,20 +1,21 @@
 #!/bin/bash
 
 # conf
-if [ ! -d "conf" ]; then
-    mkdir -p conf
+if [ ! -d "/shared/seatable-python-starter/conf" ]; then
+    mkdir -p /shared/seatable-python-starter/conf
 fi
 
-if [ ! -f "conf/seatable_python_runner.ini" ]; then
-    cp uwsgi.ini conf/seatable_python_runner.ini
+if [ ! -f "/shared/seatable-python-starter/conf/seatable_python_runner.ini" ]; then
+    cp /shared/seatable-python-starter/uwsgi.ini /shared/seatable-python-starter/conf/seatable_python_runner.ini
 fi
 
 
 # logs
-if [ ! -d "logs" ]; then
-    mkdir -p logs
+if [ ! -d "/shared/seatable-python-starter/logs" ]; then
+    mkdir -p /shared/seatable-python-starter/logs
 fi
 
-if [ ! -f "logs/seatable-python-runner.log" ]; then
-    touch logs/seatable-python-runner.log
+if [ ! -f "/shared/seatable-python-starter/logs/seatable-python-runner.log" ]; then
+    touch /shared/seatable-python-starter/logs/seatable-python-runner.log
 fi
+

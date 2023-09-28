@@ -17,8 +17,10 @@ COPY ./server_requirements.txt /server_requirements.txt
 RUN pip install -r /server_requirements.txt
 
 COPY ["./function.py", "./init.sh", "./settings.py", \
- "./start.sh", "./stop.sh", "./uwsgi.ini", "./version", "./"]
+ "./start.sh", "./stop.sh", "./uwsgi.ini", "./version", "/shared/seatable-python-starter/"]
 
-RUN ./init.sh
+RUN /shared/seatable-python-starter/init.sh
 
-ENTRYPOINT ["./start.sh"]
+RUN chmod +x /shared/seatable-python-starter/*.sh
+
+ENTRYPOINT ["/shared/seatable-python-starter/start.sh"]
