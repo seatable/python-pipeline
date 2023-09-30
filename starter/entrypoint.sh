@@ -2,20 +2,27 @@
 #
 # kill old uwsgi and stop/remove old containers
 
-sh stop.sh
+grep_uwsgi_count=`ps aux | grep 'run-pythonuWSGI' | wc -l`
 
-# image="seatable/python-runner-cicd"
+if [ $grep_uwsgi_count -gt 1 ]; then
+    ps aux | grep 'run-pythonuWSGI' | grep -v grep | awk '{print $1}' | xargs kill -9
+fi
 
-# image_count=`docker image ls | awk -vt=: '{print $1t$2}' | grep $image | wc -l`
+# stop/remove python-runner containers
+alive_container_count=`docker ps | grep '$IMAGE' | wc -l`
+
+if [ $alive_container_count -gt 0 ]; then
+    docker ps | grep '$IMAGE' | awk '{print $1}' | xargs docker container stop
+fi
+
+container_count=`docker container ls -a | grep '$IMAGE' | wc -l`
+
+if [ $container_count -gt 0 ]; then
+    docker container ls -a | grep '$IMAGE' | awk '{print $1}' | xargs docker container rm
+fi
 
 
-# if [ $image_count -eq 0 ]; then
-#     echo "$image"
-#     docker pull $image
-# fi
-
-# export IMAGE=$image
-
+##  write config file
 if [ ! -f "/shared/seatable-python-starter/conf/seatable_python_runner_settings.py" ]; then
     echo "SCHEDULER_URL = '$PYTHON_SCHEDULER_SCHEME$PYTHON_SCHEDULER_HOSTNAME:$PYTHON_SCHEDULER_PORT'" >> /shared/seatable-python-starter/conf/seatable_python_runner_settings.py
     echo "IMAGE = '$IMAGE'" >> /shared/seatable-python-starter/conf/seatable_python_runner_settings.py
@@ -25,7 +32,8 @@ ln -sn /shared/seatable-python-starter/* /opt/seatable-python-starter
 
 uwsgi --ini /shared/seatable-python-starter/conf/seatable_python_runner.ini
 
-#
+
+## idle script
 echo "This is a idle script (infinite loop) to keep container running."
 
 function cleanup() {
