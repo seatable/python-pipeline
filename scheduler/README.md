@@ -1,7 +1,6 @@
 # seatable-faas-scheduler-docker
 
 ## Deploy
-
 1. mkdir -p /opt/seatable-faas-scheduler/shared/
 2. mkdir -p /opt/seatable-faas-scheduler/mysql-data/
 3. vim /opt/seatable-faas-scheduler/docker-compose.yml
@@ -11,11 +10,9 @@
 7. docker exec -d seatable-faas-scheduler /scripts/seatable-faas-scheduler.sh
 
 ## Build
-
 1. cp `code files` docker/src/faas-scheduler/
 2. docker build -t seatable/seatable-faas-scheduler:1.x.x ./
 
 ## faas-scheduler
-
 `python3 flask_server.py`
 `python3 scheduler.py`
