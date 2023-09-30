@@ -2,7 +2,7 @@ FROM phusion/baseimage:jammy-1.0.1
 # seatable/seatable-faas-scheduler:1.x.x
 ENV SCHEDULER_VERSION=
 
-# Aliyun ubuntu source
+# ubuntu sources
 RUN rm -rf /etc/apt/sources.list
 COPY scripts/my-ubuntu-source.list /etc/apt/sources.list
 
@@ -47,4 +47,4 @@ RUN chmod +x /etc/my_init.d/01_init.sh \
 	/scripts/*.sh \
 	/scripts/*.py
 
-CMD ["/sbin/my_init", "--", "/scripts/enterpoint.sh"]
+CMD ["/sbin/my_init", "--", "/scripts/entrypoint.sh"]
