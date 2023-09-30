@@ -15,13 +15,13 @@ Please refer to [https://admin.seatable.io](https://admin.seatable.io) for more 
 
 ```bash
 git clone <this repo>
-git ckeckout -b <new branch>
+git checkout -b <new branch>
 # make changes
 cd <image_directory>
 docker build -t seatable/<image_name>:dev . # <image_name> options: seatable-python-starter  / seatable-python-runner / seatable-python-scheduler
 # optional: docker push seatable/<image_name>:dev
 # test your changes
-git add . && git commit -m "<commit_message>"
+git add <relevant_changes> && git commit -m "<commit_message>"
 ```
 
 ```mermaid
