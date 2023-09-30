@@ -1,16 +1,15 @@
-# Seatable Python Pipeline
+# SeaTable Python Pipeline
 
-This repository contains the definition of three container images (Scheduler, Starter, Runner) designed to securely run Python code, retrieve and deliver the output in the context of Seatable.
-These Image are built by Github Actions and pushed to Docker Hub.
-During a Seatable Deployment these images are then pulled from Docker Hub by Docker Compose.
-These are meant to be used in conjunction with docker compose. Please refer to [https://admin.seatable.io](https://admin.seatable.io) for more information.
+This repository contains the definition of three container images (Scheduler, Starter, Runner) designed to securely run Python code, retrieve and deliver the output in the context of SeaTable.
+During a SeaTable Deployment these images are then pulled from Docker Hub by Docker Compose.
+Please refer to [https://admin.seatable.io](https://admin.seatable.io) for more information.
 
 ## Usage
 - Clone this repository
 - Checkout a new branch
 - Make changes to the image definition(s)
-- Build the new image localy
-- Test localy or push image with a "dev" tag to docker hub
+- Build the new image locally
+- Test locally or push image with a "dev" tag to docker hub
 - Commit and push your changes
 - Create a pull request
 
@@ -48,7 +47,7 @@ flowchart
     formerly FAAS_Scheduler"] -.- Python_Scheduler
 
     note3["temporary / contains user code / payload
-    Gets data from and to Seatable Server directly via Restful_API"] -.- Python_Runner
+    Gets data from and to SeaTable Server directly via Restful_API"] -.- Python_Runner
 ```
 
 ## Scheduler
