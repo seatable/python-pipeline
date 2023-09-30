@@ -32,7 +32,6 @@ ln -sn /shared/seatable-python-starter/* /opt/seatable-python-starter
 
 uwsgi --ini /shared/seatable-python-starter/conf/seatable_python_runner.ini
 
-
 ## idle script
 echo "This is a idle script (infinite loop) to keep container running."
 
