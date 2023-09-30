@@ -1,65 +1,64 @@
 # Seatable Python Pipeline
 
-This repository contains the definition of three container images (Scheduler, Starter, Runner) designed to securely run Python code, retrieve and deliver the output in the context of Seatable. 
+This repository contains the definition of three container images (Scheduler, Starter, Runner) designed to securely run Python code, retrieve and deliver the output in the context of Seatable.
 These Image are built by Github Actions and pushed to Docker Hub.
 During a Seatable Deployment these images are then pulled from Docker Hub by Docker Compose.
 These are meant to be used in conjunction with docker compose. Please refer to [https://admin.seatable.io](https://admin.seatable.io) for more information.
 
+## Usage
+- Clone this repository
+- Checkout a new branch
+- Make changes to the image definition(s)
+- Build the new image localy
+- Test localy or push image with a "dev" tag to docker hub
+- Commit and push your changes
+- Create a pull request
+
+```bash
+git clone <this repo>
+git ckeckout -b <new branch>
+# make changes
+cd <image_directory>
+docker build -t seatable/<image_name>:dev . # <image_name> options: seatable-python-starter  / seatable-python-runner / seatable-python-scheduler
+# optional: docker push seatable/<image_name>:dev
+# test your changes
+git add . && git commit -m "<commit_message>"
+```
 
 ```mermaid
 flowchart
     subgraph Python_Script_Pipeline
         Python_Scheduler --> Python_Starter
+        Python_Scheduler <--> MariaDB
         Python_Runner
     end
 
     Docker_Deamon
-    SeaTable_Server ---> Python_Scheduler
+    SeaTable_Server --> Python_Scheduler
     Python_Starter --> Docker_Deamon
     Docker_Deamon --> Python_Runner
+    Python_Runner <--> SeaTable_Server_API
 
     note1["Docker Socket mounted via Volume
     priviliged to control the docker daemon
     receives python script via uswgi/function.py"] -.- Python_Starter
 
     note2["Network exposed or mapped
-    Manager / own maria DB Instance / receiver / bridge
-    formerly FAAS_SCheduler"] -.- Python_Scheduler
+    Manager / Receiver / Bridge
+    formerly FAAS_Scheduler"] -.- Python_Scheduler
 
-    note3["temporary / ephermal
-    contains user code / payload"] -.- Python_Runner
+    note3["temporary / contains user code / payload
+    Gets data from and to Seatable Server directly via Restful_API"] -.- Python_Runner
 ```
-
-
-## Todo
-
-- [ ] **escalate:** set up branch protection (no direct push to main) (!not possible without github team)
-
-- [ ] split github action docker description from the container build push action
-
-- [ ] remove python-starter limitation
-  - seatable-python-starter container working dir and volume on host has to be identical
-
-- [ ] add feature to python-scheduler
-  - currently the seatable_faas_scheduler_settings.py is needed to configure the scheduler
-  make it possible to configure the scheduler via environment variables
-
-- [ ] reduce image sizes for scheduler and runner trough multistage build (python wheel or venv)
-- [mutlistage python / venv](https://pythonspeed.com/articles/multi-stage-docker-python/)
-- [multistage wheel](https://www.it-ps.at/multi-stage-python/)
-
-- [ ] replace phusion base image for scheduler/ outdated? concept with slow releases ->
-  If PID is |=1 tini can be used with a standard language specific base image (e.g. gcc, golang, python, .. or debian slim) (https://github.com/krallin/tini#using-tini)
-
 
 ## Scheduler
 A Scheduler for forwarding the requests to run scripts, and responsible for statistics the data related to scripts running
 
 ## Starter
-Python Starter is a uswgi/flask container that provides a api to accept request of running python script, run script in a docker container and post the output of script to scheduler.
+Python Starter is a uswgi/flask container that provides a api to accept request of running python script, starts a runner docker container in which the script is executed in and posts the output of script to the scheduler.
 
 ## Runner
-The Dockerfile of the image for running script is in `./runner`.
+Python Runner is a container that runs the python script in a sandboxed environment and posts the output of script to the starter.
 Some python site-packages are included in the in image:
 
 - requests

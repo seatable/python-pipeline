@@ -30,7 +30,7 @@ jobs:
 
           - dockerfile: ./scheduler/docker/Dockerfile
             image: seatable/seatable-python-scheduler
-            context: ./scheduler/docker
+            context: ./scheduler
             short-description: "Scheduler image for SeaTable Python scripts"
 
     permissions:

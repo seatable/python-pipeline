@@ -14,3 +14,9 @@
 
 1. cp `code files` docker/src/faas-scheduler/
 2. docker build -t seatable/seatable-faas-scheduler:1.x.x ./
+
+# faas-scheduler
+
+`python3 flask_server.py`
+
+`python3 scheduler.py`
