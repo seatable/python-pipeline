@@ -40,7 +40,7 @@ jobs:
     steps:
 
       - uses: dorny/paths-filter@v2
-        id: ${{ matrix.image }}
+        id: paths-filter
         with:
           filters: |
             src:
@@ -81,7 +81,7 @@ jobs:
         continue-on-error: true
 
       - name: Build and push
-        if: steps.filter-paths.outputs.src == 'true'
+        if: steps.paths-filter.outputs.src == 'true'
         uses: docker/build-push-action@v5
         with:
           context: ./${{ matrix.context }}
