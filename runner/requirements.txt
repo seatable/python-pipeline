@@ -4,3 +4,4 @@ dateutils
 pyOpenSSL
 pandas
 python-barcode[images]
+qrcode[pil]

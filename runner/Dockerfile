@@ -1,9 +1,6 @@
-FROM python:3.11-alpine
+FROM python:3.11-alpine AS compile-image
 
-RUN echo "https://dl-cdn.alpinelinux.org/alpine/edge/main" >> /etc/apk/repositories
-RUN echo "https://dl-cdn.alpinelinux.org/alpine/edge/community" >> /etc/apk/repositories
-
-RUN apk add --upgrade --no-cache \
+RUN apk add --no-cache \
         cargo \
         freetype-dev \
         fribidi-dev \
@@ -31,15 +28,24 @@ VOLUME [ "/scripts", "/settings" ]
 
 WORKDIR /settings
 
-# install requirements
 COPY ./requirements.txt .
 
-RUN pip install --upgrade pip
-RUN pip install -r requirements.txt --upgrade --no-cache-dir
+RUN pip install -r requirements.txt --no-cache-dir --user
 
-# copy entrypoint.sh
+
+## Runtime image
+FROM python:3.11-alpine AS runtime-image
+
+RUN apk add --no-cache bash \
+                       curl \
+                       python3-dev
+
+WORKDIR /settings
+
+COPY --from=compile-image /root/.local /root/.local
+ENV PATH=/root/.local/bin:$PATH
+
 COPY ./entrypoint.sh .
-
 RUN chmod +x entrypoint.sh
 
 ENTRYPOINT ["/bin/sh", "./entrypoint.sh"]
