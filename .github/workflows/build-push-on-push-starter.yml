@@ -6,10 +6,7 @@ on:
     branches:
       - main
     paths:
-      - 'scheduler/**'
       - 'starter/**'
-      - 'runner/**'
-      - '.dockerhub-description.md'
 
 jobs:
   build-and-push-image:
@@ -18,33 +15,17 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - dockerfile: ./runner/Dockerfile
-            image: seatable/seatable-python-runner
-            context: runner
-            short-description: "Runner image for SeaTable Python scripts"
 
           - dockerfile: ./starter/Dockerfile
             image: seatable/seatable-python-starter
             context: starter
             short-description: "Starter image for SeaTable Python scripts"
 
-          - dockerfile: ./scheduler/Dockerfile
-            image: seatable/seatable-python-scheduler
-            context: scheduler
-            short-description: "Scheduler image for SeaTable Python scripts"
-
     permissions:
       contents: read
       packages: write
 
     steps:
-
-      - uses: dorny/paths-filter@v2
-        id: paths-filter
-        with:
-          filters: |
-            src:
-              - '${{ matrix.context }}/**'
 
       - name: Check out the repo
         uses: actions/checkout@v3
@@ -81,7 +62,6 @@ jobs:
         continue-on-error: true
 
       - name: Build and push
-        if: steps.paths-filter.outputs.src == 'true'
         uses: docker/build-push-action@v5
         with:
           context: ./${{ matrix.context }}
