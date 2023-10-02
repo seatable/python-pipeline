@@ -20,17 +20,17 @@ jobs:
         include:
           - dockerfile: ./runner/Dockerfile
             image: seatable/seatable-python-runner
-            context: ./runner
+            context: runner
             short-description: "Runner image for SeaTable Python scripts"
 
           - dockerfile: ./starter/Dockerfile
             image: seatable/seatable-python-starter
-            context: ./starter
+            context: starter
             short-description: "Starter image for SeaTable Python scripts"
 
           - dockerfile: ./scheduler/Dockerfile
             image: seatable/seatable-python-scheduler
-            context: ./scheduler
+            context: scheduler
             short-description: "Scheduler image for SeaTable Python scripts"
 
     permissions:
@@ -39,9 +39,15 @@ jobs:
 
     steps:
 
+      - uses: dorny/paths-filter@v2
+        id: ${{ matrix.image }}
+        with:
+          filters: |
+            src:
+              - '${{ matrix.context }}/**'
+
       - name: Check out the repo
         uses: actions/checkout@v3
-
 
       - name: Set short git commit SHA
         id: get_commit
@@ -75,13 +81,24 @@ jobs:
         continue-on-error: true
 
       - name: Build and push
+        if: steps.filter-paths.outputs.src == 'true'
         uses: docker/build-push-action@v5
         with:
-          context: ${{ matrix.context }}
-          push: true
+          context: ./${{ matrix.context }}
           file: ${{ matrix.dockerfile }}
-          tags: >
-            ${{ matrix.image }}:latest ,
-            ${{ matrix.image }}:build_${{ github.run_number }} ,
-            ${{ matrix.image }}:commit_${{ steps.get_commit.outputs.short_sha }} ,
+          push: true
+          tags: |
+            ${{ matrix.image }}:latest
+            ${{ matrix.image }}:build_${{ github.run_number }}
+            ${{ matrix.image }}:commit_${{ steps.get_commit.outputs.short_sha }}
             ${{ matrix.image }}:${{ steps.get_version.outputs.version }}
+          labels: |
+            org.opencontainers.image.title=${{ matrix.image }}
+            org.opencontainers.image.description=${{ matrix.short-description }}
+            org.opencontainers.image.version=${{ steps.get_version.outputs.version }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.created=${{ github.event.head_commit.timestamp }}
+            org.opencontainers.image.authors=SeaTable
+            org.opencontainers.image.url=https://www.seatable.io/
+            org.opencontainers.image.documentation=https://admin.seatable.io/
+            org.opencontainers.image.vendor=SeaTable
