@@ -19,7 +19,6 @@ jobs:
           - dockerfile: ./runner/Dockerfile
             image: seatable/seatable-python-runner
             context: runner
-            short-description: "Runner image for SeaTable Python scripts"
 
     permissions:
       contents: read
@@ -49,17 +48,6 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-
-      - name: Docker Hub Description
-        uses: peter-evans/dockerhub-description@v3
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-          repository: ${{ matrix.image }}
-          enable-url-completion: true
-          readme-filepath: ./dockerhub-description.md
-          short-description: ${{ matrix.short-description }}
-        continue-on-error: true
 
       - name: Build and push
         uses: docker/build-push-action@v5
