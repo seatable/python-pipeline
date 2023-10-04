@@ -9,6 +9,8 @@ function log() {
 
 
 # init config
+/etc/my_init.d/01_init.sh
+
 if [ "`ls -A /opt/seatable-faas-scheduler/conf`" = "" ]; then
     log "Start init"
     /scripts/seatable-faas-scheduler.sh init-sql &>> /opt/seatable-faas-scheduler/logs/init.log
@@ -22,6 +24,8 @@ fi
 
 
 # check nginx
+service nginx start &
+
 while [ 1 ]; do
     process_num=$(ps -ef | grep "/usr/sbin/nginx" | grep -v "grep" | wc -l)
     if [ $process_num -eq 0 ]; then
