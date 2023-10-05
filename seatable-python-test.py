@@ -1,15 +1,13 @@
 #!/usr/bin/env python
 #
-# This script prints the python version and some modules installed in the python runner container.
+# This script prints the python version and all modules installed in the python runner container.
 # This script also writes a row in the "Name" column of the current table, reads it and writes it again.
 
 from seatable_api import Base, context
 from seatable_api.constants import ColumnTypes
 
 import sys
-
-import OpenSSL
-import cryptography
+import subprocess
 
 def main():
     server_url = context.server_url or 'https://<your-seatable-server-url>'
@@ -18,42 +16,29 @@ def main():
     base = Base(api_token, server_url)
     base.auth()
 
-    # SSL Check
-    print("pyOpenSSL version:", OpenSSL.__version__)
-    print("cryptography version:", cryptography.__version__)
-
-    try:
-        import ssl
-        print("ssl module is available")
-    except ImportError:
-        print("ssl module is not available")
-
-
-    print("Python version:", sys.version)
-
-    # prints all modules
-    # print("Modules:")
-    # for module in sys.modules.keys():
-    #     if not module.startswith('_'):
-    #         print(module)
+    print("Runner Container Python Version:):", sys.version)
+    print("Installed packages:")
+    pip_list = subprocess.check_output(['pip', 'list']).decode('utf-8')
+    print(pip_list)
 
     print("Context ready, read/write test starting...")
 
-    inital_rows_data = [{
+    inital_row_data = {
                 'Name': 'This row is written by the python script, read and written again.'
-            }]
+            }
 
-    base.batch_append_rows(context.current_table, inital_rows_data)
+    base.append_row(context.current_table, inital_row_data)
 
-    rows = base.list_rows(context.current_table, limit=1)
+    row = base.list_rows(context.current_table, desc=True, order_by='Name', limit=100)
 
-    # Filter out key-value pairs with '_' in the key
-    filtered_rows = [{k: v for k, v in item.items() if not k.startswith('_')} for item in rows]
+    newest_entry = max(row, key=lambda x: x['_ctime'])
+    newest_name = newest_entry['Name']
 
-    print(filtered_rows)
+    row_data = {
+        'Name': newest_name
+    }
 
-    base.batch_append_rows(context.current_table, filtered_rows)
+    base.append_row(context.current_table, row_data)
 
 if __name__ == "__main__":
     main()
-
