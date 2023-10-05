@@ -1,12 +1,14 @@
-FROM python:3.11-slim-bullseye AS compile-image
+## Compile Image
+FROM python:3.11-slim-bookworm AS compile-image
 
 # Installation of the pip packages
 WORKDIR /opt/seatable-faas-scheduler
 COPY ["src/faas-scheduler/requirements.txt", "./"]
 RUN pip3 install -r /opt/seatable-faas-scheduler/requirements.txt --user
 
+
 ## Runtime Image
-FROM python:3.11-slim-bullseye AS runtime-image
+FROM python:3.11-slim-bookworm AS runtime-image
 
 WORKDIR /opt/seatable-faas-scheduler
 COPY ["src/faas-scheduler/", "/opt/seatable-faas-scheduler/faas-scheduler/"]
