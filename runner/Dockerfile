@@ -37,7 +37,6 @@ RUN pip install -r requirements.txt --no-cache-dir --user
 FROM python:3.11-alpine AS runtime-image
 
 RUN apk add --no-cache bash \
-                       curl \
                        python3-dev
 
 WORKDIR /settings
