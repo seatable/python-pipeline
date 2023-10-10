@@ -124,32 +124,66 @@ def run_python(data):
         send_to_scheduler(False, None, 'Fail to get script', None, data)
         return
 
+
+
+    # Ermitteln Sie den aktuellen Pfad
+    current_directory = os.getcwd()
+
+# Dateiname, in den der Pfad geschrieben wird
+    output_file = "current_path.txt"
+
+# Öffnen Sie die Datei im Schreibmodus und schreiben Sie den Pfad hinein
+#    with open(output_file, "w") as file:
+#        file.write(current_directory)
+
+#    print("Der aktuelle Pfad wurde in die Datei", output_file, "geschrieben.")
+
+
+
+    new_directory = 'test'
+    os.makedirs(new_directory)
+    os.chdir(new_directory)
+    with open(output_file, 'w') as file:
+        file.write(current_directory)
+
+
+
     dir_id = uuid4().hex
     container_name = 'python-runner' + dir_id
     file_name = 'index.py'
     os.makedirs(dir_id)
-    # save script
-    with open(os.path.join(dir_id, file_name), 'wb') as f:
+#    os.chdir(dir_id)  
+  # save script
+    with open(file_name, 'wb') as f:
         f.write(resp.content)
     # save env
-    env_file = os.path.join(dir_id, 'env.list')
+    env_file = 'env.list'
     with open(env_file, 'w') as f:
         if env:
             envs = '\n'.join(['%s=%s' % (key, value) for key, value in env.items()])
             f.write(envs)
     # save arguments as file to stdin
-    with open(os.path.join(dir_id, 'input'), 'w') as f:
+    with open(input, 'w') as f:
         if context_data:
             f.write(context_data)
 
     return_code, output = None, None  # init output
 
+    with open(output_file, "w") as file:
+        file.write(current_directory)
+
+
     # generate command
-    scripts_path = os.path.join(os.getcwd(), dir_id)
+    #scripts_path = os.path.join(os.getcwd(), dir_id)
     # mount volumes and set env
     command = ['docker', 'run', '--name', container_name,
                '--env-file', env_file,
-               '-v', '{}:/scripts'.format(scripts_path)]
+               '-v', './:/scripts']
+    
+    with open(output_file, "w") as file:
+        file.write(current_directory)    
+
+
     # timezone, if not set TIME_ZONE in settings then set time zone use timezone_command
     if timezone_command:
         command.extend(timezone_command)
@@ -192,13 +226,13 @@ def run_python(data):
                                 stdout=subprocess.PIPE,
                                 stderr=subprocess.STDOUT,
                                 timeout=DEFAULT_SUB_PROCESS_TIMEOUT)
-    except subprocess.TimeoutExpired as e:
-        try:  # stop container
-            subprocess.run(['docker', 'stop', container_name], stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
-        except Exception as e:
-            logging.warning('stop script: %s container: %s, error: %s', script_url, container_name, e)
-        send_to_scheduler(False, -1, 'Script running for too long time!', DEFAULT_SUB_PROCESS_TIMEOUT, data)
-        return
+    #except subprocess.TimeoutExpired as e:
+    #    try:  # stop container
+    #        subprocess.run(['docker', 'stop', container_name], stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
+    #    except Exception as e:
+    #        logging.warning('stop script: %s container: %s, error: %s', script_url, container_name, e)
+    #    send_to_scheduler(False, -1, 'Script running for too long time!', DEFAULT_SUB_PROCESS_TIMEOUT, data)
+    #    return
     except Exception as e:
         logging.exception(e)
         logging.error('Fail to run file %s error: %s', script_url, e)
@@ -213,16 +247,16 @@ def run_python(data):
         if return_code == 137:  # OOM
             output += 'out-of-memory(OOM) error!\n'
         output += result.stdout.decode()
-    finally:
-        spend_time = time.time() - start_at
-        try:
-            shutil.rmtree(dir_id)
-        except Exception as e:
-            logging.warning('Fail to remove script files error: %s', e)
-        try:
-            subprocess.run(['docker', 'container', 'rm', '-f', container_name], stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
-        except Exception as e:
-            logging.warning('Fail to remove container error: %s', e)
+#    finally:
+#        spend_time = time.time() - start_at
+#        try:
+#            shutil.rmtree(dir_id)
+#        except Exception as e:
+#            logging.warning('Fail to remove script files error: %s', e)
+#        try:
+#            subprocess.run(['docker', 'container', 'rm', '-f', container_name], stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
+#        except Exception as e:
+#            logging.warning('Fail to remove container error: %s', e)
 
     send_to_scheduler(return_code == 0, return_code, output, spend_time, data)
 
@@ -249,3 +283,4 @@ def health_check():
 
 if __name__ == "__main__":
     app.run(port=8088, debug=True)
+    
