@@ -13,6 +13,8 @@ from flask import Flask, request, make_response
 
 import settings
 
+starting_path = os.getcwd()
+new_directory = "/var/seatable-python-starter"
 
 if not settings.DEBUG:
     log_dir = os.path.join(os.path.dirname(__file__), 'logs')
@@ -41,7 +43,7 @@ elif os.path.isfile('/etc/timezone'):
     else:
         time_zone_str = time_zone_str.strip()
         SYSTEM_TIMEZONE_COMMAND = ['-e', 'TZ=%s' % time_zone_str]
-
+77
 
 def send_to_scheduler(success, return_code, output, spend_time, request_data):
     """
@@ -124,6 +126,7 @@ def run_python(data):
         send_to_scheduler(False, None, 'Fail to get script', None, data)
         return
 
+    os.chdir(new_directory)
     dir_id = uuid4().hex
     container_name = 'python-runner' + dir_id
     file_name = 'index.py'
@@ -221,11 +224,11 @@ def run_python(data):
             logging.warning('Fail to remove script files error: %s', e)
         try:
             subprocess.run(['docker', 'container', 'rm', '-f', container_name], stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
+            os.chdir(starting_path)
         except Exception as e:
             logging.warning('Fail to remove container error: %s', e)
 
     send_to_scheduler(return_code == 0, return_code, output, spend_time, data)
-
 
 @app.route("/", defaults={"path": ""}, methods=["POST", "GET"])
 @app.route('/function/run-python', defaults={"path": ""}, methods=["POST", "GET"])
