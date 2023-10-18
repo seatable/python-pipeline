@@ -1,12 +1,9 @@
 name: Build & publish containers
-# on main pushes (includes merged pull requests)
 
 on:
   push:
     branches:
       - main
-    paths:
-      - 'scheduler/**'
 
 jobs:
   build-and-push-image:
@@ -15,17 +12,27 @@ jobs:
       fail-fast: false
       matrix:
         include:
-
+          - dockerfile: ./runner/Dockerfile
+            image: seatable/seatable-python-runner
+            context: runner
+            paths:
+              - 'runner/**'
           - dockerfile: ./scheduler/Dockerfile
             image: seatable/seatable-python-scheduler
             context: scheduler
+            paths:
+              - 'scheduler/**'
+          - dockerfile: ./starter/Dockerfile
+            image: seatable/seatable-python-starter
+            context: starter
+            paths:
+              - 'starter/**'
 
     permissions:
       contents: read
       packages: write
 
     steps:
-
       - name: Check out the repo
         uses: actions/checkout@v3
 
