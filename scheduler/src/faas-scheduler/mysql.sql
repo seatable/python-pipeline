@@ -36,7 +36,7 @@ CREATE TABLE `script_log` (
   `finished_at` datetime(6) DEFAULT NULL,
   `success` tinyint(1) DEFAULT NULL,
   `return_code` int(11) DEFAULT NULL,
-  `output` longtext DEFAULT NULL,
+  `output` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `operate_from` varchar(50) DEFAULT NULL COMMENT 'manualy, automation-rule...etc',
   PRIMARY KEY (`id`),
   KEY `started_at_c6ns09vt` (`started_at`),
