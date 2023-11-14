@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 from uuid import UUID
 
 from tzlocal import get_localzone
-from sqlalchemy import desc, distinct
+from sqlalchemy import desc, distinct, text
 from faas_scheduler.models import Task, ScriptLog
 from faas_scheduler.constants import CONDITION_DAILY, TIMEOUT_OUTPUT
 import faas_scheduler.settings as settings
@@ -107,7 +107,7 @@ def update_statistics(db_session, dtable_uuid, owner, org_id, spend_time):
 
     try:
         for sql in sqls:
-            db_session.execute(sql, {
+            db_session.execute(text(sql), {
                 'dtable_uuid': dtable_uuid,
                 'username': username,
                 'org_id': org_id,
@@ -207,7 +207,7 @@ def get_run_scripts_count_monthly(username, org_id, db_session, month=None):
         month = datetime.strftime(datetime.now(), '%Y-%m')
     else:
         month = month
-    count = db_session.execute(sql, {
+    count = db_session.execute(text(sql), {
         'month': month,
         'owner_username': owner_username
     }).fetchone()[0]
@@ -332,7 +332,7 @@ def check_and_set_tasks_timeout(db_session):
         WHERE success IS NULL AND TIMESTAMPDIFF(SECOND, started_at, :now) > :timeout_interval
     '''
     try:
-        db_session.execute(sql, {
+        db_session.execute(text(sql), {
             'now': now,
             'timeout_interval': settings.SUB_PROCESS_TIMEOUT,
             'timeout_output': TIMEOUT_OUTPUT
@@ -426,7 +426,7 @@ def get_run_script_statistics_by_month(db_session, is_user=True, month=None, sta
         sql = sql % {'order_by': ''}
 
     results = []
-    for temp in db_session.execute(sql, args).fetchall():
+    for temp in db_session.execute(text(sql), args).fetchall():
         item = {
             'total_run_count': int(temp[1]),
             'total_run_time': int(temp[2])
@@ -444,7 +444,8 @@ def get_run_script_statistics_by_month(db_session, is_user=True, month=None, sta
             WHERE DATE_FORMAT(run_date, '%Y-%m')=DATE_FORMAT(:month, '%Y-%m')
             GROUP BY {column}) t
         '''
-        count = db_session.execute(count_sql.format(table_name=table_name, column=column), args).fetchone()[0]
+        count_sql = count_sql.format(table_name=table_name, column=column)
+        count = db_session.execute(text(count_sql), args).fetchone()[0]
     else:
         count = 0
 
