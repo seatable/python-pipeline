@@ -457,7 +457,8 @@ def datetime_to_isoformat_timestr(datetime):
     try:
         datetime = datetime.replace(microsecond=0)
         current_timezone = get_localzone()
-        isoformat_timestr = current_timezone.localize(datetime).isoformat()
+        localized_datetime = datetime.astimezone(current_timezone)
+        isoformat_timestr = localized_datetime.isoformat()
         return isoformat_timestr
     except Exception as e:
         logger.error(e)
