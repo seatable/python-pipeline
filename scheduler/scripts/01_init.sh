@@ -24,10 +24,6 @@ if [[ ! -e /shared/nginx-logs ]]; then
     mkdir /shared/nginx-logs
 fi
 
-if [[ ! -e /shared/ssl ]]; then
-    mkdir /shared/ssl
-fi
-
 if [[ ! -e /shared/seatable-faas-scheduler ]]; then
     mkdir /shared/seatable-faas-scheduler
 fi
@@ -56,4 +52,3 @@ chmod u+x /shared/seatable-faas-scheduler/scripts/*.sh
 # main
 ln -sfn /shared/seatable-faas-scheduler/* /opt/seatable-faas-scheduler
 ln -sfn /shared/nginx-logs /opt
-ln -sfn /shared/ssl /opt
