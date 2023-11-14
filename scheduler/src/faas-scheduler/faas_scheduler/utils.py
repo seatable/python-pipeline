@@ -13,8 +13,6 @@ import faas_scheduler.settings as settings
 logger = logging.getLogger(__name__)
 
 runner_url = getattr(settings, 'RUNNER_URL', '')
-if not runner_url and hasattr(settings, 'FAAS_URL'):
-    runner_url = settings.FAAS_URL
 faas_func_url = runner_url.rstrip('/') + '/function/run-python'
 
 

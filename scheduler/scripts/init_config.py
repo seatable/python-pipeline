@@ -22,8 +22,7 @@ MYSQL_HOST = '%s'
 MYSQL_PORT = '3306'
 DATABASE_NAME = 'faas_scheduler'
 
-# faas
-FAAS_URL = ''
+# runner
 RUNNER_URL = ''
 
 # seatable
