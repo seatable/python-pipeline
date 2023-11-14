@@ -12,19 +12,6 @@ CREATE TABLE `task` (
   UNIQUE KEY `task_dtable_uuid_script_name_yr8snbw3_uniq` (`dtable_uuid`,`script_name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
-CREATE TABLE `task_log` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `task_id` int(11) NOT NULL,
-  `started_at` datetime(6) NOT NULL,
-  `finished_at` datetime(6),
-  `success` tinyint(1),
-  `return_code` int(11),
-  `output` longtext,
-  PRIMARY KEY (`id`),
-  KEY `task_id_yw8kjf7y` (`task_id`),
-  KEY `started_at_prn7fu3j` (`started_at`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-
 CREATE TABLE `script_log` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `dtable_uuid` varchar(36) NOT NULL,

@@ -6,7 +6,7 @@ from uuid import UUID
 
 from tzlocal import get_localzone
 from sqlalchemy import desc, distinct
-from faas_scheduler.models import Task, TaskLog, ScriptLog
+from faas_scheduler.models import Task, ScriptLog
 from faas_scheduler.constants import CONDITION_DAILY, TIMEOUT_OUTPUT
 import faas_scheduler.settings as settings
 
@@ -46,7 +46,7 @@ def get_script_file(dtable_uuid, script_name):
     return response.json()
 
 
-def call_faas_func(script_url, temp_api_token, context_data, script_id=None, task_log_id=None):
+def call_faas_func(script_url, temp_api_token, context_data, script_id=None):
     try:
         data = {
             'script_url': script_url,
@@ -56,7 +56,6 @@ def call_faas_func(script_url, temp_api_token, context_data, script_id=None, tas
             },
             'context_data': context_data,
             'script_id': script_id,
-            # 'task_log_id': task_log_id
         }
         response = requests.post(faas_func_url, json=data, timeout=30)
 
@@ -162,50 +161,6 @@ def list_tasks(db_session, is_active=True):
         Task).filter_by(is_active=is_active)
 
     return tasks
-
-
-def add_task_log(db_session, task_id):
-    task = db_session.query(Task).filter_by(id=task_id).first()
-    dtable_uuid = task.dtable_uuid
-    script_name = task.script_name
-    context_data = json.dumps(task.context_data) if task.context_data else None
-    owner = task.owner
-    org_id = task.org_id
-    script = ScriptLog(
-        dtable_uuid, owner, org_id, script_name, context_data, datetime.now(), 'task')
-    db_session.add(script)
-    db_session.commit()
-    return script
-
-def update_task_log(db_session, task_log, success, return_code, output):
-    task_log.finished_at = datetime.now()
-    task_log.success = success
-    task_log.return_code = return_code
-    task_log.output = output
-    db_session.commit()
-
-    return task_log
-
-
-def list_task_logs(db_session, dtable_uuid, script_name, order_by='-id'):
-    if '-' in order_by:
-        order_by = desc(order_by.strip('-'))
-    task_logs = db_session.query(ScriptLog).filter_by(dtable_uuid=dtable_uuid, script_name=script_name).order_by(order_by)
-
-    return task_logs
-
-
-def delete_task_logs(db_session, task_id):
-    db_session.query(TaskLog).filter_by(task_id=task_id).delete()
-    db_session.commit()
-
-    return True
-
-
-def get_task_log(db_session, log_id):
-    task_log = db_session.query(ScriptLog).filter_by(id=log_id).first()
-
-    return task_log
 
 
 def update_task_trigger_time(db_session, task):
@@ -365,9 +320,6 @@ def remove_invalid_tasks(db_session):
                     task_ids.append(task.id)
                 tasks.delete()
 
-        # clean task logs
-        db_session.query(TaskLog).filter(TaskLog.task_id.in_(task_ids)).delete()
-
         db_session.commit()
     except Exception as e:
         logger.exception(e)
@@ -440,15 +392,6 @@ def hook_update_script(db_session, script_id, success, return_code, output, spen
     if script:
         update_script(db_session, script, success, return_code, output)
         update_statistics(db_session, script.dtable_uuid, script.owner, script.org_id, spend_time)
-
-
-def hook_update_task_log(db_session, task_log_id, success, return_code, output, spend_time):
-    task_log = db_session.query(ScriptLog).filter_by(id=task_log_id).first()
-    if task_log:
-        update_task_log(db_session, task_log, success, return_code, output)
-        task = db_session.query(Task).filter_by(dtable_uuid=task_log.dtable_uuid, script_name=task_log.script_name).first()
-        if task:
-            update_statistics(db_session, task.dtable_uuid, task.owner, task.org_id, spend_time)
 
 
 def get_run_script_statistics_by_month(db_session, is_user=True, month=None, start=0, limit=25, order_by=None):

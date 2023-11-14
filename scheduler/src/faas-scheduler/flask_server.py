@@ -12,9 +12,9 @@ import faas_scheduler.settings as settings
 from faas_scheduler import DBSession
 from faas_scheduler.constants import TIMEOUT_OUTPUT
 from faas_scheduler.utils import check_auth_token, \
-    add_task, get_task, update_task, delete_task, list_task_logs, \
-    get_task_log, run_script, get_script, add_script, delete_task_logs, \
-    get_run_script_statistics_by_month, hook_update_script, hook_update_task_log, \
+    add_task, get_task, update_task, delete_task, \
+    run_script, get_script, add_script, \
+    get_run_script_statistics_by_month, hook_update_script, \
     can_run_task, get_run_scripts_count_monthly, list_tasks
 
 app = Flask(__name__)
@@ -184,62 +184,7 @@ def task_api(dtable_uuid, script_name):
         elif request.method == 'DELETE':
             task_id = task.id
             delete_task(db_session, task)
-            delete_task_logs(db_session, task_id)
             return make_response(({'success': True}, 200))
-
-    except Exception as e:
-        logger.exception(e)
-        return make_response(('Internal server error', 500))
-    finally:
-        db_session.close()
-
-@app.route('/tasks/<dtable_uuid>/<script_name>/logs/', methods=['GET'])
-def task_logs_api(dtable_uuid, script_name):
-    if not check_auth_token(request):
-        return make_response(('Forbidden', 403))
-
-    try:
-        current_page = int(request.args.get('page', '1'))
-        per_page = int(request.args.get('per_page', '20'))
-        order_by = request.args.get('org_by', '-id')
-    except ValueError:
-        current_page = 1
-        per_page = 20
-
-    if order_by.strip('-') not in ('id',):
-        return make_response(('order_by invalid.', 400))
-
-    start = per_page * (current_page - 1)
-    end = start + per_page
-
-    db_session = DBSession()
-    try:
-        task_logs = list_task_logs(db_session, dtable_uuid, script_name, order_by)
-        count = task_logs.count()
-        task_logs = task_logs[start: end]
-        task_log_list = [task_log.to_dict() for task_log in task_logs]
-        return make_response(({
-            'task_logs': task_log_list,
-            'count': count,
-        }, 200))
-
-    except Exception as e:
-        logger.exception(e)
-        return make_response(('Internal server error', 500))
-    finally:
-        db_session.close()
-
-@app.route('/tasks/<dtable_uuid>/<script_name>/logs/<log_id>/', methods=['GET'])
-def task_log_api(dtable_uuid, script_name, log_id):
-    if not check_auth_token(request):
-        return make_response(('Forbidden', 403))
-
-    db_session = DBSession()
-    try:
-        task_log = get_task_log(db_session, log_id)
-        task_log_info= task_log.to_dict()
-
-        return make_response(({'task_log': task_log_info}, 200))
 
     except Exception as e:
         logger.exception(e)
@@ -303,11 +248,10 @@ def record_script_result():
 
     db_session = DBSession()
 
-    # udpate script/task log and run-time statistics
+    # update script/task log and run-time statistics
     try:
         if script_id:
             hook_update_script(db_session, script_id, success, return_code, output, spend_time)
-            # hook_update_task_log(db_session, script_id, success, return_code, output, spend_time)
 
     except Exception as e:
         logger.exception(e)

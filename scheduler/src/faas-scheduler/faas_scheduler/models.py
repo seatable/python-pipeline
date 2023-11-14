@@ -42,32 +42,6 @@ class Task(Base):
             'is_active': self.is_active,
         }
 
-# TaskLog is going to be deprecated, and record the task logs by using ScriptLog
-class TaskLog(Base):
-    __tablename__ = 'task_log'
-    id = Column(Integer, primary_key=True)
-    task_id = Column(Integer, index=True)
-    started_at = Column(DateTime, index=True)
-    finished_at = Column(DateTime, nullable=True)
-    success = Column(Boolean, nullable=True)
-    return_code = Column(Integer, nullable=True)
-    output = Column(Text, nullable=True)
-
-    def __init__(self, task_id, started_at):
-        self.task_id = task_id
-        self.started_at = started_at
-
-    def to_dict(self):
-        return {
-            'id': self.id,
-            'task_id': self.task_id,
-            'started_at': self.started_at,
-            'finished_at': self.finished_at,
-            'success': self.success,
-            'return_code': self.return_code,
-        }
-
-
 class ScriptLog(Base):
     __tablename__ = 'script_log'
     id = Column(Integer, primary_key=True)
