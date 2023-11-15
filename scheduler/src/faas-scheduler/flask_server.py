@@ -24,6 +24,10 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 executor = ThreadPoolExecutor(max_workers=settings.SCRIPT_WORKERS)
 
+@app.route('/ping/', methods=['GET'])
+def ping():
+    return make_response(('Pong', 200))
+
 
 @app.route('/run-script/', methods=['POST'])
 def scripts_api():
