@@ -20,7 +20,7 @@ class ScriptInvalidException(Exception):
     pass
 
 def ping_starter(request):
-    response = requests.get(settings.PYTHON_STARTER_URL.rstrip('/'))
+    response = requests.get(settings.PYTHON_STARTER_URL.rstrip('/') + '/ping/')
     if response.status_code == 200:
         return True
 
