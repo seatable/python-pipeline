@@ -14,7 +14,7 @@ function log() {
 if [ "`ls -A /opt/seatable-faas-scheduler/conf`" = "" ]; then
     log "Start init"
     /scripts/seatable-faas-scheduler.sh init-sql &>> /opt/seatable-faas-scheduler/logs/init.log
-
+    
     /scripts/seatable-faas-scheduler.sh init &>> /opt/seatable-faas-scheduler/logs/init.log
 
     echo $SCHEDULER_VERSION > /opt/seatable-faas-scheduler/conf/current_version

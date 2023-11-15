@@ -10,7 +10,7 @@ function stop_server() {
 }
 
 function set_env() {
-    export PYTHONPATH=/opt/seatable-faas-scheduler/faas-scheduler:/usr/lib/python3.6/dist-packages:/usr/lib/python3.6/site-packages:/usr/local/lib/python3.6/dist-packages:/usr/local/lib/python3.6/site-packages
+    export PYTHONPATH=/opt/seatable-faas-scheduler/faas-scheduler:/usr/local/lib/python3.11/site-packages
 }
 
 function run_python_wth_env() {

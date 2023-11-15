@@ -248,7 +248,7 @@ def record_script_result():
 
     db_session = DBSession()
 
-    # update script/task log and run-time statistics
+    # update script_log and run-time statistics
     try:
         if script_id:
             hook_update_script(db_session, script_id, success, return_code, output, spend_time)

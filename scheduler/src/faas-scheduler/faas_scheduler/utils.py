@@ -22,7 +22,7 @@ class ScriptInvalidException(Exception):
 
 def check_auth_token(request):
     value = request.headers.get('Authorization', '')
-    if value == 'Token ' + settings.SEATABLE_FAAS_AUTH_TOKEN:
+    if value == 'Token ' + settings.PYTHON_SCHEDULER_AUTH_TOKEN:
         return True
 
     return False
@@ -32,8 +32,9 @@ def get_script_file(dtable_uuid, script_name):
     if not script_name or not dtable_uuid:
         raise ScriptInvalidException('dtable: %s script: %s invalid' % (dtable_uuid, script_name))
     dtable_uuid = str(UUID(dtable_uuid))
-    headers = {'Authorization': 'Token ' + settings.SEATABLE_FAAS_AUTH_TOKEN}
+    headers = {'Authorization': 'Token ' + settings.PYTHON_SCHEDULER_AUTH_TOKEN}
     url = '%s/api/v2.1/dtable/%s/run-script/%s/task/file/' % (settings.DTABLE_WEB_SERVICE_URL.rstrip('/'), dtable_uuid, script_name)
+    logger.error('BLUBBER %s' % url)
     response = requests.get(url, headers=headers, timeout=30)
     if response.status_code == 404:  # script file not found
         raise ScriptInvalidException('dtable: %s, script: %s invalid' % (dtable_uuid, script_name))
@@ -222,7 +223,7 @@ def can_run_task(owner, org_id, db_session, scripts_running_limit=None):
     # check run-scripts count/limit
     if not scripts_running_limit:
         url = '%s/api/v2.1/scripts-running-limit/' % (settings.DTABLE_WEB_SERVICE_URL.strip('/'),)
-        headers = {'Authorization': 'Token ' + settings.SEATABLE_FAAS_AUTH_TOKEN}
+        headers = {'Authorization': 'Token ' + settings.PYTHON_SCHEDULER_AUTH_TOKEN}
         if org_id and org_id != -1:
             params = {'org_id': org_id}
         elif owner:
@@ -292,7 +293,7 @@ def remove_invalid_tasks(db_session):
 
         # request user/org script/task permissions
         permission_url = settings.DTABLE_WEB_SERVICE_URL.strip()+ '/api/v2.1/script-permissions/'
-        headers = {'Authorization': 'Token ' + settings.SEATABLE_FAAS_AUTH_TOKEN}
+        headers = {'Authorization': 'Token ' + settings.PYTHON_SCHEDULER_AUTH_TOKEN}
         response = requests.get(permission_url, headers=headers, json={'users': users, 'org_ids': org_ids})
         if response.status_code != 200:
             logger.error('request script permissions error status code: %s', response.status_code)

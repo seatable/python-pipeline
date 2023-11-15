@@ -21,7 +21,7 @@ RUNNER_URL = ''
 
 #
 DTABLE_WEB_SERVICE_URL = ''
-SEATABLE_FAAS_AUTH_TOKEN = ''
+PYTHON_SCHEDULER_AUTH_TOKEN = ''
 
 #
 CONF_DIR = '/opt/seatable-faas-scheduler/conf/'
