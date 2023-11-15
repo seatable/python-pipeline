@@ -22,7 +22,7 @@ class ScriptInvalidException(Exception):
 
 def check_auth_token(request):
     value = request.headers.get('Authorization', '')
-    if value == 'Token ' + settings.PYTHON_SCHEDULER_AUTH_TOKEN:
+    if value == 'Token ' + settings.PYTHON_SCHEDULER_AUTH_TOKEN or value == 'Bearer ' + settings.PYTHON_SCHEDULER_AUTH_TOKEN:
         return True
 
     return False

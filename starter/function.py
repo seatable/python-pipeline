@@ -230,6 +230,10 @@ def run_python(data):
 
     send_to_scheduler(return_code == 0, return_code, output, spend_time, data)
 
+@app.route('/ping/', methods=['GET'])
+def ping():
+    return make_response(('Pong', 200))
+
 @app.route("/", defaults={"path": ""}, methods=["POST", "GET"])
 @app.route('/function/run-python', defaults={"path": ""}, methods=["POST", "GET"])
 def main_route(path):
