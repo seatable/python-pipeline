@@ -18,7 +18,7 @@ MYSQL_PORT = '3306'
 DATABASE_NAME = 'faas_scheduler'
 
 # runner
-RUNNER_URL = 'http://seatable-python-starter:8080'
+PYTHON_STARTER_URL = 'http://seatable-python-starter:8080'
 
 # seatable
 DTABLE_WEB_SERVICE_URL = '%s'

@@ -12,12 +12,14 @@ import faas_scheduler.settings as settings
 
 logger = logging.getLogger(__name__)
 
-runner_url = getattr(settings, 'RUNNER_URL', '')
-faas_func_url = runner_url.rstrip('/') + '/function/run-python'
+starter_url = getattr(settings, 'PYTHON_STARTER_URL', '')
+run_func_url = starter_url.rstrip('/') + '/function/run-python'
 
 
 class ScriptInvalidException(Exception):
     pass
+
+def 
 
 
 def check_auth_token(request):
@@ -56,16 +58,16 @@ def call_faas_func(script_url, temp_api_token, context_data, script_id=None):
             'context_data': context_data,
             'script_id': script_id,
         }
-        response = requests.post(faas_func_url, json=data, timeout=30)
+        response = requests.post(run_func_url, json=data, timeout=30)
 
         # script will be executed asynchronously, so there will be nothing in response
         # so only check response
 
         if response.status_code != 200:
-            logger.error('Fail to call FAAS: %s, data: %s, error response: %s, %s', faas_func_url, data, response.status_code, response.text)
+            logger.error('Fail to call FAAS: %s, data: %s, error response: %s, %s', run_func_url, data, response.status_code, response.text)
 
     except Exception as e:
-        logger.error('Fail to call FAAS: %s, data: %s, error: %s', faas_func_url, data, e)
+        logger.error('Fail to call FAAS: %s, data: %s, error: %s', run_func_url, data, e)
         return None
 
 

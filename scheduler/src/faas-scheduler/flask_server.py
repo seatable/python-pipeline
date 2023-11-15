@@ -26,6 +26,9 @@ executor = ThreadPoolExecutor(max_workers=settings.SCRIPT_WORKERS)
 
 @app.route('/ping/', methods=['GET'])
 def ping():
+    if not ping_starter():
+        return make_response(('SeaTable Python Starter not reachable. Check PYTHON_STARTER_URL.', 400))
+
     return make_response(('Pong', 200))
 
 
