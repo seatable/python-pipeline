@@ -19,7 +19,12 @@ run_func_url = starter_url.rstrip('/') + '/function/run-python'
 class ScriptInvalidException(Exception):
     pass
 
-def 
+def ping_starter(request):
+    response = requests.get(settings.SEATABLE_STARTER_URL.rstrip('/'))
+    if response.status_code == 200:
+        return True
+
+    return False
 
 
 def check_auth_token(request):

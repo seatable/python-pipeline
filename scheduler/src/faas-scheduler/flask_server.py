@@ -15,7 +15,7 @@ from faas_scheduler.utils import check_auth_token, \
     add_task, get_task, update_task, delete_task, \
     run_script, get_script, add_script, \
     get_run_script_statistics_by_month, hook_update_script, \
-    can_run_task, get_run_scripts_count_monthly, list_tasks
+    can_run_task, get_run_scripts_count_monthly, list_tasks, ping_starter
 
 app = Flask(__name__)
 logging.basicConfig(
@@ -26,9 +26,8 @@ executor = ThreadPoolExecutor(max_workers=settings.SCRIPT_WORKERS)
 
 @app.route('/ping/', methods=['GET'])
 def ping():
-    if not ping_starter():
+    if not ping_starter(request):
         return make_response(('SeaTable Python Starter not reachable. Check PYTHON_STARTER_URL.', 400))
-
     return make_response(('Pong', 200))
 
 
