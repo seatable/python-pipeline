@@ -20,7 +20,7 @@ class ScriptInvalidException(Exception):
     pass
 
 def ping_starter(request):
-    response = requests.get(settings.SEATABLE_STARTER_URL.rstrip('/'))
+    response = requests.get(settings.PYTHON_STARTER_URL.rstrip('/'))
     if response.status_code == 200:
         return True
 
@@ -41,7 +41,6 @@ def get_script_file(dtable_uuid, script_name):
     dtable_uuid = str(UUID(dtable_uuid))
     headers = {'Authorization': 'Token ' + settings.PYTHON_SCHEDULER_AUTH_TOKEN}
     url = '%s/api/v2.1/dtable/%s/run-script/%s/task/file/' % (settings.SEATABLE_SERVER_URL.rstrip('/'), dtable_uuid, script_name)
-    logger.error('BLUBBER %s' % url)
     response = requests.get(url, headers=headers, timeout=30)
     if response.status_code == 404:  # script file not found
         raise ScriptInvalidException('dtable: %s, script: %s invalid' % (dtable_uuid, script_name))
@@ -69,10 +68,10 @@ def call_faas_func(script_url, temp_api_token, context_data, script_id=None):
         # so only check response
 
         if response.status_code != 200:
-            logger.error('Fail to call FAAS: %s, data: %s, error response: %s, %s', run_func_url, data, response.status_code, response.text)
+            logger.error('Fail to call scheduler: %s, data: %s, error response: %s, %s', run_func_url, data, response.status_code, response.text)
 
     except Exception as e:
-        logger.error('Fail to call FAAS: %s, data: %s, error: %s', run_func_url, data, e)
+        logger.error('Fail to call scheduler: %s, data: %s, error: %s', run_func_url, data, e)
         return None
 
 
