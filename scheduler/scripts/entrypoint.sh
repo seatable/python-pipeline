@@ -4,7 +4,7 @@
 function log() {
     local time=$(date +"%F %T")
     echo "$time $1 "
-    echo "[$time] $1 " &>> /opt/seatable-faas-scheduler/logs/init.log
+    echo "[$time] $1 " &>> /opt/seatable-faas-scheduler/logs/faas-scheduler.log
 }
 
 
@@ -12,9 +12,9 @@ function log() {
 /etc/my_init.d/01_init.sh
 
 if [ "`ls -A /opt/seatable-faas-scheduler/conf`" = "" ]; then
-    log "Start initalization of database and config files. Check init.log if this is the last log entry."
-    /scripts/seatable-faas-scheduler.sh init-sql &>> /opt/seatable-faas-scheduler/logs/init.log
-    /scripts/seatable-faas-scheduler.sh init &>> /opt/seatable-faas-scheduler/logs/init.log
+    log "Start initalization of database and config files."
+    /scripts/seatable-faas-scheduler.sh init-sql
+    /scripts/seatable-faas-scheduler.sh init
 
     # not working
     # echo $SCHEDULER_VERSION > /opt/seatable-faas-scheduler/conf/current_version
@@ -25,7 +25,8 @@ fi
 
 # check nginx
 log "Start nginx ..."
-service nginx start & 2>&1 /dev/null
+service nginx start &
+echo ""
 
 while [ 1 ]; do
     sleep 0.2
@@ -40,7 +41,7 @@ done
 
 if [[ ! -L /etc/nginx/sites-enabled/default ]]; then
     ln -s /opt/seatable-faas-scheduler/conf/nginx.conf /etc/nginx/sites-enabled/default
-    nginx -s reload &>> /opt/seatable-faas-scheduler/logs/init.log
+    nginx -s reload &>> /dev/null
 fi
 
 # upgrade
@@ -49,7 +50,7 @@ log "Check for updates of Python Scheduler ..."
 
 
 # autorun
-echo "Starting SeaTable Python Scheduler ..."
+log "Starting SeaTable Python Scheduler ..."
 /scripts/seatable-faas-scheduler.sh start
 wait
 sleep 1
