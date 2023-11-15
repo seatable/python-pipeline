@@ -4,6 +4,8 @@ from uuid import uuid4
 DB_HOST = os.getenv('DB_HOST', 'db')
 DB_ROOT_PASSWD = os.getenv('DB_ROOT_PASSWD', '')
 SCHEDULER_AUTH_TOKEN = os.getenv('PYTHON_SCHEDULER_AUTH_TOKEN', uuid4().hex)
+SCHEDULER_HOSTNAME = os.getenv('SCHEDULER_HOSTNAME', uuid4().hex)
+DTABLE_WEB_SERVICE_URL = os.getenv('DTABLE_WEB_SERVICE_URL', '')
 
 # seatable-faas-scheduler
 seatable_faas_scheduler_config_path = '/opt/seatable-faas-scheduler/conf/seatable_faas_scheduler_settings.py'
@@ -19,10 +21,12 @@ DATABASE_NAME = 'faas_scheduler'
 RUNNER_URL = 'http://seatable-python-starter:8080'
 
 # seatable
-DTABLE_WEB_SERVICE_URL = ''
-PYTHON_SCHEDULER_AUTH_TOKEN = '%s'  # copy to dtable_web_settings.py
+DTABLE_WEB_SERVICE_URL = '%s'
+PYTHON_SCHEDULER_AUTH_TOKEN = '%s'
 
-""" % (DB_ROOT_PASSWD, DB_HOST, SCHEDULER_AUTH_TOKEN)
+""" % (DB_ROOT_PASSWD, DB_HOST, DTABLE_WEB_SERVICE_URL, SCHEDULER_AUTH_TOKEN)
+
+print('\nAdd these lines to your dtable_web_settings.py\nSEATABLE_FAAS_AUTH_TOKEN=...\nSEATABLE_FAAS_URL=...')
 
 if not os.path.exists(seatable_faas_scheduler_config_path):
     with open(seatable_faas_scheduler_config_path, 'w') as f:
