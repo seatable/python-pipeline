@@ -3,14 +3,12 @@
 function stop_server() {
     pkill -9 -f flask_server.py
     pkill -9 -f scheduler.py
-
     pkill -9 -f monitor
-
     rm -f /opt/seatable-faas-scheduler/pids/*.pid
 }
 
 function set_env() {
-    export PYTHONPATH=/opt/seatable-faas-scheduler/faas-scheduler:/usr/local/lib/python3.11/site-packages
+    export PYTHONPATH=/opt/seatable-faas-scheduler/faas-scheduler
 }
 
 function run_python_wth_env() {
@@ -20,19 +18,17 @@ function run_python_wth_env() {
 
 function check_folder() {
     if [[ ! -e /opt/seatable-faas-scheduler/conf ]]; then
-        echo 'do not find /opt/seatable-faas-scheduler/conf path'
+        echo 'There is no config folder at /opt/seatable-faas-scheduler/conf'
         exit 1
     fi
 }
 
 function start_server() {
+    set_env
 
     check_folder
-
     stop_server
     sleep 0.5
-
-    set_env
 
     cd /opt/seatable-faas-scheduler/faas-scheduler/
     python3 flask_server.py &>>/opt/seatable-faas-scheduler/logs/faas-scheduler.log &
@@ -43,18 +39,13 @@ function start_server() {
 
     /scripts/monitor.sh &>>/opt/seatable-faas-scheduler/logs/monitor.log &
 
-    echo
-    echo "SeaTable FAAS Scheduler started"
-    echo
-
+    echo "SeaTable Python Scheduler ready"
 }
 
 
 function init_sql() {
     set_env
-
     python3 /scripts/init_sql.py
-
 }
 
 
@@ -64,9 +55,7 @@ function init() {
     fi
 
     set_env
-
     python3 /scripts/init_config.py
-
 }
 
 

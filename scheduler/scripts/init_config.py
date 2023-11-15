@@ -4,7 +4,7 @@ from uuid import uuid4
 DB_HOST = os.getenv('DB_HOST', 'db')
 DB_ROOT_PASSWD = os.getenv('DB_ROOT_PASSWD', '')
 SCHEDULER_AUTH_TOKEN = os.getenv('PYTHON_SCHEDULER_AUTH_TOKEN', uuid4().hex)
-SCHEDULER_HOSTNAME = os.getenv('SCHEDULER_HOSTNAME', uuid4().hex)
+#SCHEDULER_HOSTNAME = os.getenv('SCHEDULER_HOSTNAME', uuid4().hex)
 DTABLE_WEB_SERVICE_URL = os.getenv('DTABLE_WEB_SERVICE_URL', '')
 
 # seatable-faas-scheduler

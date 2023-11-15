@@ -12,27 +12,28 @@ function log() {
 /etc/my_init.d/01_init.sh
 
 if [ "`ls -A /opt/seatable-faas-scheduler/conf`" = "" ]; then
-    log "Start init"
+    log "Start initalization of database and config files. Check init.log if this is the last log entry."
     /scripts/seatable-faas-scheduler.sh init-sql &>> /opt/seatable-faas-scheduler/logs/init.log
-    
     /scripts/seatable-faas-scheduler.sh init &>> /opt/seatable-faas-scheduler/logs/init.log
 
-    echo $SCHEDULER_VERSION > /opt/seatable-faas-scheduler/conf/current_version
+    # not working
+    # echo $SCHEDULER_VERSION > /opt/seatable-faas-scheduler/conf/current_version
 else
-    log "Conf exists"
+    log "Initalization skipped, config files already exist."
 fi
 
 
 # check nginx
-service nginx start &
+log "Start nginx ..."
+service nginx start & 2>&1 /dev/null
 
 while [ 1 ]; do
+    sleep 0.2
     process_num=$(ps -ef | grep "/usr/sbin/nginx" | grep -v "grep" | wc -l)
     if [ $process_num -eq 0 ]; then
-        log "Waiting Nginx"
-        sleep 0.2
+        log "Waiting for nginx to start ..."
     else
-        log "Nginx ready"
+        log "nginx ready"
         break
     fi
 done
@@ -43,23 +44,18 @@ if [[ ! -L /etc/nginx/sites-enabled/default ]]; then
 fi
 
 # upgrade
+log "Check for updates of Python Scheduler ..."
 /scripts/upgrade.py
 
 
 # autorun
-echo
-echo "Starting SeaTable FAAS Scheduler"
-echo
-
+echo "Starting SeaTable Python Scheduler ..."
 /scripts/seatable-faas-scheduler.sh start
-
 wait
-
 sleep 1
 
-
 #
-log "This is a idle script (infinite loop) to keep container running."
+# log "This is a idle script (infinite loop) to keep container running."
 
 function cleanup() {
     kill -s SIGTERM $!

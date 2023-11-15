@@ -109,7 +109,7 @@ def check_upgrade():
         run_script_and_update_version_stamp(script, new_version)
 
     update_version_stamp(current_version)
-    print('Auto upgrade success.')
+    print('Auto upgrade successful.')
 
 
 def main():

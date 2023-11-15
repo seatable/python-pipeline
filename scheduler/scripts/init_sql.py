@@ -12,15 +12,15 @@ def wait_for_mysql():
             pymysql.connect(host=DB_HOST, port=3306, user='root', passwd=DB_ROOT_PASSWD)
         except Exception as e:
             print ('waiting for mysql server to be ready: %s', e)
-            time.sleep(2)
+            time.sleep(10)
             continue
-        print('mysql server is ready')
+        print('mysql server ready')
         return
 
 
 wait_for_mysql()
-os.system('mysql -h $DB_HOST -p$DB_ROOT_PASSWD -e "create database faas_scheduler charset utf8";')
 
+os.system('mysql -h $DB_HOST -p$DB_ROOT_PASSWD -e "create database faas_scheduler charset utf8";')
 os.system('mysql -h $DB_HOST -p$DB_ROOT_PASSWD faas_scheduler </opt/seatable-faas-scheduler/faas-scheduler/mysql.sql')
 
-print('Init sql success')
+print('Initalization of database success')
