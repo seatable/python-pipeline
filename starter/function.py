@@ -14,7 +14,7 @@ from flask import Flask, request, make_response
 import settings
 
 working_dir = os.getcwd()
-transfer_directory = os.environ.get("TRANSFER_DIRECTORY")
+PYTHON_TRANSFER_DIRECTORY = os.environ.get("PYTHON_TRANSFER_DIRECTORY")
 
 if not settings.DEBUG:
     log_dir = os.path.join(os.path.dirname(__file__), 'logs')
@@ -55,14 +55,14 @@ def send_to_scheduler(success, return_code, output, spend_time, request_data):
     spend_time: time subprocess took
     request_data: data from request
     """
-    if not settings.SCHEDULER_URL:
-        logging.error('SCHEDULER_URL not set!')
+    if not settings.PYTHON_SCHEDULER_URL:
+        logging.error('PYTHON_SCHEDULER_URL not set!')
         return
 
     if output:
         output = output[:settings.OUTPUT_LIMIT]
 
-    url = settings.SCHEDULER_URL.strip('/') + '/script-result/'
+    url = settings.PYTHON_SCHEDULER_URL.strip('/') + '/script-result/'
 
     result_data = {
         'success': success,
@@ -126,7 +126,7 @@ def run_python(data):
         send_to_scheduler(False, None, 'Fail to get script', None, data)
         return
 
-    os.chdir(transfer_directory)
+    os.chdir(PYTHON_TRANSFER_DIRECTORY)
     dir_id = uuid4().hex
     container_name = 'python-runner' + dir_id
     file_name = 'index.py'

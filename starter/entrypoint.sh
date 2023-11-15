@@ -24,7 +24,7 @@ fi
 
 ##  write config file
 if [ ! -f "/shared/seatable-python-starter/conf/seatable_python_runner_settings.py" ]; then
-    echo "SCHEDULER_URL = '$PYTHON_SCHEDULER_SCHEME$PYTHON_SCHEDULER_HOSTNAME:$PYTHON_SCHEDULER_PORT'" >> /shared/seatable-python-starter/conf/seatable_python_runner_settings.py
+    echo "PYTHON_SCHEDULER_URL = '$PYTHON_SCHEDULER_URL'" >> /shared/seatable-python-starter/conf/seatable_python_runner_settings.py
     echo "IMAGE = '$IMAGE'" >> /shared/seatable-python-starter/conf/seatable_python_runner_settings.py
 fi
 

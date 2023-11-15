@@ -52,7 +52,7 @@ def call_faas_func(script_url, temp_api_token, context_data, script_id=None):
         data = {
             'script_url': script_url,
             'env': {
-                'dtable_web_url': settings.SEATABLE_SERVER_URL,
+                'dtable_web_url': settings.SEATABLE_SERVER_URL.rstrip('/'),
                 'api_token': temp_api_token,
             },
             'context_data': context_data,
@@ -294,7 +294,7 @@ def remove_invalid_tasks(db_session):
         org_ids = [t[0] for t in db_session.query(distinct(Task.org_id)).filter(Task.org_id!=-1)]
 
         # request user/org script/task permissions
-        permission_url = settings.SEATABLE_SERVER_URL.strip()+ '/api/v2.1/script-permissions/'
+        permission_url = settings.SEATABLE_SERVER_URL.strip('/')+ '/api/v2.1/script-permissions/'
         headers = {'Authorization': 'Token ' + settings.PYTHON_SCHEDULER_AUTH_TOKEN}
         response = requests.get(permission_url, headers=headers, json={'users': users, 'org_ids': org_ids})
         if response.status_code != 200:

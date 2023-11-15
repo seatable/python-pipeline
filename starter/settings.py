@@ -3,7 +3,7 @@ import sys
 import logging
 
 
-SCHEDULER_URL = ''
+PYTHON_SCHEDULER_URL = ''
 
 DEBUG = False
 LOG_LEVEL = logging.WARNING
