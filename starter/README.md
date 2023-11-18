@@ -1,5 +1,7 @@
 # Run Python
 
+REWORK NEEDED!!!
+
 ## Project description
 
 The project is for run-python, including run-python server and the definition of image which python scripts really run in.
@@ -11,11 +13,9 @@ Here is the introduction of the project files.
 - Dockerfile: definition of python-runner
 - function.py: flask app
 - settings.py: settings of functions
-- requirements.txt: requirements of python-runner
-- server_requirements.txt: requirements of function
+- requirements.txt: requirements of python-starter
 - start.sh: startup script
 - stop.sh: stop script
-
 
 ## Deploy
 
@@ -45,8 +45,7 @@ You can do that by hand or run stop script to do it autimatically.
 ./stop.sh
 ```
 
-
 ## Zip
 
 1. copy files to seatable-python-runner/
-2. zip -r seatable-python-runner.zip seatable-python-runner -x "/seatable-python-runner/.DS_Store" -x "/seatable-python-runner/local_settings.py" -x "/seatable-python-runner/Dockerfile" -x "/seatable-python-runner/requirements.txt" -x "/seatable-python-runner/readme.md" -x "/seatable-python-runner/conf/*" -x "/seatable-python-runner/logs/*"
+2. zip -r seatable-python-runner.zip seatable-python-runner -x "/seatable-python-runner/.DS*Store" -x "/seatable-python-runner/local_settings.py" -x "/seatable-python-runner/Dockerfile" -x "/seatable-python-runner/requirements.txt" -x "/seatable-python-runner/readme.md" -x "/seatable-python-runner/conf/*" -x "/seatable-python-runner/logs/\_"

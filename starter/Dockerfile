@@ -1,3 +1,4 @@
+## Compile Image
 FROM docker:cli AS compile-image
 
 # bash (convenience) and linux-headers (uswgi build dependency) added
@@ -10,11 +11,8 @@ RUN apk add --no-cache unzip \
                        build-base
 
 WORKDIR /opt/seatable-python-starter
-
-COPY ["./", "/shared/seatable-python-starter/"]
-
-RUN pip install -r /shared/seatable-python-starter/requirements.txt --user \
-    && chmod +x /shared/seatable-python-starter/entrypoint.sh
+COPY ["./requirements.txt", "/opt/seatable-python-starter/"]
+RUN pip install -r /opt/seatable-python-starter/requirements.txt --user 
 
 
 ## Runtime image
@@ -24,11 +22,17 @@ RUN apk add --no-cache bash \
                        curl \
                        python3-dev
 
+
+
 WORKDIR /opt/seatable-python-starter
+COPY ["./", "./"]
+#COPY ["./entrypoint.sh", "./"]
+#COPY ["./runner.py", "./"]
+#COPY ["./uwsgi.ini", "./"]
 
-COPY ["./", "/shared/seatable-python-starter/"]
+# copy compiled pip packages in runtime-image
 COPY --from=compile-image /root/.local /root/.local
-
 ENV PATH=/root/.local/bin:$PATH
 
-ENTRYPOINT ["/shared/seatable-python-starter/entrypoint.sh"]
+RUN chmod +x entrypoint.sh
+ENTRYPOINT ["/bin/sh", "/opt/seatable-python-starter/entrypoint.sh"]
