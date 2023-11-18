@@ -30,16 +30,16 @@ if [ $container_count -gt 0 ]; then
 fi
 
 check_empty () {
-    if [ -z "${1+x}" ]; then
-        echo "{$2}" is empty ot not defined.
+    if [ -z "$1" ]; then
+        echo "$2 is empty ot not defined."
         exit 1
     fi
 }
 
 check_starter_config() {
-    check_empty "${PYTHON_SCHEDULER_URL+x}" PYTHON_SCHEDULER_URL
-    check_empty "${PYTHON_TRANSFER_DIRECTORY+x}" PYTHON_TRANSFER_DIRECTORY
-    check_empty "${IMAGE+x}" IMAGE
+    check_empty "${PYTHON_SCHEDULER_URL}" "PYTHON_SCHEDULER_URL"
+    check_empty "${PYTHON_TRANSFER_DIRECTORY}" "PYTHON_TRANSFER_DIRECTORY"
+    check_empty "${PYTHON_RUNNER_IMAGE}" "PYTHON_RUNNER_IMAGE"
 }
 
 #################################################
