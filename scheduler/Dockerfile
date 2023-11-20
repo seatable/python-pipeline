@@ -13,7 +13,7 @@ FROM python:3.11-slim-bookworm AS runtime-image
 WORKDIR /opt/seatable-faas-scheduler
 COPY ["src/faas-scheduler/", "/opt/seatable-faas-scheduler/faas-scheduler/"]
 
-# seatable/seatable-faas-scheduler:1.x.x
+# seatable/seatable-faas-scheduler:1.x.x   -> not needed.
 ENV SCHEDULER_VERSION=
 
 # Clean up && Installation of the apt packages

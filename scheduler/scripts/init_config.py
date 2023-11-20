@@ -3,9 +3,10 @@ from uuid import uuid4
 
 DB_HOST = os.getenv('DB_HOST', 'db')
 DB_ROOT_PASSWD = os.getenv('DB_ROOT_PASSWD', '')
-SCHEDULER_AUTH_TOKEN = os.getenv('PYTHON_SCHEDULER_AUTH_TOKEN', uuid4().hex)
-SCHEDULER_URL = os.getenv('PYTHON_SCHEDULER_URL', uuid4().hex)
+SCHEDULER_AUTH_TOKEN = os.getenv('PYTHON_SCHEDULER_AUTH_TOKEN', '')
+SCHEDULER_URL = os.getenv('PYTHON_SCHEDULER_URL', '')
 SEATABLE_SERVER_URL = os.getenv('SEATABLE_SERVER_URL', '')
+STARTER_URL = os.getenv('PYTHON_STARTER_URL', '')
 
 # seatable-faas-scheduler
 seatable_faas_scheduler_config_path = '/opt/seatable-faas-scheduler/conf/seatable_faas_scheduler_settings.py'
@@ -18,11 +19,11 @@ MYSQL_PORT = '3306'
 DATABASE_NAME = 'faas_scheduler'
 
 # scheduler
-PYTHON_STARTER_URL = 'http://seatable-python-starter:8080'
+PYTHON_STARTER_URL = '%s'
 PYTHON_SCHEDULER_AUTH_TOKEN = '%s'
 SEATABLE_SERVER_URL = '%s'
 
-""" % (DB_ROOT_PASSWD, DB_HOST, SCHEDULER_AUTH_TOKEN, SEATABLE_SERVER_URL)
+""" % (DB_ROOT_PASSWD, DB_HOST, STARTER_URL, SCHEDULER_AUTH_TOKEN, SEATABLE_SERVER_URL)
 
 print('\nAdd these lines to your dtable_web_settings.py\nSEATABLE_FAAS_AUTH_TOKEN=' + SCHEDULER_AUTH_TOKEN + '\nSEATABLE_FAAS_URL=' + SCHEDULER_URL)
 
