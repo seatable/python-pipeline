@@ -7,20 +7,32 @@ from uuid import UUID
 from tzlocal import get_localzone
 from sqlalchemy import desc, distinct, text
 from faas_scheduler.models import Task, ScriptLog
-from faas_scheduler.constants import CONDITION_DAILY, TIMEOUT_OUTPUT
-import faas_scheduler.settings as settings
+#from faas_scheduler.constants import CONDITION_DAILY, TIMEOUT_OUTPUT
+
 
 logger = logging.getLogger(__name__)
 
-starter_url = getattr(settings, 'PYTHON_STARTER_URL', '')
-run_func_url = starter_url.rstrip('/') + '/function/run-python'
+STARTER_URL = os.getenv('PYTHON_STARTER_URL', '')
+RUN_FUNC_URL = STARTER_URL.rstrip('/') + '/function/run-python'
+SEATABLE_SERVER_URL = os.getenv('SEATABLE_SERVER_URL', '')
+SCHEDULER_AUTH_TOKEN = os.getenv('SCHEDULER_AUTH_TOKEN', '')
+
+# defaults...
+SCRIPT_WORKERS = 5
+SCHEDULER_INTERVAL = 3600
+SCHEDULER_WORKERS = 3
+CONF_DIR = '/opt/seatable-faas-scheduler/conf/'
+LOG_DIR = '/opt/seatable-faas-scheduler/logs/'
+SUB_PROCESS_TIMEOUT = 60 * 15
+CONDITION_DAILY = 'daily'
+TIMEOUT_OUTPUT = 'Script running for too long time!'
 
 
 class ScriptInvalidException(Exception):
     pass
 
 def ping_starter(request):
-    response = requests.get(settings.PYTHON_STARTER_URL.rstrip('/') + '/ping/')
+    response = requests.get(STARTER_URL.rstrip('/') + '/ping/')
     if response.status_code == 200:
         return True
 
@@ -29,7 +41,7 @@ def ping_starter(request):
 
 def check_auth_token(request):
     value = request.headers.get('Authorization', '')
-    if value == 'Token ' + settings.PYTHON_SCHEDULER_AUTH_TOKEN or value == 'Bearer ' + settings.PYTHON_SCHEDULER_AUTH_TOKEN:
+    if value == 'Token ' + SCHEDULER_AUTH_TOKEN or value == 'Bearer ' + SCHEDULER_AUTH_TOKEN:
         return True
 
     return False
@@ -39,8 +51,8 @@ def get_script_file(dtable_uuid, script_name):
     if not script_name or not dtable_uuid:
         raise ScriptInvalidException('dtable: %s script: %s invalid' % (dtable_uuid, script_name))
     dtable_uuid = str(UUID(dtable_uuid))
-    headers = {'Authorization': 'Token ' + settings.PYTHON_SCHEDULER_AUTH_TOKEN}
-    url = '%s/api/v2.1/dtable/%s/run-script/%s/task/file/' % (settings.SEATABLE_SERVER_URL.rstrip('/'), dtable_uuid, script_name)
+    headers = {'Authorization': 'Token ' + SCHEDULER_AUTH_TOKEN}
+    url = '%s/api/v2.1/dtable/%s/run-script/%s/task/file/' % (SEATABLE_SERVER_URL.rstrip('/'), dtable_uuid, script_name)
     response = requests.get(url, headers=headers, timeout=30)
     if response.status_code == 404:  # script file not found
         raise ScriptInvalidException('dtable: %s, script: %s invalid' % (dtable_uuid, script_name))
@@ -56,22 +68,22 @@ def call_faas_func(script_url, temp_api_token, context_data, script_id=None):
         data = {
             'script_url': script_url,
             'env': {
-                'dtable_web_url': settings.SEATABLE_SERVER_URL.rstrip('/'),
+                'dtable_web_url': SEATABLE_SERVER_URL.rstrip('/'),
                 'api_token': temp_api_token,
             },
             'context_data': context_data,
             'script_id': script_id,
         }
-        response = requests.post(run_func_url, json=data, timeout=30)
+        response = requests.post(RUN_FUNC_URL, json=data, timeout=30)
 
         # script will be executed asynchronously, so there will be nothing in response
         # so only check response
 
         if response.status_code != 200:
-            logger.error('Fail to call scheduler: %s, data: %s, error response: %s, %s', run_func_url, data, response.status_code, response.text)
+            logger.error('Fail to call scheduler: %s, data: %s, error response: %s, %s', RUN_FUNC_URL, data, response.status_code, response.text)
 
     except Exception as e:
-        logger.error('Fail to call scheduler: %s, data: %s, error: %s', run_func_url, data, e)
+        logger.error('Fail to call scheduler: %s, data: %s, error: %s', RUN_FUNC_URL, data, e)
         return None
 
 
@@ -228,8 +240,8 @@ def can_run_task(owner, org_id, db_session, scripts_running_limit=None):
 
     # check run-scripts count/limit
     if not scripts_running_limit:
-        url = '%s/api/v2.1/scripts-running-limit/' % (settings.SEATABLE_SERVER_URL.strip('/'),)
-        headers = {'Authorization': 'Token ' + settings.PYTHON_SCHEDULER_AUTH_TOKEN}
+        url = '%s/api/v2.1/scripts-running-limit/' % (SEATABLE_SERVER_URL.strip('/'),)
+        headers = {'Authorization': 'Token ' + SCHEDULER_AUTH_TOKEN}
         if org_id and org_id != -1:
             params = {'org_id': org_id}
         elif owner:
@@ -298,8 +310,8 @@ def remove_invalid_tasks(db_session):
         org_ids = [t[0] for t in db_session.query(distinct(Task.org_id)).filter(Task.org_id!=-1)]
 
         # request user/org script/task permissions
-        permission_url = settings.SEATABLE_SERVER_URL.strip('/')+ '/api/v2.1/script-permissions/'
-        headers = {'Authorization': 'Token ' + settings.PYTHON_SCHEDULER_AUTH_TOKEN}
+        permission_url = SEATABLE_SERVER_URL.strip('/')+ '/api/v2.1/script-permissions/'
+        headers = {'Authorization': 'Token ' + SCHEDULER_AUTH_TOKEN}
         response = requests.get(permission_url, headers=headers, json={'users': users, 'org_ids': org_ids})
         if response.status_code != 200:
             logger.error('request script permissions error status code: %s', response.status_code)
@@ -339,7 +351,7 @@ def check_and_set_tasks_timeout(db_session):
     try:
         db_session.execute(text(sql), {
             'now': now,
-            'timeout_interval': settings.SUB_PROCESS_TIMEOUT,
+            'timeout_interval': SUB_PROCESS_TIMEOUT,
             'timeout_output': TIMEOUT_OUTPUT
         })
         db_session.commit()

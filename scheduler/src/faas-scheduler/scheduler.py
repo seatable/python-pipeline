@@ -6,7 +6,7 @@ from concurrent.futures import ThreadPoolExecutor, wait, ALL_COMPLETED
 from threading import Thread
 
 from faas_scheduler import DBSession
-import faas_scheduler.settings as settings
+#import faas_scheduler.settings as settings
 from faas_scheduler.utils import list_tasks_to_run, remove_invalid_tasks, run_task, check_and_set_tasks_timeout
 
 logging.basicConfig(
@@ -14,15 +14,22 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# defaults...
+SCRIPT_WORKERS = 5
+SCHEDULER_INTERVAL = 3600
+SCHEDULER_WORKERS = 3
+LOG_DIR = '/opt/scheduler/logs/'
+SUB_PROCESS_TIMEOUT = 60 * 15
+
 
 class FAASScheduler(Thread):
 
     def __init__(self):
         super(FAASScheduler, self).__init__()
-        self.interval = settings.SCHEDULER_INTERVAL
-        self.logfile = os.path.join(settings.LOG_DIR, 'scheduler.log')
+        self.interval = SCHEDULER_INTERVAL
+        self.logfile = os.path.join(LOG_DIR, 'scheduler.log')
         self.executor = ThreadPoolExecutor(
-            max_workers=settings.SCHEDULER_WORKERS)
+            max_workers=SCHEDULER_WORKERS)
 
     def run(self):
         while True:
@@ -46,13 +53,13 @@ class FAASScheduler(Thread):
             logger.info('Sleep %d...' % self.interval)
             time.sleep(self.interval)
 
-
+## this code is never used ?!?!
 class FAASTaskCleaner(Thread):
 
     def __init__(self):
         super(FAASTaskCleaner, self).__init__()
         self.interval = 60 * 60 * 24
-        self.logfile = os.path.join(settings.LOG_DIR, 'scheduler.log')
+        self.logfile = os.path.join(LOG_DIR, 'scheduler.log')
 
     def run(self):
         while True:
@@ -78,7 +85,7 @@ class FAASTaskTimeoutSetter(Thread):
         self.interval = 60 * 10
 
     def run(self):
-        if settings.SUB_PROCESS_TIMEOUT and isinstance(settings.SUB_PROCESS_TIMEOUT, int):
+        if SUB_PROCESS_TIMEOUT and isinstance(SUB_PROCESS_TIMEOUT, int):
             while True:
                 logger.info('Start task timeout setter...')
                 db_session = DBSession()
@@ -97,5 +104,4 @@ class FAASTaskTimeoutSetter(Thread):
 
 if __name__ == '__main__':
     task_timeout_setter = FAASTaskTimeoutSetter()
-
     task_timeout_setter.start()

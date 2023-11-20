@@ -8,21 +8,28 @@ from flask import Flask, request, make_response
 from gevent.pywsgi import WSGIServer
 from concurrent.futures import ThreadPoolExecutor
 
-import faas_scheduler.settings as settings
 from faas_scheduler import DBSession
-from faas_scheduler.constants import TIMEOUT_OUTPUT
+#from faas_scheduler.constants import TIMEOUT_OUTPUT
 from faas_scheduler.utils import check_auth_token, \
     add_task, get_task, update_task, delete_task, \
     run_script, get_script, add_script, \
     get_run_script_statistics_by_month, hook_update_script, \
     can_run_task, get_run_scripts_count_monthly, list_tasks, ping_starter
 
+# defaults...
+SCRIPT_WORKERS = 5
+SCHEDULER_INTERVAL = 3600
+SCHEDULER_WORKERS = 3
+SUB_PROCESS_TIMEOUT = 60 * 15
+TIMEOUT_OUTPUT = 'Script running for too long time!'
+
+
 app = Flask(__name__)
 logging.basicConfig(
     format='[%(asctime)s] [%(levelname)s] %(name)s:%(lineno)s %(funcName)s %(message)s'
 )
 logger = logging.getLogger(__name__)
-executor = ThreadPoolExecutor(max_workers=settings.SCRIPT_WORKERS)
+executor = ThreadPoolExecutor(max_workers=SCRIPT_WORKERS)
 
 @app.route('/ping/', methods=['GET'])
 def ping():
@@ -97,10 +104,10 @@ def script_api(script_id):
                 or script_name != script.script_name:
             return make_response(('Bad request', 400))
 
-        if settings.SUB_PROCESS_TIMEOUT and isinstance(settings.SUB_PROCESS_TIMEOUT, int):
+        if SUB_PROCESS_TIMEOUT and isinstance(SUB_PROCESS_TIMEOUT, int):
             now = datetime.now()
             duration_seconds = (now - script.started_at).seconds
-            if duration_seconds > settings.SUB_PROCESS_TIMEOUT:
+            if duration_seconds > SUB_PROCESS_TIMEOUT:
                 script.success = False
                 script.return_code = -1
                 script.finished_at = now
