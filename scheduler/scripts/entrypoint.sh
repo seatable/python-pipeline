@@ -39,10 +39,10 @@ while [ 1 ]; do
     fi
 done
 
-if [[ ! -L /etc/nginx/sites-enabled/default ]]; then
-    ln -s /opt/seatable-faas-scheduler/conf/nginx.conf /etc/nginx/sites-enabled/default
-    nginx -s reload &>> /dev/null
-fi
+#if [[ ! -L /etc/nginx/sites-enabled/default ]]; then
+#    ln -s /opt/seatable-faas-scheduler/conf/nginx.conf /etc/nginx/sites-enabled/default
+#    nginx -s reload &>> /dev/null
+#fi
 
 # upgrade
 log "Check for updates of Python Scheduler ..."

@@ -33,39 +33,39 @@ if not os.path.exists(seatable_faas_scheduler_config_path):
 
 
 # nginx
-nginx_config_path = '/opt/seatable-faas-scheduler/conf/nginx.conf'
+#nginx_config_path = '/opt/seatable-faas-scheduler/conf/nginx.conf'
 
 # init nginx http config
-nginx_http_config = """
-log_format seatableformat '$http_x_forwarded_for $remote_addr [$time_local] "$request" $status $body_bytes_sent "$http_referer" "$http_user_agent" $upstream_response_time';
+#nginx_http_config = """
+#log_format seatableformat '$http_x_forwarded_for $remote_addr [$time_local] "$request" $status $body_bytes_sent "$http_referer" "$http_user_agent" $upstream_response_time';
+#
+#server {
+#    server_name _;
+#    listen 80;
+#
+#    proxy_set_header X-Forwarded-For $remote_addr;
+#
+#    location / {
+#        proxy_pass http://localhost:5055;
+#
+#        proxy_set_header Host $host;
+#        proxy_set_header X-Real-IP $remote_addr;
+#        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+#        proxy_set_header X-Forwarded-Host $server_name;
+#
+#        access_log      /opt/nginx-logs/seatable-faas-scheduler.access.log seatableformat;
+#        error_log       /opt/nginx-logs/seatable-faas-scheduler.error.log;
+#    }
+#}
+#"""
 
-server {
-    server_name _;
-    listen 80;
+#if not os.path.exists(nginx_config_path):
+#    with open(nginx_config_path, 'w') as f:
+#        f.write(nginx_http_config)
 
-    proxy_set_header X-Forwarded-For $remote_addr;
-
-    location / {
-        proxy_pass http://localhost:5055;
-
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Host $server_name;
-
-        access_log      /opt/nginx-logs/seatable-faas-scheduler.access.log seatableformat;
-        error_log       /opt/nginx-logs/seatable-faas-scheduler.error.log;
-    }
-}
-"""
-
-if not os.path.exists(nginx_config_path):
-    with open(nginx_config_path, 'w') as f:
-        f.write(nginx_http_config)
-
-    if not os.path.exists('/etc/nginx/sites-enabled/default'):
-        os.system(
-            'ln -s /opt/seatable-faas-scheduler/conf/nginx.conf /etc/nginx/sites-enabled/default')
-    os.system('nginx -s reload')
+#    if not os.path.exists('/etc/nginx/sites-enabled/default'):
+#        os.system(
+#            'ln -s /opt/seatable-faas-scheduler/conf/nginx.conf /etc/nginx/sites-enabled/default')
+#    os.system('nginx -s reload')
 
 print('\nInit config success')

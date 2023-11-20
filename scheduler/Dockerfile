@@ -10,6 +10,8 @@ RUN pip3 install -r /opt/seatable-faas-scheduler/requirements.txt --user
 ## Runtime Image
 FROM python:3.11-slim-bookworm AS runtime-image
 
+RUN mkdir -p /opt/scheduler/logs
+
 WORKDIR /opt/seatable-faas-scheduler
 COPY ["src/faas-scheduler/", "/opt/seatable-faas-scheduler/faas-scheduler/"]
 
@@ -31,10 +33,13 @@ ENV PATH=/root/.local/bin:$PATH
 COPY ["scripts/", "/scripts/"]
 
 # nginx configuration
-RUN mkdir -p /etc/service/nginx && \
-	rm -f /etc/nginx/sites-enabled/* /etc/nginx/conf.d/* && \
-	mv /scripts/nginx.conf /etc/nginx/nginx.conf && \
-	mv /scripts/nginx.sh /etc/service/nginx/run
+#RUN mkdir -p /etc/service/nginx && \
+#	rm -f /etc/nginx/sites-enabled/* /etc/nginx/conf.d/* && \
+#	mv /scripts/nginx.conf /etc/nginx/nginx.conf && \
+#	mv /scripts/nginx.sh /etc/service/nginx/run
+COPY ["nginx/nginx.conf", "/etc/nginx/nginx.conf"]
+COPY ["nginx/scheduler.conf", "/etc/nginx/conf.d/scheduler.conf"]
+RUN rm -r /etc/nginx/sites-enabled /etc/nginx/sites-available
 
 # my_init
 RUN rm -rf /etc/my_init.d/*
