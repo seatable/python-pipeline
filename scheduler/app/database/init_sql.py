@@ -21,6 +21,6 @@ def wait_for_mysql():
 wait_for_mysql()
 
 os.system('mysql -h $DB_HOST -p$DB_ROOT_PASSWD -e "create database faas_scheduler charset utf8";')
-os.system('mysql -h $DB_HOST -p$DB_ROOT_PASSWD faas_scheduler </opt/seatable-faas-scheduler/faas-scheduler/mysql.sql')
+os.system('mysql -h $DB_HOST -p$DB_ROOT_PASSWD faas_scheduler </opt/scheduler/database/mysql.sql')
 
 print('Initalization of database success')

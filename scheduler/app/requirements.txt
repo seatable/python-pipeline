@@ -2,7 +2,7 @@ flask
 gevent
 pymysql
 sqlalchemy
-future  # seaf-server
+future
 requests
 pyjwt
 pytz

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-export PYTHONPATH=/opt/seatable-faas-scheduler/faas-scheduler
+export PYTHONPATH=/opt/scheduler
 
 
 # log function
@@ -28,8 +28,8 @@ function monitor_flask_server() {
     if [ $check_num -eq 0 ]; then
         log "Start $process_name"
         sleep 0.2
-        cd /opt/seatable-faas-scheduler/faas-scheduler/
-        python3 flask_server.py &>>/opt/seatable-faas-scheduler/logs/web_server.log &
+        cd /opt/scheduler/
+        python3 flask_server.py &>>/opt/scheduler/logs/web_server.log &
         sleep 0.2
     fi
 }
@@ -40,8 +40,8 @@ function monitor_seatable_faas_scheduler() {
     if [ $check_num -eq 0 ]; then
         log "Start $process_name"
         sleep 0.2
-        cd /opt/seatable-faas-scheduler/faas-scheduler/
-        python3 scheduler.py &>>/opt/seatable-faas-scheduler/logs/scheduler.log &
+        cd /opt/scheduler/faas-scheduler/
+        python3 scheduler.py &>>/opt/scheduler/logs/scheduler.log &
         sleep 0.2
     fi
 }

@@ -13,9 +13,9 @@ import pymysql
 
 
 SCHEDULER_VERSION_ENV = 'SCHEDULER_VERSION'
-top_dir = '/opt/seatable-faas-scheduler/'
+top_dir = '/opt/scheduler/'
 conf_dir = top_dir + 'conf/'
-sql_dir = top_dir + 'faas-scheduler/upgrade/'
+sql_dir = top_dir + 'upgrade/'
 version_stamp_file = conf_dir + 'current_version'
 
 # mysql user and passwd
@@ -122,4 +122,4 @@ if __name__ == '__main__':
         main()
     except Exception as e:
         print('Error:', type(e), e)
-        print('Auto upgrade failed, please run < seatable-faas-scheduler.sh upgrade-sql x.x.x > manually.')
+        print('Auto upgrade failed, please run < scheduler.sh upgrade-sql x.x.x > manually.')

@@ -1,6 +1,7 @@
 from gevent import monkey
 monkey.patch_all()
 
+import os
 import json
 import logging
 from datetime import datetime
@@ -9,7 +10,6 @@ from gevent.pywsgi import WSGIServer
 from concurrent.futures import ThreadPoolExecutor
 
 from faas_scheduler import DBSession
-#from faas_scheduler.constants import TIMEOUT_OUTPUT
 from faas_scheduler.utils import check_auth_token, \
     add_task, get_task, update_task, delete_task, \
     run_script, get_script, add_script, \

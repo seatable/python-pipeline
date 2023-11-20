@@ -1,3 +1,4 @@
+import os
 import json
 import logging
 import requests
@@ -21,8 +22,7 @@ SCHEDULER_AUTH_TOKEN = os.getenv('SCHEDULER_AUTH_TOKEN', '')
 SCRIPT_WORKERS = 5
 SCHEDULER_INTERVAL = 3600
 SCHEDULER_WORKERS = 3
-CONF_DIR = '/opt/seatable-faas-scheduler/conf/'
-LOG_DIR = '/opt/seatable-faas-scheduler/logs/'
+LOG_DIR = '/opt/scheduler/logs/'
 SUB_PROCESS_TIMEOUT = 60 * 15
 CONDITION_DAILY = 'daily'
 TIMEOUT_OUTPUT = 'Script running for too long time!'

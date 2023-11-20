@@ -1,3 +1,4 @@
+import os
 from urllib.parse import quote
 
 from sqlalchemy.ext.declarative import declarative_base
@@ -13,7 +14,7 @@ MYSQL_DATABASE_NAME = 'faas-scheduler'
 # DBSession for flask and scheduler
 db_url = 'mysql+pymysql://%s:%s@%s:%s/%s?charset=utf8mb4' % \
     (quote(MYSQL_USER), quote(MYSQL_PASSWORD),
-     quote(MYSQL_HOST), quote(MYSQL_PORT), quote(DATABASE_NAME))
+     quote(MYSQL_HOST), quote(MYSQL_PORT), quote(MYSQL_DATABASE_NAME))
 db_kwargs = dict(pool_recycle=300, echo=False, echo_pool=False)
 
 engine = create_engine(db_url, **db_kwargs)

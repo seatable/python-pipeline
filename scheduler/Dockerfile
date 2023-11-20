@@ -2,21 +2,15 @@
 FROM python:3.11-slim-bookworm AS compile-image
 
 # Installation of the pip packages
-WORKDIR /opt/seatable-faas-scheduler
-COPY ["src/faas-scheduler/requirements.txt", "./"]
-RUN pip3 install -r /opt/seatable-faas-scheduler/requirements.txt --user
-
+WORKDIR /opt/scheduler
+COPY ["app/requirements.txt", "/opt/scheduler/requirements.txt"]
+RUN pip3 install -r /opt/scheduler/requirements.txt --user
 
 ## Runtime Image
 FROM python:3.11-slim-bookworm AS runtime-image
 
-RUN mkdir -p /opt/scheduler/logs
-
-WORKDIR /opt/seatable-faas-scheduler
-COPY ["src/faas-scheduler/", "/opt/seatable-faas-scheduler/faas-scheduler/"]
-
 # seatable/seatable-faas-scheduler:1.x.x   -> not needed.
-ENV SCHEDULER_VERSION=
+ENV SCHEDULER_VERSION=4.2.7
 
 # Clean up && Installation of the apt packages
 RUN apt-get update --fix-missing && \
@@ -25,28 +19,24 @@ RUN apt-get update --fix-missing && \
     export DEBIAN_FRONTEND=noninteractive && \
     apt-get install -y tzdata nginx default-mysql-client procps
 
+# REMOVE THIS LINE
+RUN apt-get install -y curl net-tools nano
+
 # copy compiled pip packages in runtime-image
 COPY --from=compile-image /root/.local /root/.local
 ENV PATH=/root/.local/bin:$PATH
 
-
-COPY ["scripts/", "/scripts/"]
-
 # nginx configuration
-#RUN mkdir -p /etc/service/nginx && \
-#	rm -f /etc/nginx/sites-enabled/* /etc/nginx/conf.d/* && \
-#	mv /scripts/nginx.conf /etc/nginx/nginx.conf && \
-#	mv /scripts/nginx.sh /etc/service/nginx/run
 COPY ["nginx/nginx.conf", "/etc/nginx/nginx.conf"]
 COPY ["nginx/scheduler.conf", "/etc/nginx/conf.d/scheduler.conf"]
 RUN rm -r /etc/nginx/sites-enabled /etc/nginx/sites-available
 
-# my_init
-RUN rm -rf /etc/my_init.d/*
-COPY scripts/01_init.sh /etc/my_init.d/01_init.sh
-RUN chmod +x /etc/my_init.d/01_init.sh \
-	/scripts/*.sh \
-	/scripts/*.py
+# copy scheduler app
+WORKDIR /opt/scheduler
+COPY ["app/", "/opt/scheduler/"]
+COPY ["version", "/opt/scheduler/version"]
+RUN mkdir -p /opt/scheduler/logs
+RUN pip3 install -r /opt/scheduler/requirements.txt --user
 
 # Add Tini
 ENV TINI_VERSION v0.19.0
@@ -55,4 +45,4 @@ RUN chmod +x /tini
 ENTRYPOINT ["/tini", "--"]
 
 # Run your program under Tini
-CMD ["/scripts/entrypoint.sh"]
+CMD ["/opt/scheduler/entrypoint.sh"]
