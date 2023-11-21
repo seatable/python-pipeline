@@ -1,9 +1,12 @@
 #!/bin/sh
 
-if [[ "$1" != 'custom' ]]; then
+if [ -f /scripts/index.py ]; then
     cd /scripts
     cat input | python index.py > output
     exit $?
+else
+    echo "No input file found"
+    echo "Goodbye"
 fi
 
 function cleanup() {

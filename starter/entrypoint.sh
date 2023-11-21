@@ -1,40 +1,63 @@
 #!/bin/bash
-#
-# kill old uwsgi and stop/remove old containers
 
+## todo: helpful?
+set -o pipefail
+set +e
+
+version=`cat /opt/seatable-python-starter/version`
+export VERSION=${version}
+
+echo "
+*******************
+* SEATABLE PYTHON STARTER (v${VERSION})
+*******************
+"
+
+echo "** Clean old uwsgi and python-runner containers"
+
+# kill old uwsgi
 grep_uwsgi_count=`ps aux | grep 'run-pythonuWSGI' | wc -l`
-
 if [ $grep_uwsgi_count -gt 1 ]; then
     ps aux | grep 'run-pythonuWSGI' | grep -v grep | awk '{print $1}' | xargs kill -9
 fi
 
 # stop/remove python-runner containers
 alive_container_count=`docker ps | grep '$IMAGE' | wc -l`
-
 if [ $alive_container_count -gt 0 ]; then
     docker ps | grep '$IMAGE' | awk '{print $1}' | xargs docker container stop
 fi
 
+# remove old python-runner images
 container_count=`docker container ls -a | grep '$IMAGE' | wc -l`
-
 if [ $container_count -gt 0 ]; then
     docker container ls -a | grep '$IMAGE' | awk '{print $1}' | xargs docker container rm
 fi
 
+check_empty () {
+    if [ -z "$1" ]; then
+        echo "$2 is empty ot not defined."
+        exit 1
+    fi
+}
 
-##  write config file
-if [ ! -f "/shared/seatable-python-starter/conf/seatable_python_runner_settings.py" ]; then
-    echo "SCHEDULER_URL = '$PYTHON_SCHEDULER_SCHEME$PYTHON_SCHEDULER_HOSTNAME:$PYTHON_SCHEDULER_PORT'" >> /shared/seatable-python-starter/conf/seatable_python_runner_settings.py
-    echo "IMAGE = '$IMAGE'" >> /shared/seatable-python-starter/conf/seatable_python_runner_settings.py
+check_starter_config() {
+    check_empty "${PYTHON_SCHEDULER_URL}" "PYTHON_SCHEDULER_URL"
+    check_empty "${PYTHON_TRANSFER_DIRECTORY}" "PYTHON_TRANSFER_DIRECTORY"
+    check_empty "${PYTHON_RUNNER_IMAGE}" "PYTHON_RUNNER_IMAGE"
+}
+
+#################################################
+
+check_starter_config
+
+echo "** uWSGI is starting now"
+uwsgi --ini /opt/seatable-python-starter/uwsgi.ini 2>&1 &
+sleep 1
+if curl -IsSf http://127.0.0.1:8080/ping/ >/dev/null 2>&1; then
+    echo "** SeaTable Python Starter ready"
+else
+    echo "** Error: SeaTable Python Starter is not ready. uWSGI is not answering."
 fi
-
-ln -sn /shared/seatable-python-starter/* /opt/seatable-python-starter
-
-uwsgi --ini /shared/seatable-python-starter/conf/seatable_python_runner.ini
-
-
-## idle script
-echo "This is a idle script (infinite loop) to keep container running."
 
 function cleanup() {
     kill -s SIGTERM $!
