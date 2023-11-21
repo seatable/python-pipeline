@@ -36,6 +36,8 @@ TIMEOUT_OUTPUT = 'Script running for too long time!'
 class ScriptInvalidException(Exception):
     pass
 
+
+## part of ping to get the check if the python starter can be reached.
 def ping_starter(request):
     response = requests.get(STARTER_URL.rstrip('/') + '/ping/')
     if response.status_code == 200:
@@ -43,6 +45,7 @@ def ping_starter(request):
 
     return False
 
+## triggered from scheduler.py to remove old script_logs
 def delete_log_after_days(db_session):
     clean_script_logs = "DELETE FROM `script_log` WHERE `started_at` < DATE_SUB(NOW(), INTERVAL %s DAY)" % DELETE_LOG_DAYS
     logger.debug(clean_script_logs)
@@ -156,12 +159,24 @@ def update_statistics(db_session, dtable_uuid, owner, org_id, spend_time):
     except Exception as e:
         logger.exception('update statistics sql error: %s' % (e,))
 
+# required to get "script logs" in dtable-web
+def list_task_logs(db_session, dtable_uuid, script_name, order_by='-id'):
+    if '-' in order_by:
+        order_by = desc(order_by.strip('-'))
+    task_logs = db_session.query(ScriptLog).filter_by(dtable_uuid=dtable_uuid, script_name=script_name).order_by(order_by)
 
-def get_task(db_session, dtable_uuid, script_name):
-    task = db_session.query(
-        Task).filter_by(dtable_uuid=dtable_uuid, script_name=script_name).first()
+    return task_logs
 
-    return task
+# required for get "script logs" in dtable-web
+def get_task_log(db_session, log_id):
+    task_log = db_session.query(ScriptLog).filter_by(id=log_id).first()
+    return task_log
+
+## deprecated
+#def get_task(db_session, dtable_uuid, script_name):
+#    task = db_session.query(
+#        Task).filter_by(dtable_uuid=dtable_uuid, script_name=script_name).first()
+#    return task
 
 
 # not used anymore...
@@ -174,60 +189,59 @@ def get_task(db_session, dtable_uuid, script_name):
 #    return task
 
 
-def update_task(db_session, task, context_data, trigger, is_active):
-    if context_data is not None:
-        task.context_data = json.dumps(context_data)
-    if trigger is not None:
-        task.trigger = json.dumps(trigger)
-    if is_active is not None:
-        task.is_active = is_active
-    db_session.commit()
+## deprecated
+#def update_task(db_session, task, context_data, trigger, is_active):
+#    if context_data is not None:
+#        task.context_data = json.dumps(context_data)
+#    if trigger is not None:
+#        task.trigger = json.dumps(trigger)
+#    if is_active is not None:
+#        task.is_active = is_active
+#    db_session.commit()
+#    return task
 
-    return task
-
-
-def delete_task(db_session, task):
-    db_session.delete(task)
-    db_session.commit()
-
-    return True
-
-
-def list_tasks(db_session, is_active=True):
-    tasks = db_session.query(
-        Task).filter_by(is_active=is_active)
-
-    return tasks
+## deprecated
+#def delete_task(db_session, task):
+#    db_session.delete(task)
+#    db_session.commit()
+#    return True
 
 
-def update_task_trigger_time(db_session, task):
-    task.last_trigger_time = datetime.now()
-    db_session.commit()
-
-    return task
-
-
-def list_tasks_to_run(db_session):
-    """ Only for scheduler """
-    active_tasks = list_tasks(db_session)
-    tasks = []
-    now = datetime.now()
-    for task in active_tasks:
-        last_trigger_time = task.last_trigger_time
-        trigger = json.loads(task.trigger)
-        condition = trigger.get('condition')
-        # if condition == CONDITION_DAILY:
-        alarm_days = trigger.get('alarm_days', 1)
-
-        if last_trigger_time == None:
-            tasks.append(task)
-        else:
-            if last_trigger_time + timedelta(days=alarm_days) <= now:
-                tasks.append(task)
-
-    return tasks
+## deprecated
+#def list_tasks(db_session, is_active=True):
+#    tasks = db_session.query(
+#        Task).filter_by(is_active=is_active)
+#    return tasks
 
 
+## deprecated
+#def update_task_trigger_time(db_session, task):
+#    task.last_trigger_time = datetime.now()
+#    db_session.commit()
+#    return task
+
+## deprecated
+#def list_tasks_to_run(db_session):
+#    """ Only for scheduler """
+#    active_tasks = list_tasks(db_session)
+#    tasks = []
+#    now = datetime.now()
+#    for task in active_tasks:
+#        last_trigger_time = task.last_trigger_time
+#        trigger = json.loads(task.trigger)
+#        condition = trigger.get('condition')
+#        # if condition == CONDITION_DAILY:
+#        alarm_days = trigger.get('alarm_days', 1)
+#
+#        if last_trigger_time == None:
+#            tasks.append(task)
+#        else:
+#            if last_trigger_time + timedelta(days=alarm_days) <= now:
+#                tasks.append(task)
+#
+#    return tasks
+
+# get current count of executions for team or username
 def get_run_scripts_count_monthly(username, org_id, db_session, month=None):
     sql = '''
     SELECT SUM(total_run_count) FROM %s
@@ -251,9 +265,10 @@ def get_run_scripts_count_monthly(username, org_id, db_session, month=None):
     return int(count) if count else 0
 
 
+## executed from flask_server, to check if execution is possible (check limits!)
 def can_run_task(owner, org_id, db_session, scripts_running_limit=None):
     """
-    whether can run task
+    whether can run task (check run limits for teams)
     """
     if org_id == -1 and '@seafile_group' in owner:
         return True
@@ -285,80 +300,84 @@ def can_run_task(owner, org_id, db_session, scripts_running_limit=None):
     return count < scripts_running_limit
 
 
-def run_task(task):
-    """ Only for scheduler """
-    db_session = DBSession()  # for multithreading
-    
-    task_id = task.id
-    dtable_uuid = task.dtable_uuid
-    script_name = task.script_name
-    context_data = json.dumps(task.context_data) if task.context_data else None
+## deprecated
+#def run_task(task):
+#    """ Only for scheduler """
+#    db_session = DBSession()  # for multithreading
+#    
+#    task_id = task.id
+#    dtable_uuid = task.dtable_uuid
+#    script_name = task.script_name
+#    context_data = json.dumps(task.context_data) if task.context_data else None
+#
+#    logger.debug("run_task")
+#
+#    try:
+#        if not can_run_task(task.owner, task.org_id, db_session):
+#            return True
+#        script_file = get_script_file(dtable_uuid, script_name)
+#        script_url = script_file.get('script_url', '')
+#        temp_api_token = script_file.get('temp_api_token', '')
+#        if not script_url:
+#            raise ValueError('script not found')
+#
+#        #
+#        task_log = add_task_log(db_session, task_id)
+#        call_faas_func(script_url, temp_api_token, context_data, script_id=task_log.id)
+#        task = get_task(db_session, dtable_uuid, script_name)
+#        update_task_trigger_time(db_session, task)
+#
+#    except ScriptInvalidException as e:
+#        logger.info('task: %s script: %s invalid info: %s', task.id, task.script_name, e)
+#        db_session.query(Task).filter(Task.id==task.id).delete()
+#        db_session.commit()
+#
+#    except Exception as e:
+#        logger.exception('Run task %d error: %s' % (task_id, e))
+#    finally:
+#        db_session.close()
+#
+#    return True
 
-    try:
-        if not can_run_task(task.owner, task.org_id, db_session):
-            return True
-        script_file = get_script_file(dtable_uuid, script_name)
-        script_url = script_file.get('script_url', '')
-        temp_api_token = script_file.get('temp_api_token', '')
-        if not script_url:
-            raise ValueError('script not found')
 
-        #
-        task_log = add_task_log(db_session, task_id)
-        call_faas_func(script_url, temp_api_token, context_data, script_id=task_log.id)
-        task = get_task(db_session, dtable_uuid, script_name)
-        update_task_trigger_time(db_session, task)
-
-    except ScriptInvalidException as e:
-        logger.info('task: %s script: %s invalid info: %s', task.id, task.script_name, e)
-        db_session.query(Task).filter(Task.id==task.id).delete()
-        db_session.commit()
-
-    except Exception as e:
-        logger.exception('Run task %d error: %s' % (task_id, e))
-    finally:
-        db_session.close()
-
-    return True
-
-
-def remove_invalid_tasks(db_session):
-    try:
-        # select all users and org_ids
-        users = [t[0] for t in db_session.query(distinct(Task.owner)).filter(Task.org_id==-1)]
-        org_ids = [t[0] for t in db_session.query(distinct(Task.org_id)).filter(Task.org_id!=-1)]
-
-        # request user/org script/task permissions
-        permission_url = SEATABLE_SERVER_URL.strip('/')+ '/api/v2.1/script-permissions/'
-        headers = {'Authorization': 'Token ' + SCHEDULER_AUTH_TOKEN}
-        response = requests.get(permission_url, headers=headers, json={'users': users, 'org_ids': org_ids})
-        if response.status_code != 200:
-            logger.error('request script permissions error status code: %s', response.status_code)
-            return
-
-        # retrieve user/org permissions from response
-        user_script_permissions = response.json().get('user_script_permissions', {})
-        org_script_permissions = response.json().get('org_script_permissions', {})
-
-        # remove tasks that belong to owner/org who has no permission to run task
-        # and their logs
-        task_ids = []
-        for user, permission_dict in user_script_permissions.items():
-            if permission_dict.get('can_schedule_run_script') is False:
-                tasks = db_session.query(Task).filter_by(owner=user)
-                for task in tasks:
-                    task_ids.append(task.id)
-                tasks.delete()
-        for org_id, permission_dict in org_script_permissions.items():
-            if permission_dict.get('can_schedule_run_script') is False:
-                tasks = db_session.query(Task).filter_by(org_id=org_id)
-                for task in tasks:
-                    task_ids.append(task.id)
-                tasks.delete()
-
-        db_session.commit()
-    except Exception as e:
-        logger.exception(e)
+## deprecated
+#def remove_invalid_tasks(db_session):
+#    try:
+#        # select all users and org_ids
+#        users = [t[0] for t in db_session.query(distinct(Task.owner)).filter(Task.org_id==-1)]
+#        org_ids = [t[0] for t in db_session.query(distinct(Task.org_id)).filter(Task.org_id!=-1)]
+#
+#        # request user/org script/task permissions
+#        permission_url = SEATABLE_SERVER_URL.strip('/')+ '/api/v2.1/script-permissions/'
+#        headers = {'Authorization': 'Token ' + SCHEDULER_AUTH_TOKEN}
+#        response = requests.get(permission_url, headers=headers, json={'users': users, 'org_ids': org_ids})
+#        if response.status_code != 200:
+#            logger.error('request script permissions error status code: %s', response.status_code)
+#            return
+#
+#        # retrieve user/org permissions from response
+#        user_script_permissions = response.json().get('user_script_permissions', {})
+#        org_script_permissions = response.json().get('org_script_permissions', {})
+#
+#        # remove tasks that belong to owner/org who has no permission to run task
+#        # and their logs
+#        task_ids = []
+#        for user, permission_dict in user_script_permissions.items():
+#            if permission_dict.get('can_schedule_run_script') is False:
+#                tasks = db_session.query(Task).filter_by(owner=user)
+#                for task in tasks:
+#                    task_ids.append(task.id)
+#                tasks.delete()
+#        for org_id, permission_dict in org_script_permissions.items():
+#            if permission_dict.get('can_schedule_run_script') is False:
+#                tasks = db_session.query(Task).filter_by(org_id=org_id)
+#                for task in tasks:
+#                    task_ids.append(task.id)
+#                tasks.delete()
+#
+#        db_session.commit()
+#    except Exception as e:
+#        logger.exception(e)
 
 
 # update entries in script_log after SUB_PROCESS_TIMEOUT (typically 15 minutes)

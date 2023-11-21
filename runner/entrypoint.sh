@@ -1,11 +1,6 @@
 #!/bin/sh
 
-# source version
-echo "SeaTable Python Runner ready"
-
-#if [[ "$1" != 'custom' ]]; then
 if [ -f /scripts/index.py ]; then
-    echo "let's run the python code"
     cd /scripts
     cat input | python index.py > output
     exit $?

@@ -29,21 +29,24 @@ fi
 sed -i '$a\PATH=/opt/scheduler:$PATH' ~/.bashrc
 chmod u+x /opt/scheduler/*.sh
 
+echo "
+*******************
+* SEATABLE PYTHON SCHEDULER (v${VERSION})
+*******************
+"
+
 # database init
 echo "Initialize database ..."
 python3 /opt/scheduler/database/init_db.py
 
-
 # upgrade (später wieder einbauen...)
 #export CURRENT_VERSION = 
-echo "Check for updates of Python Scheduler (${VERSION}) ..."
+echo "Check for updates of Python Scheduler ..."
 python3 /opt/scheduler/upgrade/upgrade.py
-
 
 # check nginx
 log "Start nginx ..."
 service nginx start &
-echo ""
 
 while [ 1 ]; do
     sleep 0.2
@@ -56,13 +59,17 @@ while [ 1 ]; do
     fi
 done
 
-
 # autorun
 log "Starting SeaTable Python Scheduler ..."
 /opt/scheduler/scheduler.sh start
 wait
 sleep 1
 
+# check if all variables are set correctly
+# later...
+
+# healthcheck
+# later...
 
 function cleanup() {
     kill -s SIGTERM $!

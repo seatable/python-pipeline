@@ -7,8 +7,12 @@ set +e
 version=`cat /opt/seatable-python-starter/version`
 export VERSION=${version}
 
-echo "*****"
-echo "** SeaTable Python Scheduler (v${version}) started"
+echo "
+*******************
+* SEATABLE PYTHON STARTER (v${VERSION})
+*******************
+"
+
 echo "** Clean old uwsgi and python-runner containers"
 
 # kill old uwsgi
