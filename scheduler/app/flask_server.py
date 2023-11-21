@@ -1,6 +1,7 @@
 from gevent import monkey
 monkey.patch_all()
 
+import sys
 import os
 import json
 import logging
@@ -11,10 +12,13 @@ from concurrent.futures import ThreadPoolExecutor
 
 from database import DBSession
 from faas_scheduler.utils import check_auth_token, \
-    add_task, get_task, update_task, delete_task, \
+    get_task, update_task, delete_task, \
     run_script, get_script, add_script, \
     get_run_script_statistics_by_month, hook_update_script, \
     can_run_task, get_run_scripts_count_monthly, list_tasks, ping_starter
+    # add_task
+
+LOG_LEVEL = os.environ.get('PYTHON_SCHEDULER_LOG_LEVEL', 'INFO')
 
 # defaults...
 SCRIPT_WORKERS = 5
@@ -24,25 +28,28 @@ SUB_PROCESS_TIMEOUT = 60 * 15
 TIMEOUT_OUTPUT = 'Script running for too long time!'
 
 
+
 app = Flask(__name__)
-logging.basicConfig(
-    format='[%(asctime)s] [%(levelname)s] %(name)s:%(lineno)s %(funcName)s %(message)s'
-)
+#logging.basicConfig(format='[%(asctime)s] [%(levelname)s] %(name)s:%(lineno)s %(funcName)s %(message)s')
+
+logging.basicConfig(stream=sys.stdout, format="[%(asctime)s] [%(levelname)s] %(name)s:%(lineno)s %(funcName)s %(message)s", level=LOG_LEVEL)
 logger = logging.getLogger(__name__)
 executor = ThreadPoolExecutor(max_workers=SCRIPT_WORKERS)
 
 @app.route('/ping/', methods=['GET'])
 def ping():
     if not ping_starter(request):
-        return make_response(('SeaTable Python Starter not reachable. Check PYTHON_STARTER_URL.', 400))
+        return make_response(('Error: Python Scheduler can not reach the Python Starter. Check PYTHON_STARTER_URL.', 400))
     return make_response(('Pong', 200))
 
 
+# called from dtable-web to start the python run
 @app.route('/run-script/', methods=['POST'])
 def scripts_api():
     if not check_auth_token(request):
         return make_response(('Forbidden: the auth token is not correct.', 403))
 
+    logger.debug('dtable-web initialized the execution of a python script...')
     try:
         data = json.loads(request.data)
         if not isinstance(data, dict):
@@ -66,12 +73,12 @@ def scripts_api():
 
     # main
     db_session = DBSession()
-    logger.debug('Create database entry for this python run')
+    logger.debug('create a database entry for this python run...')
     try:
         if scripts_running_limit != -1 and not can_run_task(owner, org_id, db_session, scripts_running_limit=scripts_running_limit):
             return make_response(('The number of runs exceeds the limit'), 400)
         script = add_script(db_session, dtable_uuid, owner, org_id, script_name, context_data, operate_from)
-        logger.debug('try to call the starter')
+        logger.debug('lets call the starter to fire up the runner...')
         executor.submit(run_script, script.id, dtable_uuid, script_name, script_url, temp_api_token, context_data)
 
         return make_response(({'script_id': script.id}, 200))
@@ -82,11 +89,13 @@ def scripts_api():
         db_session.close()
 
 
+# called from dtable-web to get the status of a specific run
 @app.route('/run-script/<script_id>/', methods=['GET'])
 def script_api(script_id):
     if not check_auth_token(request):
         return make_response(('Forbidden: the auth token is not correct.', 403))
 
+    logger.debug('dtable-web asks for the status of the execution of the python script with the id %s' % script_id)
     try:
         script_id = int(script_id)
     except Exception as e:
@@ -125,54 +134,56 @@ def script_api(script_id):
         db_session.close()
 
 
-@app.route('/tasks/', methods=['POST'])
-def tasks_api():
-    if not check_auth_token(request):
-        return make_response(('Forbidden: the auth token is not correct.', 403))
+#@app.route('/tasks/', methods=['POST'])
+#def tasks_api():
+#    if not check_auth_token(request):
+#        return make_response(('Forbidden: the auth token is not correct.', 403))
+#
+#    try:
+#        data = json.loads(request.data)
+#        if not isinstance(data, dict):
+#            return make_response(('Bad request', 400))
+#    except Exception as e:
+#        return make_response(('Bad request', 400))
+#
+#    dtable_uuid = data.get('dtable_uuid')
+#    script_name = data.get('script_name')
+#    context_data = data.get('context_data')
+#    trigger = data.get('trigger')
+#    is_active = data.get('is_active', True)
+#    owner = data.get('owner')
+#    org_id = data.get('org_id')
+#    if not dtable_uuid \
+#            or not script_name \
+#            or not trigger \
+#            or not owner:
+#        return make_response(('Parameters invalid', 400))
+#
+#    # main
+#    db_session = DBSession()
+#    try:
+#        task_in_db = get_task(db_session, dtable_uuid, script_name)
+#        if task_in_db:
+#            return make_response(('task exists', 400))
+#
+#        task = add_task(
+#            db_session, dtable_uuid, owner, org_id, script_name, context_data, trigger, is_active)
+#        return make_response(({'task': task.to_dict()}, 200))
+#
+#    except Exception as e:
+#        logger.exception(e)
+#        return make_response(('Internal server error', 500))
+#    finally:
+#        db_session.close()
 
-    try:
-        data = json.loads(request.data)
-        if not isinstance(data, dict):
-            return make_response(('Bad request', 400))
-    except Exception as e:
-        return make_response(('Bad request', 400))
 
-    dtable_uuid = data.get('dtable_uuid')
-    script_name = data.get('script_name')
-    context_data = data.get('context_data')
-    trigger = data.get('trigger')
-    is_active = data.get('is_active', True)
-    owner = data.get('owner')
-    org_id = data.get('org_id')
-    if not dtable_uuid \
-            or not script_name \
-            or not trigger \
-            or not owner:
-        return make_response(('Parameters invalid', 400))
-
-    # main
-    db_session = DBSession()
-    try:
-        task_in_db = get_task(db_session, dtable_uuid, script_name)
-        if task_in_db:
-            return make_response(('task exists', 400))
-
-        task = add_task(
-            db_session, dtable_uuid, owner, org_id, script_name, context_data, trigger, is_active)
-        return make_response(({'task': task.to_dict()}, 200))
-
-    except Exception as e:
-        logger.exception(e)
-        return make_response(('Internal server error', 500))
-    finally:
-        db_session.close()
-
-
+# what for? manage this task? used ??
 @app.route('/tasks/<dtable_uuid>/<script_name>/', methods=['GET', 'PUT', 'DELETE'])
 def task_api(dtable_uuid, script_name):
     if not check_auth_token(request):
         return make_response(('Forbidden: the auth token is not correct.', 403))
 
+    logger.debug('??? /tasks/dtable_uuid/script_name ...')
     db_session = DBSession()
     try:
         task = get_task(db_session, dtable_uuid, script_name)
@@ -208,10 +219,13 @@ def task_api(dtable_uuid, script_name):
         db_session.close()
 
 
+# what for? admin statistics??
 @app.route('/scripts-running-count/', methods=['GET'])
 def scripts_running_count():
     if not check_auth_token(request):
         return make_response(('Forbidden: the auth token is not correct.', 403))
+
+    
     username = request.args.get('username')
     org_id = request.args.get('org_id')
     raw_month = request.args.get('month')
@@ -246,10 +260,11 @@ def scripts_running_count():
     return make_response(({'count': count}, 200))
 
 
+# endpoint to be informed that the execution of python code is done.
 @app.route('/script-result/', methods=['POST'])
 def record_script_result():
     """
-    Receive result of script from python-runner
+    Receive result of script from python-starter
     """
     try:
         data = request.get_json()
@@ -277,6 +292,7 @@ def record_script_result():
     return 'success'
 
 
+# internal function...
 def get_scripts_running_statistics_by_request(request, is_user=True):
     raw_month = request.args.get('month')
     if raw_month:
@@ -315,6 +331,7 @@ def get_scripts_running_statistics_by_request(request, is_user=True):
     return make_response(({'results': results, 'count': count}, 200))
 
 
+# admin statistics
 @app.route('/admin/statistics/scripts-running/by-user/', methods=['GET'])
 def user_run_python_statistics():
     if not check_auth_token(request):
@@ -323,6 +340,7 @@ def user_run_python_statistics():
     return get_scripts_running_statistics_by_request(request, is_user=True)
 
 
+# admin statistics
 @app.route('/admin/statistics/scripts-running/by-org/', methods=['GET'])
 def org_run_python_statistics():
     if not check_auth_token(request):
@@ -331,6 +349,7 @@ def org_run_python_statistics():
     return get_scripts_running_statistics_by_request(request, is_user=False)
 
 
+# admin statistics
 @app.route('/admin/tasks/', methods=['GET'])
 def admin_tasks_api():
     if not check_auth_token(request):
@@ -360,6 +379,7 @@ def admin_tasks_api():
         db_session.close()
 
 
+# what for ???
 @app.route('/dtables/<dtable_uuid>/tasks/', methods=['DELETE'])
 def dtable_tasks(dtable_uuid):
     if not check_auth_token(request):

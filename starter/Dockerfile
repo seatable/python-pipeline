@@ -14,6 +14,7 @@ WORKDIR /opt/seatable-python-starter
 COPY ["./requirements.txt", "/opt/seatable-python-starter/"]
 RUN pip install -r /opt/seatable-python-starter/requirements.txt --user 
 
+#####
 
 ## Runtime image
 FROM docker:cli AS runtime-image

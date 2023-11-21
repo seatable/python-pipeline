@@ -20,6 +20,8 @@ STARTER_URL = os.getenv('PYTHON_STARTER_URL', '')
 RUN_FUNC_URL = STARTER_URL.rstrip('/') + '/function/run-python'
 SEATABLE_SERVER_URL = os.getenv('SEATABLE_SERVER_URL', '')
 SCHEDULER_AUTH_TOKEN = os.getenv('PYTHON_SCHEDULER_AUTH_TOKEN', '')
+#DELETE_LOG_DAYS = os.getenv('DELETE_LOG_DAYS', '30') # warum geht das nicht??
+DELETE_LOG_DAYS = os.environ.get('DELETE_LOG_DAYS', '30')
 
 # defaults...
 SCRIPT_WORKERS = 5
@@ -41,6 +43,19 @@ def ping_starter(request):
 
     return False
 
+def delete_log_after_days(db_session):
+    clean_script_logs = "DELETE FROM `script_log` WHERE `started_at` < DATE_SUB(NOW(), INTERVAL %s DAY)" % DELETE_LOG_DAYS
+    logger.debug(clean_script_logs)
+
+    try:
+        result = db_session.execute(text(clean_script_logs))
+        db_session.commit()
+        msg = '[%s] Clean %d script logs' % (datetime.now(), result.rowcount)
+        logger.info(msg)
+    except Exception as e:
+        logger.exception(e)
+    finally:
+        db_session.close()
 
 def check_auth_token(request):
     value = request.headers.get('Authorization', '')
@@ -149,14 +164,14 @@ def get_task(db_session, dtable_uuid, script_name):
     return task
 
 
-def add_task(db_session, dtable_uuid, owner, org_id, script_name, context_data, trigger, is_active):
-    context_data = json.dumps(context_data) if context_data else None
-    task = Task(
-        dtable_uuid, owner, org_id, script_name, context_data, json.dumps(trigger), is_active)
-    db_session.add(task)
-    db_session.commit()
-
-    return task
+# not used anymore...
+#def add_task(db_session, dtable_uuid, owner, org_id, script_name, context_data, trigger, is_active):
+#    context_data = json.dumps(context_data) if context_data else None
+#    task = Task(
+#        dtable_uuid, owner, org_id, script_name, context_data, json.dumps(trigger), is_active)
+#    db_session.add(task)
+#    db_session.commit()
+#    return task
 
 
 def update_task(db_session, task, context_data, trigger, is_active):
@@ -346,6 +361,7 @@ def remove_invalid_tasks(db_session):
         logger.exception(e)
 
 
+# update entries in script_log after SUB_PROCESS_TIMEOUT (typically 15 minutes)
 def check_and_set_tasks_timeout(db_session):
     now = datetime.now()
     sql = '''

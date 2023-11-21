@@ -23,13 +23,16 @@ function start_server() {
     sleep 0.5
 
     cd /opt/scheduler/
-    python3 flask_server.py &>>/opt/scheduler/logs/scheduler2.log &
+    python3 flask_server.py &
+    # &>>/opt/scheduler/logs/scheduler2.log &
     sleep 0.2
 
-    python3 scheduler.py &>>/opt/scheduler/logs/scheduler3.log &
+    python3 scheduler.py &
+    # &>>/opt/scheduler/logs/scheduler3.log &
     sleep 0.2
 
-    ./monitor.sh &>>/opt/scheduler/logs/monitor.log &
+    ./monitor.sh &
+    #&>>/opt/scheduler/logs/monitor.log &
 
     echo "SeaTable Python Scheduler ready"
 }

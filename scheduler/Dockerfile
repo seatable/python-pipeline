@@ -6,11 +6,10 @@ WORKDIR /opt/scheduler
 COPY ["app/requirements.txt", "/opt/scheduler/requirements.txt"]
 RUN pip3 install -r /opt/scheduler/requirements.txt --user
 
+#####
+
 ## Runtime Image
 FROM python:3.11-slim-bookworm AS runtime-image
-
-# seatable/seatable-faas-scheduler:1.x.x   -> not needed.
-#ENV SCHEDULER_VERSION=4.2.7
 
 # Clean up && Installation of the apt packages
 RUN apt-get update --fix-missing && \
@@ -19,8 +18,8 @@ RUN apt-get update --fix-missing && \
     export DEBIAN_FRONTEND=noninteractive && \
     apt-get install -y tzdata nginx default-mysql-client procps
 
-# REMOVE THIS LINE !!!
-RUN apt-get install -y curl net-tools nano
+# Comment this line for production
+# RUN apt-get install -y curl net-tools nano
 
 # copy compiled pip packages in runtime-image
 COPY --from=compile-image /root/.local /root/.local
