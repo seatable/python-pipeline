@@ -41,7 +41,7 @@ def ping():
 @app.route('/run-script/', methods=['POST'])
 def scripts_api():
     if not check_auth_token(request):
-        return make_response(('Forbidden', 403))
+        return make_response(('Forbidden: the auth token is not correct.', 403))
 
     try:
         data = json.loads(request.data)
@@ -66,10 +66,12 @@ def scripts_api():
 
     # main
     db_session = DBSession()
+    logger.debug('Create database entry for this python run')
     try:
         if scripts_running_limit != -1 and not can_run_task(owner, org_id, db_session, scripts_running_limit=scripts_running_limit):
             return make_response(('The number of runs exceeds the limit'), 400)
         script = add_script(db_session, dtable_uuid, owner, org_id, script_name, context_data, operate_from)
+        logger.debug('try to call the starter')
         executor.submit(run_script, script.id, dtable_uuid, script_name, script_url, temp_api_token, context_data)
 
         return make_response(({'script_id': script.id}, 200))
@@ -83,7 +85,7 @@ def scripts_api():
 @app.route('/run-script/<script_id>/', methods=['GET'])
 def script_api(script_id):
     if not check_auth_token(request):
-        return make_response(('Forbidden', 403))
+        return make_response(('Forbidden: the auth token is not correct.', 403))
 
     try:
         script_id = int(script_id)
@@ -126,7 +128,7 @@ def script_api(script_id):
 @app.route('/tasks/', methods=['POST'])
 def tasks_api():
     if not check_auth_token(request):
-        return make_response(('Forbidden', 403))
+        return make_response(('Forbidden: the auth token is not correct.', 403))
 
     try:
         data = json.loads(request.data)
@@ -169,7 +171,7 @@ def tasks_api():
 @app.route('/tasks/<dtable_uuid>/<script_name>/', methods=['GET', 'PUT', 'DELETE'])
 def task_api(dtable_uuid, script_name):
     if not check_auth_token(request):
-        return make_response(('Forbidden', 403))
+        return make_response(('Forbidden: the auth token is not correct.', 403))
 
     db_session = DBSession()
     try:
@@ -209,7 +211,7 @@ def task_api(dtable_uuid, script_name):
 @app.route('/scripts-running-count/', methods=['GET'])
 def scripts_running_count():
     if not check_auth_token(request):
-        return make_response(('Forbidden', 403))
+        return make_response(('Forbidden: the auth token is not correct.', 403))
     username = request.args.get('username')
     org_id = request.args.get('org_id')
     raw_month = request.args.get('month')
@@ -316,7 +318,7 @@ def get_scripts_running_statistics_by_request(request, is_user=True):
 @app.route('/admin/statistics/scripts-running/by-user/', methods=['GET'])
 def user_run_python_statistics():
     if not check_auth_token(request):
-        return make_response(('Forbidden', 403))
+        return make_response(('Forbidden: the auth token is not correct.', 403))
 
     return get_scripts_running_statistics_by_request(request, is_user=True)
 
@@ -324,7 +326,7 @@ def user_run_python_statistics():
 @app.route('/admin/statistics/scripts-running/by-org/', methods=['GET'])
 def org_run_python_statistics():
     if not check_auth_token(request):
-        return make_response(('Forbidden', 403))
+        return make_response(('Forbidden: the auth token is not correct.', 403))
 
     return get_scripts_running_statistics_by_request(request, is_user=False)
 
@@ -332,7 +334,7 @@ def org_run_python_statistics():
 @app.route('/admin/tasks/', methods=['GET'])
 def admin_tasks_api():
     if not check_auth_token(request):
-        return make_response(('Forbidden', 403))
+        return make_response(('Forbidden: the auth token is not correct.', 403))
     try:
         page = int(request.args.get('page', 1))
         per_page = int(request.args.get('per_page', 25))
@@ -361,7 +363,7 @@ def admin_tasks_api():
 @app.route('/dtables/<dtable_uuid>/tasks/', methods=['DELETE'])
 def dtable_tasks(dtable_uuid):
     if not check_auth_token(request):
-        return make_response(('Forbidden', 403))
+        return make_response(('Forbidden: the auth token is not correct.', 403))
 
     db_session = DBSession()
     try:

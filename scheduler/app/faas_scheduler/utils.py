@@ -10,13 +10,16 @@ from sqlalchemy import desc, distinct, text
 from faas_scheduler.models import Task, ScriptLog
 #from faas_scheduler.constants import CONDITION_DAILY, TIMEOUT_OUTPUT
 
+import sys
+sys.path.append('/opt/scheduler')
+from database import DBSession
 
 logger = logging.getLogger(__name__)
 
 STARTER_URL = os.getenv('PYTHON_STARTER_URL', '')
 RUN_FUNC_URL = STARTER_URL.rstrip('/') + '/function/run-python'
 SEATABLE_SERVER_URL = os.getenv('SEATABLE_SERVER_URL', '')
-SCHEDULER_AUTH_TOKEN = os.getenv('SCHEDULER_AUTH_TOKEN', '')
+SCHEDULER_AUTH_TOKEN = os.getenv('PYTHON_SCHEDULER_AUTH_TOKEN', '')
 
 # defaults...
 SCRIPT_WORKERS = 5
@@ -63,6 +66,7 @@ def get_script_file(dtable_uuid, script_name):
     return response.json()
 
 
+# call python-starter to run the script!
 def call_faas_func(script_url, temp_api_token, context_data, script_id=None):
     try:
         data = {
@@ -74,6 +78,7 @@ def call_faas_func(script_url, temp_api_token, context_data, script_id=None):
             'context_data': context_data,
             'script_id': script_id,
         }
+        logger.error('I call starter at url %s', RUN_FUNC_URL)
         response = requests.post(RUN_FUNC_URL, json=data, timeout=30)
 
         # script will be executed asynchronously, so there will be nothing in response
@@ -267,9 +272,8 @@ def can_run_task(owner, org_id, db_session, scripts_running_limit=None):
 
 def run_task(task):
     """ Only for scheduler """
-    from faas_scheduler import DBSession
     db_session = DBSession()  # for multithreading
-
+    
     task_id = task.id
     dtable_uuid = task.dtable_uuid
     script_name = task.script_name
@@ -386,15 +390,17 @@ def update_script(db_session, script, success, return_code, output):
     return script
 
 
+# run_script is called from flash_server. Initializes the process.
 def run_script(script_id, dtable_uuid, script_name, script_url, temp_api_token, context_data):
     """ Only for flask-server """
-    from faas_scheduler import DBSession
+    #from faas_scheduler import DBSession
     db_session = DBSession()  # for multithreading
 
     try:
         if not script_url:
             script_file = get_script_file(dtable_uuid, script_name)
             script_url = script_file.get('script_url', '')
+        logger.debug('run_script executed...')
         call_faas_func(script_url, temp_api_token, context_data, script_id=script_id)
     except Exception as e:
         logger.exception('Run script %d error: %s' % (script_id, e))

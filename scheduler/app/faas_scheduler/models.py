@@ -2,8 +2,9 @@ import json
 from sqlalchemy import Column, Integer, String, DateTime, Boolean, Text, \
     UniqueConstraint, Float, Date
 
-from faas_scheduler import Base
-
+import sys
+sys.path.append('/opt/scheduler')
+from database import Base
 
 class Task(Base):
     __tablename__ = 'task'

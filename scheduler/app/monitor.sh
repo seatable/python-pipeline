@@ -40,7 +40,7 @@ function monitor_seatable_faas_scheduler() {
     if [ $check_num -eq 0 ]; then
         log "Start $process_name"
         sleep 0.2
-        cd /opt/scheduler/faas-scheduler/
+        cd /opt/scheduler/
         python3 scheduler.py &>>/opt/scheduler/logs/scheduler.log &
         sleep 0.2
     fi
