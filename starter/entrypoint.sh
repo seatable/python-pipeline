@@ -5,7 +5,7 @@ set -o pipefail
 set +e
 
 version=`cat /opt/seatable-python-starter/version`
-export VERSION=$version
+export VERSION=${version}
 
 echo "*****"
 echo "** SeaTable Python Scheduler (v${version}) started"

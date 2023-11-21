@@ -9,7 +9,7 @@ from flask import Flask, request, make_response
 from gevent.pywsgi import WSGIServer
 from concurrent.futures import ThreadPoolExecutor
 
-from faas_scheduler import DBSession
+from database import DBSession
 from faas_scheduler.utils import check_auth_token, \
     add_task, get_task, update_task, delete_task, \
     run_script, get_script, add_script, \

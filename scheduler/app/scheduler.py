@@ -5,7 +5,7 @@ import logging
 from concurrent.futures import ThreadPoolExecutor, wait, ALL_COMPLETED
 from threading import Thread
 
-from faas_scheduler import DBSession
+from database import DBSession
 #import faas_scheduler.settings as settings
 from faas_scheduler.utils import list_tasks_to_run, remove_invalid_tasks, run_task, check_and_set_tasks_timeout
 

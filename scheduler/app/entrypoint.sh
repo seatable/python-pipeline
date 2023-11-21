@@ -1,6 +1,10 @@
 #!/bin/bash
 
-set -e
+set -o pipefail
+set +e
+
+version=`cat /opt/scheduler/version`
+export VERSION=${version}
 
 
 # log function
@@ -25,23 +29,15 @@ fi
 sed -i '$a\PATH=/opt/scheduler:$PATH' ~/.bashrc
 chmod u+x /opt/scheduler/*.sh
 
-# initilization of database (get version from database)
-# ...
+# database init
+echo "Initialize database ..."
+python3 /opt/scheduler/database/init_db.py
 
-#if [ "`ls -A /opt/scheduler/conf`" = "" ]; then
-#    log "Start initalization of database and config files."
-#    /opt/scheduler/scripts/seatable-faas-scheduler.sh init-sql
-#    #/scripts/seatable-faas-scheduler.sh init
-
-    # not working
-    # echo $SCHEDULER_VERSION > /opt/seatable-faas-scheduler/conf/current_version
-#else
-#    log "Initalization skipped, config files already exist."
-#fi
 
 # upgrade (später wieder einbauen...)
-#log "Check for updates of Python Scheduler ..."
-#/scripts/upgrade.py
+#export CURRENT_VERSION = 
+echo "Check for updates of Python Scheduler (${VERSION}) ..."
+python3 /opt/scheduler/upgrade/upgrade.py
 
 
 # check nginx

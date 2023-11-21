@@ -10,25 +10,23 @@ import os
 from os.path import abspath, basename, exists, dirname, join, isdir, islink
 import time
 import pymysql
+from sqlalchemy import text
+from datetime import datetime
 
+import sys
+sys.path.append('/opt/scheduler')
+from database import DBSession
 
-SCHEDULER_VERSION_ENV = 'SCHEDULER_VERSION'
-top_dir = '/opt/scheduler/'
-conf_dir = top_dir + 'conf/'
-sql_dir = top_dir + 'upgrade/'
-version_stamp_file = conf_dir + 'current_version'
-
-# mysql user and passwd
-DB_HOST = os.getenv('DB_HOST', 'db')
+DB_ROOT_USER = os.getenv('DB_ROOT_USER', 'root')
 DB_ROOT_PASSWD = os.getenv('DB_ROOT_PASSWD', '')
-DB_USER = os.getenv('DB_USER', '')
-DB_USER_PASSWD = os.getenv('DB_USER_PASSWD', '')
-if DB_USER and DB_USER_PASSWD:
-    db_user = DB_USER
-    db_passwd = DB_USER_PASSWD
-else:
-    db_user = 'root'
-    db_passwd = DB_ROOT_PASSWD
+DB_HOST = os.getenv('DB_HOST', 'seatable-mysql')
+DB_PORT = os.getenv('DB_PORT', '3306')
+DATABASE_NAME = os.getenv('DATABASE_NAME', 'scheduler')
+CURRENT_VERSION = os.getenv('VERSION', '4.2.1')
+
+#SCHEDULER_VERSION_ENV = 'SCHEDULER_VERSION'
+top_dir = '/opt/scheduler/'
+sql_dir = top_dir + 'upgrade/'
 
 
 def collect_upgrade_scripts(from_version, to_version):
@@ -61,59 +59,55 @@ def parse_upgrade_script_version(script):
 
 
 def run_script_and_update_version_stamp(script, new_version):
-    os.system('mysql -h %(db_host)s -u%(db_user)s -p%(db_passwd)s faas_scheduler <%(script)s' % {
+    os.system('mysql -h %(db_host)s -u%(db_user)s -p%(db_passwd)s %(database)s < %(script)s' % {
         'db_host': DB_HOST,
-        'db_user': db_user,
-        'db_passwd': db_passwd,
+        'db_user': DB_ROOT_USER,
+        'db_passwd': DB_ROOT_PASSWD,
+        'database': DATABASE_NAME,
         'script': script
     })
     update_version_stamp(new_version)
 
 
-def read_version_stamp(fn=version_stamp_file):
-    if not exists(fn):
-        with open(fn, 'w') as fp:
-            fp.write('2.1.0\n')  # default 2.1.0
-    with open(fn, 'r') as fp:
-        return fp.read().strip()
+def read_version_stamp():
+    db_session = DBSession()
+    sql = 'SELECT version FROM version_history ORDER BY update_at DESC LIMIT 1;'
+    try:
+        return db_session.execute(text(sql)).fetchone()[0]
+    except Exception as e:
+        return None
 
-
-def update_version_stamp(version, fn=version_stamp_file):
-    with open(fn, 'w') as fp:
-        fp.write(version + '\n')
-
-
-def wait_for_mysql():
-    while True:
-        try:
-            pymysql.connect(host=DB_HOST, port=3306, user=db_user, passwd=db_passwd)
-        except Exception as e:
-            print ('waiting for mysql server to be ready: %s', e)
-            time.sleep(2)
-            continue
-        print('mysql server is ready')
-        return
-
+def update_version_stamp(version):
+    db_session = DBSession()
+    sql = 'INSERT INTO version_history (version, update_at) VALUES ("%s", "%s");' % (CURRENT_VERSION, datetime.now())
+    try:
+        db_session.execute(text(sql))
+        db_session.commit()
+    except Exception as e:
+        print(e)
 
 def check_upgrade():
     last_version = read_version_stamp()
-    current_version = os.environ[SCHEDULER_VERSION_ENV]
-    if last_version == current_version:
+    if last_version == CURRENT_VERSION:
+        print('No database update needed')
         return
 
-    # Now we do the upgrade
-    scripts_to_run = collect_upgrade_scripts(from_version=last_version, to_version=current_version)
+    if last_version == None:
+        update_version_stamp(CURRENT_VERSION)    
+        return
+
+    # Now we do the upgrade, if versions are different
+    scripts_to_run = collect_upgrade_scripts(from_version=last_version, to_version=CURRENT_VERSION)
     for script in scripts_to_run:
-        print('Running scripts {}'.format(script))
+        print('Running database update: {}'.format(script))
         new_version = parse_upgrade_script_version(script)
         run_script_and_update_version_stamp(script, new_version)
 
-    update_version_stamp(current_version)
-    print('Auto upgrade successful.')
+    update_version_stamp(CURRENT_VERSION)
+    print('Database upgrade successful.')
 
 
 def main():
-    wait_for_mysql()
     check_upgrade()
 
 
@@ -122,4 +116,4 @@ if __name__ == '__main__':
         main()
     except Exception as e:
         print('Error:', type(e), e)
-        print('Auto upgrade failed, please run < scheduler.sh upgrade-sql x.x.x > manually.')
+        print('Auto upgrade failed, please run the folloging command manually: scheduler.sh upgrade-sql x.x.x')

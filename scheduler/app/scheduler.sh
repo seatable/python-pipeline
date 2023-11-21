@@ -16,17 +16,9 @@ function run_python_wth_env() {
     python3 ${*:2}
 }
 
-#function check_folder() {
-#    if [[ ! -e /opt/seatable-faas-scheduler/conf ]]; then
-#        echo 'There is no config folder at /opt/seatable-faas-scheduler/conf'
-#        exit 1
-#    fi
-#}
-
 function start_server() {
     set_env
 
-    #check_folder
     stop_server
     sleep 0.5
 
@@ -41,22 +33,6 @@ function start_server() {
 
     echo "SeaTable Python Scheduler ready"
 }
-
-
-function init_sql() {
-    set_env
-    python3 /scripts/init_sql.py
-}
-
-
-#function init() {
-#    if [[ ! -e /opt/seatable-faas-scheduler/conf ]]; then
-#        mkdir /opt/seatable-faas-scheduler/conf
-#    fi
-
-#    set_env
-#    python3 /scripts/init_config.py
-#}
 
 
 function upgrade_sql() {
@@ -78,11 +54,9 @@ case $1 in
 "stop")
     stop_server
     ;;
-"init-sql")
-    init_sql
-    ;;
-"init")
-    init
+"restart")
+    stop_server
+    start_server
     ;;
 "upgrade-sql")
     upgrade_sql "$@"
