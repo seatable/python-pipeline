@@ -20,8 +20,8 @@ STARTER_URL = os.getenv('PYTHON_STARTER_URL', '')
 RUN_FUNC_URL = STARTER_URL.rstrip('/') + '/function/run-python'
 SEATABLE_SERVER_URL = os.getenv('SEATABLE_SERVER_URL', '')
 SCHEDULER_AUTH_TOKEN = os.getenv('PYTHON_SCHEDULER_AUTH_TOKEN', '')
-#DELETE_LOG_DAYS = os.getenv('DELETE_LOG_DAYS', '30') # warum geht das nicht??
 DELETE_LOG_DAYS = os.environ.get('DELETE_LOG_DAYS', '30')
+DELETE_STATISTICS_DAYS = os.environ.get('DELETE_STATISTICS_DAYS', '90')
 
 # defaults...
 SCRIPT_WORKERS = 5
@@ -60,6 +60,25 @@ def delete_log_after_days(db_session):
         logger.exception(e)
     finally:
         db_session.close()
+
+## triggered from scheduler.py to remove old statistics
+def delete_statistics_after_days(db_session):
+    tables = ["dtable_run_script_statistics", "org_run_script_statistics", "user_run_script_statistics"]
+
+    for table in tables:
+        clean_statistics_logs = f"DELETE FROM `{table}` WHERE `run_date` < DATE_SUB(NOW(), INTERVAL %s DAY)" % DELETE_STATISTICS_DAYS
+        logger.debug(clean_statistics_logs)
+
+        try:
+            result = db_session.execute(text(clean_statistics_logs))
+            db_session.commit()
+            msg = f"[{datetime.now()}] Clean {result.rowcount} script logs from {table}"
+            logger.info(msg)
+        except Exception as e:
+            logger.exception(e)
+
+    db_session.close()
+
 
 def check_auth_token(request):
     value = request.headers.get('Authorization', '')
@@ -116,6 +135,8 @@ def update_statistics(db_session, dtable_uuid, owner, org_id, spend_time):
     if not spend_time:
         return
     username = owner
+
+    # dtable_run_script_statistcis
     sqls = ['''
     INSERT INTO dtable_run_script_statistics(dtable_uuid, run_date, total_run_count, total_run_time, update_at) VALUES
     (:dtable_uuid, :run_date, 1, :spend_time, :update_at)
@@ -125,27 +146,28 @@ def update_statistics(db_session, dtable_uuid, owner, org_id, spend_time):
     update_at=:update_at;
     ''']
 
-    if owner:  # maybe some old tasks without owner, so user/org statistics only for valuable owner
+    # org_run_script_statistics
+    if org_id and org_id != -1:
+        sqls += ['''
+        INSERT INTO org_run_script_statistics(org_id, run_date, total_run_count, total_run_time, update_at) VALUES
+        (:org_id, :run_date, 1, :spend_time, :update_at)
+        ON DUPLICATE KEY UPDATE
+        total_run_count=total_run_count+1,
+        total_run_time=total_run_time+:spend_time,
+        update_at=:update_at;
+        ''']
 
-        if org_id and org_id != -1:  # org
-            sqls += ['''
-            INSERT INTO org_run_script_statistics(org_id, run_date, total_run_count, total_run_time, update_at) VALUES
-            (:org_id, :run_date, 1, :spend_time, :update_at)
-            ON DUPLICATE KEY UPDATE
-            total_run_count=total_run_count+1,
-            total_run_time=total_run_time+:spend_time,
-            update_at=:update_at;
-            ''']
-
-        elif org_id and org_id == -1 and '@seafile_group' not in username:      # user who is not an org user
-            sqls += ['''
-            INSERT INTO user_run_script_statistics(username, run_date, total_run_count, total_run_time, update_at) VALUES
-            (:username, :run_date, 1, :spend_time, :update_at)
-            ON DUPLICATE KEY UPDATE
-            total_run_count=total_run_count+1,
-            total_run_time=total_run_time+:spend_time,
-            update_at=:update_at;
-            ''']
+    # user_run_script_statistics
+    if '@seafile_group' not in username:
+        sqls += ['''
+        INSERT INTO user_run_script_statistics(username, org_id, run_date, total_run_count, total_run_time, update_at) VALUES
+        (:username, :org_id, :run_date, 1, :spend_time, :update_at)
+        ON DUPLICATE KEY UPDATE
+        org_id=:org_id,
+        total_run_count=total_run_count+1,
+        total_run_time=total_run_time+:spend_time,
+        update_at=:update_at;
+        ''']
 
     try:
         for sql in sqls:
@@ -454,7 +476,7 @@ def hook_update_script(db_session, script_id, success, return_code, output, spen
         update_statistics(db_session, script.dtable_uuid, script.owner, script.org_id, spend_time)
 
 
-def get_run_script_statistics_by_month(db_session, is_user=True, month=None, start=0, limit=25, order_by=None):
+def get_run_script_statistics_by_month(db_session, target, month=None, start=0, limit=25, order_by=None, direction=None):
     sql = '''
     SELECT {column}, SUM(total_run_count) AS total_run_count, SUM(total_run_time) AS total_run_time
     FROM {table_name}
@@ -466,22 +488,30 @@ def get_run_script_statistics_by_month(db_session, is_user=True, month=None, sta
 
     if not month:
         month = datetime.today()
-    if is_user:
+    
+    if target == "user":
         table_name = 'user_run_script_statistics'
         column = 'username'
-    else:
+    elif target == "org":
         table_name = 'org_run_script_statistics'
         column = 'org_id'
+    elif target == "base":
+        table_name = 'dtable_run_script_statistics'
+        column = 'dtable_uuid'
+    else:
+        return []
 
     sql = sql.format(table_name=table_name, column=column)
-
     args = {
         'month': month,
         'limit': limit,
         'offset': start,
     }
     if order_by:
-        sql = sql % {'order_by': 'ORDER BY %s' % (order_by,)}
+        if direction == "desc":
+            sql = sql % {'order_by': 'ORDER BY %s DESC' % (order_by,)}
+        else:
+            sql = sql % {'order_by': 'ORDER BY %s' % (order_by,)}
     else:
         sql = sql % {'order_by': ''}
 
@@ -491,10 +521,12 @@ def get_run_script_statistics_by_month(db_session, is_user=True, month=None, sta
             'total_run_count': int(temp[1]),
             'total_run_time': int(temp[2])
         }
-        if is_user:
+        if target == "user":
             item['username'] = temp[0]
-        else:
+        elif target == "org":
             item['org_id'] = temp[0]
+        elif target == "base":
+            item['base_uuid'] = temp[0]
         results.append(item)
 
     if results:
@@ -505,11 +537,11 @@ def get_run_script_statistics_by_month(db_session, is_user=True, month=None, sta
             GROUP BY {column}) t
         '''
         count_sql = count_sql.format(table_name=table_name, column=column)
-        count = db_session.execute(text(count_sql), args).fetchone()[0]
+        total_count = db_session.execute(text(count_sql), args).fetchone()[0]
     else:
-        count = 0
+        total_count = 0
 
-    return results, count
+    return month.strftime('%Y-%m'), total_count, results
 
 def datetime_to_isoformat_timestr(datetime):
     if not datetime:
