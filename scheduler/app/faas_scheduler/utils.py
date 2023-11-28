@@ -31,6 +31,7 @@ LOG_DIR = '/opt/scheduler/logs/'
 SUB_PROCESS_TIMEOUT = 60 * 15
 CONDITION_DAILY = 'daily'
 TIMEOUT_OUTPUT = 'Script running for too long time!'
+VERSION = os.getenv('VERSION')
 
 
 class ScriptInvalidException(Exception):
@@ -96,8 +97,9 @@ def call_faas_func(script_url, temp_api_token, context_data, script_id=None):
             'context_data': context_data,
             'script_id': script_id,
         }
+        headers = {'User-Agent': 'python-scheduler/' + VERSION}
         logger.error('I call starter at url %s', RUN_FUNC_URL)
-        response = requests.post(RUN_FUNC_URL, json=data, timeout=30)
+        response = requests.post(RUN_FUNC_URL, json=data, timeout=30, headers=headers)
 
         # script will be executed asynchronously, so there will be nothing in response
         # so only check response
