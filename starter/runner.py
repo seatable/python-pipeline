@@ -85,8 +85,9 @@ def send_to_scheduler(success, return_code, output, spend_time, request_data):
     })
 
     try:
+        headers = {'User-Agent': 'python-starter/' + VERSION}
         logging.debug('try to send to scheduler: %s, result_data: %s', url, result_data)
-        response = requests.post(url, json=result_data, timeout=30)
+        response = requests.post(url, json=result_data, timeout=30, headers=headers)
     except Exception as e:
         logging.error('request could not be send to scheduler. error: %s, result_data: %s', url, e, result_data)
         return
@@ -129,7 +130,8 @@ def run_python(data):
 
     logging.debug('try to get script from seatable server')
     try:
-        resp = requests.get(script_url)
+        headers = {'User-Agent': 'python-starter/' + VERSION}
+        resp = requests.get(script_url, headers=headers)
         logging.debug('response from seatable server: resp: %s', resp)
         if resp.status_code < 200 or resp.status_code >= 300:
             logging.error('Failed to get script from %s, response: %s', script_url, resp)
