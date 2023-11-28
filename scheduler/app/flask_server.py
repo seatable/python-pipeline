@@ -356,7 +356,7 @@ def record_script_result():
 
 
 # internal function...
-def get_scripts_running_statistics_by_request(request, is_user=True):
+def get_scripts_running_statistics_by_request(request, target):
     raw_month = request.args.get('month')
     if raw_month:
         try:
@@ -373,6 +373,8 @@ def get_scripts_running_statistics_by_request(request, is_user=True):
         if '-' in order_by:
             order_by = order_by.strip('-') + ' DESC'
 
+    direction = request.args.get('direction')
+
     try:
         page = int(request.args.get('page', 1))
         per_page = int(request.args.get('per_page', 25))
@@ -383,7 +385,7 @@ def get_scripts_running_statistics_by_request(request, is_user=True):
 
     db_session = DBSession()
     try:
-        results, count = get_run_script_statistics_by_month(db_session, is_user, month=month, start=start, limit=limit, order_by=order_by)
+        month, total_count, results = get_run_script_statistics_by_month(db_session, target, month=month, start=start, limit=limit, order_by=order_by, direction=direction)
     except Exception as e:
         logger.error(e)
         logger.exception(e)
@@ -391,7 +393,7 @@ def get_scripts_running_statistics_by_request(request, is_user=True):
     finally:
         db_session.close()
 
-    return make_response(({'results': results, 'count': count}, 200))
+    return make_response(({'month': month, 'total_count': total_count, 'results': results}, 200))
 
 
 # admin statistics
@@ -400,7 +402,7 @@ def user_run_python_statistics():
     if not check_auth_token(request):
         return make_response(('Forbidden: the auth token is not correct.', 403))
 
-    return get_scripts_running_statistics_by_request(request, is_user=True)
+    return get_scripts_running_statistics_by_request(request, target="user")
 
 
 # admin statistics
@@ -409,7 +411,15 @@ def org_run_python_statistics():
     if not check_auth_token(request):
         return make_response(('Forbidden: the auth token is not correct.', 403))
 
-    return get_scripts_running_statistics_by_request(request, is_user=False)
+    return get_scripts_running_statistics_by_request(request, target="org")
+
+# admin statistics
+@app.route('/admin/statistics/scripts-running/by-base/', methods=['GET'])
+def base_run_python_statistics():
+    if not check_auth_token(request):
+        return make_response(('Forbidden: the auth token is not correct.', 403))
+
+    return get_scripts_running_statistics_by_request(request, target="base")
 
 
 ## deprecated

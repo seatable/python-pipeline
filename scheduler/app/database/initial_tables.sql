@@ -45,6 +45,7 @@ CREATE TABLE IF NOT EXISTS `dtable_run_script_statistics` (
 CREATE TABLE IF NOT EXISTS `user_run_script_statistics` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `username` varchar(255) NOT NULL,
+  `org_id` int(11) NOT NULL,
   `run_date` date NOT NULL,
   `total_run_count` int(11) DEFAULT 0,
   `total_run_time` float DEFAULT 0,

@@ -1,0 +1,1 @@
+ALTER TABLE user_run_script_statistics ADD COLUMN IF NOT EXISTS org_id int(11) NOT NULL AFTER username;
