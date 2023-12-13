@@ -168,7 +168,7 @@ def run_python(data):
             if context_data:
                 f.write(context_data)
 
-        return_code, output = None, None  # init output
+        return_code, output = None, ''  # init output
     except Exception as e:
         logging.error('Failed to save script %s, error: %s', script_url, e)
         return
@@ -240,6 +240,9 @@ def run_python(data):
         logging.debug("python runner should have created an output file in the temporary directory")
         output_file_path = os.path.join(tmp_dir, 'output')
         if os.path.isfile(output_file_path):
+            if os.path.islink(output_file_path):
+                send_to_scheduler(False, -1, 'Script invalid!', time.time() - start_at, data)
+                return
             with open(output_file_path, 'r') as f:
                 output = f.read()
         
