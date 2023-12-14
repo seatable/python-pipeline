@@ -136,53 +136,6 @@ def script_api(script_id):
 
 
 ## deprecated
-## script tasks -> happened only 4 times in total for cloud.seatable.io. No idea what this is for
-@app.route('/tasks/', methods=['POST'])
-def tasks_api():
-    if not check_auth_token(request):
-        return make_response(('Forbidden: the auth token is not correct.', 403))
-
-    return make_response(({'success': True, 'status': 'deprecated'}, 200))
-
-#    try:
-#        data = json.loads(request.data)
-#        if not isinstance(data, dict):
-#            return make_response(('Bad request', 400))
-#    except Exception as e:
-#        return make_response(('Bad request', 400))
-#
-#    dtable_uuid = data.get('dtable_uuid')
-#    script_name = data.get('script_name')
-#    context_data = data.get('context_data')
-#    trigger = data.get('trigger')
-#    is_active = data.get('is_active', True)
-#    owner = data.get('owner')
-#    org_id = data.get('org_id')
-#    if not dtable_uuid \
-#            or not script_name \
-#            or not trigger \
-#            or not owner:
-#        return make_response(('Parameters invalid', 400))
-#
-#    # main
-#    db_session = DBSession()
-#    try:
-#        task_in_db = get_task(db_session, dtable_uuid, script_name)
-#        if task_in_db:
-#            return make_response(('task exists', 400))
-#
-#        task = add_task(
-#            db_session, dtable_uuid, owner, org_id, script_name, context_data, trigger, is_active)
-#        return make_response(({'task': task.to_dict()}, 200))
-#
-#    except Exception as e:
-#        logger.exception(e)
-#        return make_response(('Internal server error', 500))
-#    finally:
-#        db_session.close()
-
-
-## deprecated
 ## manage script tasks - what are script tasks??
 @app.route('/tasks/<dtable_uuid>/<script_name>/', methods=['GET', 'PUT', 'DELETE'])
 def task_api(dtable_uuid, script_name):
@@ -190,41 +143,6 @@ def task_api(dtable_uuid, script_name):
         return make_response(('Forbidden: the auth token is not correct.', 403))
 
     return make_response(({'success': True, 'status': 'deprecated'}, 200))
-
-#    logger.debug('??? /tasks/dtable_uuid/script_name ...')
-#    db_session = DBSession()
-#    try:
-#        task = get_task(db_session, dtable_uuid, script_name)
-#        if not task:
-#            return make_response(({'task': None}, 200))
-#
-#        if request.method == 'GET':
-#            return make_response(({'task': task.to_dict()}, 200))
-#
-#        elif request.method == 'PUT':
-#            try:
-#                data = json.loads(request.data)
-#                if not isinstance(data, dict):
-#                    return make_response(('Bad request', 400))
-#            except Exception as e:
-#                return make_response(('Bad request', 400))
-#
-#            context_data = data.get('context_data')
-#            trigger = data.get('trigger', None)
-#            is_active = data.get('is_active', None)
-#            task = update_task(db_session, task, context_data, trigger, is_active)
-#            return make_response(({'task': task.to_dict()}, 200))
-#
-#        elif request.method == 'DELETE':
-#            task_id = task.id
-#            delete_task(db_session, task)
-#            return make_response(({'success': True}, 200))
-#
-#    except Exception as e:
-#        logger.exception(e)
-#        return make_response(('Internal server error', 500))
-#    finally:
-#        db_session.close()
 
 
 # get python script statistics logs...
@@ -420,65 +338,6 @@ def base_run_python_statistics():
         return make_response(('Forbidden: the auth token is not correct.', 403))
 
     return get_scripts_running_statistics_by_request(request, target="base")
-
-
-## deprecated
-# admin statistics for tasks
-@app.route('/admin/tasks/', methods=['GET'])
-def admin_tasks_api():
-    if not check_auth_token(request):
-        return make_response(('Forbidden: the auth token is not correct.', 403))
-
-    return make_response(({
-            'task_list': "",
-            'count': 0,
-            'status': 'deprecated',
-        }, 200))
-    
-    #try:
-    #    page = int(request.args.get('page', 1))
-    #    per_page = int(request.args.get('per_page', 25))
-    #except ValueError:
-    #    page, per_page = 1, 25
-
-    #start = (page - 1) * per_page
-    #end = start + per_page
-    #db_session = DBSession()
-
-    #try:
-    #    tasks_info = list_tasks(db_session)
-    #    tasks, tasks_count = tasks_info[start: end], tasks_info.count()
-    #    task_list = [task.to_dict() for task in tasks]
-    #    return make_response(({
-    #        'task_list': task_list,
-    #        'count': tasks_count,
-    #    }, 200))
-    #except Exception as e:
-    #    logger.exception(e)
-    #    return make_response(('Internal server error', 500))
-    #finally:
-    #    db_session.close()
-
-
-# called, if a base is moved to trash. 
-## deprecated
-@app.route('/dtables/<dtable_uuid>/tasks/', methods=['DELETE'])
-def dtable_tasks(dtable_uuid):
-    if not check_auth_token(request):
-        return make_response(('Forbidden: the auth token is not correct.', 403))
-
-    return make_response(({'success': True, 'status': 'deprecated'}, 200))
-
-    #db_session = DBSession()
-    #try:
-    #    list_tasks(db_session).filter_by(dtable_uuid=dtable_uuid).delete()
-    #    db_session.commit()
-    #except Exception as e:
-    #    logger.error(e)
-    #    return make_response(('Internal server error', 500))
-    #finally:
-    #    db_session.close()
-    #return make_response(({'success': True}, 200))
 
 
 if __name__ == '__main__':

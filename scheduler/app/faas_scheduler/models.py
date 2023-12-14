@@ -6,43 +6,6 @@ import sys
 sys.path.append('/opt/scheduler')
 from database import Base
 
-class Task(Base):
-    __tablename__ = 'task'
-    id = Column(Integer, primary_key=True)
-    dtable_uuid = Column(String(36))
-    owner = Column(String(255))
-    org_id = Column(Integer)
-    script_name = Column(String(255))
-    context_data = Column(Text, nullable=True)
-    trigger = Column(Text)
-    last_trigger_time = Column(DateTime, nullable=True)
-    is_active = Column(Boolean)
-
-    __table_args__ = (
-        UniqueConstraint('dtable_uuid', 'script_name'),
-    )
-
-    def __init__(self, dtable_uuid, owner, org_id, script_name, context_data, trigger, is_active):
-        self.dtable_uuid = dtable_uuid
-        self.owner = owner
-        self.org_id = org_id
-        self.script_name = script_name
-        self.context_data = context_data
-        self.trigger = trigger
-        self.is_active = is_active
-
-    def to_dict(self):
-        return {
-            'id': self.id,
-            'dtable_uuid': self.dtable_uuid,
-            'owner': self.owner,
-            'script_name': self.script_name,
-            'context_data': json.loads(self.context_data) if self.context_data else None,
-            'trigger': json.loads(self.trigger),
-            'last_trigger_time': self.last_trigger_time,
-            'is_active': self.is_active,
-        }
-
 class ScriptLog(Base):
     __tablename__ = 'script_log'
     id = Column(Integer, primary_key=True)
