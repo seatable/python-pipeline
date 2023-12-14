@@ -1,17 +1,3 @@
-CREATE TABLE IF NOT EXISTS `task` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `dtable_uuid` varchar(36) NOT NULL,
-  `owner` varchar(255),
-  `org_id` int(11),
-  `script_name` varchar(255) NOT NULL,
-  `context_data` longtext,
-  `trigger` longtext NOT NULL,
-  `last_trigger_time` datetime(6),
-  `is_active` tinyint(1) NOT NULL,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `task_dtable_uuid_script_name_yr8snbw3_uniq` (`dtable_uuid`,`script_name`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-
 CREATE TABLE IF NOT EXISTS `script_log` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `dtable_uuid` varchar(36) NOT NULL,
