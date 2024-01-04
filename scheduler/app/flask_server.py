@@ -22,10 +22,8 @@ from faas_scheduler.utils import check_auth_token, \
 LOG_LEVEL = os.environ.get('PYTHON_SCHEDULER_LOG_LEVEL', 'INFO')
 
 # defaults...
-SCRIPT_WORKERS = 5
-SCHEDULER_INTERVAL = 3600
-SCHEDULER_WORKERS = 3
-SUB_PROCESS_TIMEOUT = 60 * 15
+SCRIPT_WORKERS = int(os.environ.get('PYTHON_SCHEDULER_SCRIPT_WORKERS', 5))
+SUB_PROCESS_TIMEOUT = int(os.environ.get('PYTHON_PROCESS_TIMEOUT', 60 * 15))
 TIMEOUT_OUTPUT = 'Script running for too long time!'
 
 

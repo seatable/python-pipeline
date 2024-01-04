@@ -8,7 +8,6 @@ from uuid import UUID
 from tzlocal import get_localzone
 from sqlalchemy import desc, distinct, text
 from faas_scheduler.models import ScriptLog
-#from faas_scheduler.constants import CONDITION_DAILY, TIMEOUT_OUTPUT
 
 import sys
 sys.path.append('/opt/scheduler')
@@ -24,12 +23,8 @@ DELETE_LOG_DAYS = os.environ.get('DELETE_LOG_DAYS', '30')
 DELETE_STATISTICS_DAYS = os.environ.get('DELETE_STATISTICS_DAYS', '90')
 
 # defaults...
-SCRIPT_WORKERS = 5
-SCHEDULER_INTERVAL = 3600
-SCHEDULER_WORKERS = 3
 LOG_DIR = '/opt/scheduler/logs/'
-SUB_PROCESS_TIMEOUT = 60 * 15
-CONDITION_DAILY = 'daily'
+SUB_PROCESS_TIMEOUT = int(os.environ.get('PYTHON_PROCESS_TIMEOUT', 60 * 15))
 TIMEOUT_OUTPUT = 'Script running for too long time!'
 VERSION = os.getenv('VERSION')
 
