@@ -10,7 +10,7 @@ from database import DBSession
 from faas_scheduler.utils import check_and_set_tasks_timeout, delete_log_after_days, delete_statistics_after_days
 
 LOG_LEVEL = os.environ.get('PYTHON_SCHEDULER_LOG_LEVEL', 'INFO')
-SUB_PROCESS_TIMEOUT = os.environ.get('PYTHON_PROCESS_TIMEOUT', 900) # 60*15 = 900 or 15 minutes
+SUB_PROCESS_TIMEOUT = int(os.environ.get('PYTHON_PROCESS_TIMEOUT', 60 * 15)) # 15 minutes
 
 logging.basicConfig(stream=sys.stdout, format="[%(asctime)s] [%(levelname)s] %(name)s:%(lineno)s %(funcName)s %(message)s", level=LOG_LEVEL)
 logger = logging.getLogger(__name__)

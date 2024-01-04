@@ -7,6 +7,7 @@ import requests
 import shutil
 import subprocess
 import time
+import ast
 
 from concurrent.futures import ThreadPoolExecutor
 from uuid import uuid4
@@ -19,20 +20,26 @@ VERSION = os.environ.get("VERSION")
 PYTHON_TRANSFER_DIRECTORY = os.environ.get("PYTHON_TRANSFER_DIRECTORY")
 PYTHON_SCHEDULER_URL = os.environ.get("PYTHON_SCHEDULER_URL")
 LOG_LEVEL = os.environ.get('PYTHON_STARTER_LOG_LEVEL', 'INFO')
+TIME_ZONE = os.environ.get('TIME_ZONE', '')
 PYTHON_RUNNER_IMAGE = os.environ.get('PYTHON_RUNNER_IMAGE')
-THREAD_COUNT = 10
-SUB_PROCESS_TIMEOUT = 60 * 15  # 15 mins
-TIME_ZONE = ''
-CONTAINER_MEMORY = '2g'  # default 2G memory for each container/script
-CONTAINER_CPUS = ''
-OUTPUT_LIMIT = 1000000
-UID = ''
-GID = ''
-USER = ''
-GROUP = ''
-OTHER_OPTIONS = []
-ALTERNATIVE_FILE_SERVER_ROOT = ''
-USE_ALTERNATIVE_FILE_SERVER_ROOT = False
+
+THREAD_COUNT = int(os.environ.get('PYTHON_STARTER_THREAD_COUNT', 10))
+SUB_PROCESS_TIMEOUT = int(os.environ.get('PYTHON_PROCESS_TIMEOUT', 60 * 15))  # 15 mins
+ALTERNATIVE_FILE_SERVER_ROOT = os.environ.get('PYTHON_STARTER_ALTERNATIVE_FILE_SERVER_ROOT', '')
+USE_ALTERNATIVE_FILE_SERVER_ROOT = os.environ.get('PYTHON_STARTER_USE_ALTERNATIVE_FILE_SERVER_ROOT', '')
+
+OUTPUT_LIMIT = int(os.environ.get('PYTHON_RUNNER_OUTPUT_LIMIT', 1000000))
+CONTAINER_MEMORY = os.environ.get('PYTHON_RUNNER_CONTAINER_MEMORY', '2g')  # default 2G memory for each container/script
+CONTAINER_CPUS = os.environ.get('PYTHON_RUNNER_CONTAINER_CPUS', '')
+UID = os.environ.get('PYTHON_RUNNER_UID', '')
+GID = os.environ.get('PYTHON_RUNNER_GID', '')
+USER = os.environ.get('PYTHON_RUNNER_USER', '')
+GROUP = os.environ.get('PYTHON_RUNNER_GROUP', '')
+OTHER_OPTIONS = os.environ.get('PYTHON_RUNNER_OTHER_OPTIONS', '[]')
+try:
+    OTHER_OPTIONS = ast.literal_eval(OTHER_OPTIONS)
+except:
+    OTHER_OPTIONS = []
 
 
 # log to stdout
