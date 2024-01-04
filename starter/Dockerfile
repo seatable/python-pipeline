@@ -12,7 +12,7 @@ RUN apk add --no-cache unzip \
 
 WORKDIR /opt/seatable-python-starter
 COPY ["./requirements.txt", "/opt/seatable-python-starter/"]
-RUN pip install -r /opt/seatable-python-starter/requirements.txt --user 
+RUN pip install -r /opt/seatable-python-starter/requirements.txt --user --ignoreExternallyManagedEnvironment
 
 #####
 
