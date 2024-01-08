@@ -73,7 +73,10 @@ def read_version_stamp():
     db_session = DBSession()
     sql = 'SELECT version FROM version_history ORDER BY update_at DESC LIMIT 1;'
     try:
-        return db_session.execute(text(sql)).fetchone()[0]
+        last_one = db_session.execute(text(sql)).fetchone()
+        if not last_one:  # version_history exists but no records
+            return '4.2.1'
+        return last_one[0]
     except Exception as e:
         return None
 
