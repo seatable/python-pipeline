@@ -22,7 +22,7 @@ DB_PASSWD = os.getenv('DB_PASSWD', '')
 DB_HOST = os.getenv('DB_HOST', 'seatable-mysql')
 DB_PORT = os.getenv('DB_PORT', '3306')
 DATABASE_NAME = os.getenv('DATABASE_NAME', 'scheduler')
-CURRENT_VERSION = os.getenv('VERSION', '2.6.0')
+CURRENT_VERSION = os.getenv('VERSION', '2.2.4')
 
 #SCHEDULER_VERSION_ENV = 'SCHEDULER_VERSION'
 top_dir = '/opt/scheduler/'
