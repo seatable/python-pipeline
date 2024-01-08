@@ -17,12 +17,12 @@ import sys
 sys.path.append('/opt/scheduler')
 from database import DBSession
 
-DB_ROOT_USER = os.getenv('DB_ROOT_USER', 'root')
-DB_ROOT_PASSWD = os.getenv('DB_ROOT_PASSWD', '')
+DB_USER = os.getenv('DB_USER', 'root')
+DB_PASSWD = os.getenv('DB_PASSWD', '')
 DB_HOST = os.getenv('DB_HOST', 'seatable-mysql')
 DB_PORT = os.getenv('DB_PORT', '3306')
 DATABASE_NAME = os.getenv('DATABASE_NAME', 'scheduler')
-CURRENT_VERSION = os.getenv('VERSION', '4.2.1')
+CURRENT_VERSION = os.getenv('VERSION', '2.2.4')
 
 #SCHEDULER_VERSION_ENV = 'SCHEDULER_VERSION'
 top_dir = '/opt/scheduler/'
@@ -55,14 +55,14 @@ def collect_upgrade_scripts(from_version, to_version):
 def parse_upgrade_script_version(script):
     name = basename(script)
     version = name.rstrip('.sql')
-    return version
+    return tuple(int(v) for v in version.split('.'))
 
 
 def run_script_and_update_version_stamp(script, new_version):
     os.system('mysql -h %(db_host)s -u%(db_user)s -p%(db_passwd)s %(database)s < %(script)s' % {
         'db_host': DB_HOST,
-        'db_user': DB_ROOT_USER,
-        'db_passwd': DB_ROOT_PASSWD,
+        'db_user': DB_USER,
+        'db_passwd': DB_PASSWD,
         'database': DATABASE_NAME,
         'script': script
     })

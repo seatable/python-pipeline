@@ -112,7 +112,7 @@ def call_faas_func(script_url, temp_api_token, context_data, script_id=None):
             'script_id': script_id,
         }
         headers = {'User-Agent': 'python-scheduler/' + VERSION}
-        logger.error('I call starter at url %s', RUN_FUNC_URL)
+        logger.debug('I call starter at url %s', RUN_FUNC_URL)
         response = requests.post(RUN_FUNC_URL, json=data, timeout=30, headers=headers)
 
         # script will be executed asynchronously, so there will be nothing in response
