@@ -36,8 +36,9 @@ def wait_for_mysql():
 
 wait_for_mysql()
 
-sql = 'mysql -h %s -u%s -p%s -e "CREATE DATABASE IF NOT EXISTS %s;"' % (DB_HOST, db_user, db_passwd, DATABASE_NAME)
-os.system(sql)
+if db_user == 'root':
+    sql = 'mysql -h %s -u%s -p%s -e "CREATE DATABASE IF NOT EXISTS %s;"' % (DB_HOST, db_user, db_passwd, DATABASE_NAME)
+    os.system(sql)
 sql = 'mysql -h %s -u%s -p%s %s </opt/scheduler/database/initial_tables.sql' % (DB_HOST, db_user, db_passwd, DATABASE_NAME)
 os.system(sql)
 
