@@ -27,7 +27,7 @@ DATABASE_NAME = os.getenv('DATABASE_NAME', 'scheduler')
 
 # DBSession for flask and scheduler
 db_url = 'mysql+pymysql://%s:%s@%s:%s/%s?charset=utf8mb4' % \
-    (quote(DB_USER), quote(DB_PASSWD),
+    (quote(db_user), quote(db_passwd),
      quote(DB_HOST), quote(DB_PORT), quote(DATABASE_NAME))
 db_kwargs = dict(pool_recycle=300, echo=False, echo_pool=False)
 
