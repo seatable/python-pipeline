@@ -69,16 +69,3 @@ jobs:
             org.opencontainers.image.url=https://www.seatable.io/
             org.opencontainers.image.documentation=https://admin.seatable.io/
             org.opencontainers.image.vendor=SeaTable
-
-      - name: Notify
-        continue-on-error: true
-        run: |
-          curl 'https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=${{ secrets.WEIXIN_KEY }}' \
-          -H 'Content-Type: application/json' \
-          -d '
-          {
-              "msgtype": "markdown",
-              "markdown": {
-                  "content": "${{ matrix.context }} version: ${{ steps.get_version.outputs.version }} built and pushed"
-              }
-          }'
