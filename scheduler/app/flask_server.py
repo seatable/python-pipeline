@@ -16,8 +16,7 @@ from faas_scheduler.utils import check_auth_token, \
     get_run_script_statistics_by_month, hook_update_script, \
     can_run_task, get_run_scripts_count_monthly, ping_starter, \
     get_task_log, list_task_logs
-    # add_task, get_task, update_task, delete_task, list_tasks, \
-    
+
 
 LOG_LEVEL = os.environ.get('PYTHON_SCHEDULER_LOG_LEVEL', 'INFO')
 
@@ -131,16 +130,6 @@ def script_api(script_id):
         return make_response(('Internal server error', 500))
     finally:
         db_session.close()
-
-
-## deprecated
-## manage script tasks - what are script tasks??
-@app.route('/tasks/<dtable_uuid>/<script_name>/', methods=['GET', 'PUT', 'DELETE'])
-def task_api(dtable_uuid, script_name):
-    if not check_auth_token(request):
-        return make_response(('Forbidden: the auth token is not correct.', 403))
-
-    return make_response(({'success': True, 'status': 'deprecated'}, 200))
 
 
 # get python script statistics logs...
@@ -309,7 +298,7 @@ def get_scripts_running_statistics_by_request(request, target):
     finally:
         db_session.close()
 
-    return make_response(({'month': month, 'total_count': total_count, 'results': results}, 200))
+    return make_response(({'month': month, 'count': total_count, 'results': results}, 200))
 
 
 # admin statistics

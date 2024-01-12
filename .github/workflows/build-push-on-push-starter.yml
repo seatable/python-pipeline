@@ -56,10 +56,9 @@ jobs:
           file: ${{ matrix.dockerfile }}
           push: true
           tags: |
-            ${{ matrix.image }}:latest
             ${{ matrix.image }}:build_${{ github.run_number }}
             ${{ matrix.image }}:commit_${{ steps.get_commit.outputs.short_sha }}
-            ${{ matrix.image }}:${{ steps.get_version.outputs.version }}
+            ${{ matrix.image }}:${{ steps.get_version.outputs.version }}-test
           labels: |
             org.opencontainers.image.title=${{ matrix.image }}
             org.opencontainers.image.description=${{ matrix.short-description }}
