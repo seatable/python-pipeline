@@ -11,7 +11,7 @@ DB_USER = os.getenv('DB_USER')
 DB_PASSWD = os.getenv('DB_PASSWD')
 db_user = ''
 db_passwd = ''
-if DB_ROOT_USER and DB_ROOT_PASSWD is not None:
+if DB_ROOT_USER and DB_ROOT_PASSWD:
     db_user = 'root'
     db_passwd = DB_ROOT_PASSWD
 elif DB_USER and DB_PASSWD:
