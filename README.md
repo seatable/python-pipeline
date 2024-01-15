@@ -1,17 +1,14 @@
 # SeaTable Python Pipeline
 
-This repository contains the definition of three container images (Scheduler, Starter, Runner) designed to securely run Python code, retrieve and deliver the output in the context of SeaTable.
-During a SeaTable Deployment these images are then pulled from Docker Hub by Docker Compose.
+This repository contains the three components (Scheduler, Starter, Runner) of the python pipeline together with there packaging definition (docker file to build container images). The Python Pipeline is designed to securely run Python code, to retrieve and deliver the output in the context of SeaTable.
+During a typical SeaTable Deployment these images are pulled from Docker Hub by Docker Compose.
 Please refer to [https://admin.seatable.io](https://admin.seatable.io) for more information.
 
 ## Usage
 - Clone this repository
-- Checkout a new branch
-- Make changes to the image definition(s)
-- Build the new image locally
-- Test locally or push image with a "dev" tag to docker hub
-- Commit and push your changes
-- Create a pull request
+- Checkout a new testing branch "testing-v*.*.*"
+- Make your changes / Images are being build and pushed automatically after a commit. They get the testing_ prefix tag.
+- Create new brabch "release-v*.*.*"
 
 ```bash
 git clone <this repo>
