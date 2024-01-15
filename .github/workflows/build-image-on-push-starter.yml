@@ -39,6 +39,16 @@ jobs:
         run: echo "version=$(cat ./${{ matrix.context }}/version)" >> $GITHUB_OUTPUT
       - id: extract_branch_prefix
         run: echo "branch_prefix=$(echo ${{ github.ref }} | awk -F/ '{print $3}' | awk -Fv '{print $1}')v" >> $GITHUB_OUTPUT
+      - id: extract_branch_version
+        run: echo "branch_version=$(echo ${{ github.ref }} | awk -F/ '{print $3}' | awk -Fv '{print $2}')" >> $GITHUB_OUTPUT
+
+      - name: Compare versions
+        run: |
+          if [[ "${{ steps.get_version.outputs.version }}" != "${{ steps.extract_branch_version.outputs.branch_version }}" ]]; then
+            echo "Version from file and branch don't match, container image build aborted"
+            exit 1
+          fi
+
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -99,6 +109,15 @@ jobs:
         run: echo "version=$(cat ./${{ matrix.context }}/version)" >> $GITHUB_OUTPUT
       - id: extract_branch_prefix
         run: echo "branch_prefix=$(echo ${{ github.ref }} | awk -F/ '{print $3}' | awk -Fv '{print $1}')v" >> $GITHUB_OUTPUT
+      - id: extract_branch_version
+        run: echo "branch_version=$(echo ${{ github.ref }} | awk -F/ '{print $3}' | awk -Fv '{print $2}')" >> $GITHUB_OUTPUT
+
+      - name: Compare versions
+        run: |
+          if [[ "${{ steps.get_version.outputs.version }}" != "${{ steps.extract_branch_version.outputs.branch_version }}" ]]; then
+            echo "Version from file and branch don't match, container image build aborted"
+            exit 1
+          fi
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
