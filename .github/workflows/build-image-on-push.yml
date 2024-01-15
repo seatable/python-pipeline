@@ -77,7 +77,7 @@ jobs:
           tags: |
             seatable/seatable-python-runner:build_${{ github.run_number }}
             seatable/seatable-python-runner:commit_${{ steps.get_commit.outputs.short_sha }}
-            seatable/seatable-python-runner:testing_${{ steps.get_version.outputs.version }}
+            seatable/seatable-python-runner:testing_${{ fromJson(steps.get_version.outputs.version)[matrix.context + '_version'] }}
           labels: |
             org.opencontainers.image.title=seatable/seatable-python-${{ matrix.context }}
             org.opencontainers.image.version=${{ steps.get_version.outputs.version }}
