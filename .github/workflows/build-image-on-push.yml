@@ -1,5 +1,5 @@
 name: Build & push containers
-# on main pushes (includes merged pull requests)
+# "on push" includes merged pull requests
 
 on:
   push:
