@@ -57,9 +57,9 @@ jobs:
           file: ${{ matrix.dockerfile }}
           push: true
           tags: |
-            seatable/seatable-python-${{ matrix.context }}:build_${{ github.run_number }}
-            seatable/seatable-python-${{ matrix.context }}:commit_${{ steps.get_commit.outputs.short_sha }}
-            seatable/seatable-python-${{ matrix.context }}:testing-v${{ steps.get_version.outputs.version }}
+            seatable/seatable-python-${{ matrix.context }}:build-${{ github.run_number }}
+            seatable/seatable-python-${{ matrix.context }}:commit-${{ steps.get_commit.outputs.short_sha }}
+            seatable/seatable-python-${{ matrix.context }}:testing-${{ steps.get_version.outputs.version }}
           labels: |
             org.opencontainers.image.title=seatable/seatable-python-${{ matrix.context }}
             org.opencontainers.image.version=testing-v${{ steps.get_version.outputs.version }}
@@ -117,9 +117,9 @@ jobs:
           file: ${{ matrix.dockerfile }}
           push: true
           tags: |
-            seatable/seatable-python-${{ matrix.context }}:build_${{ github.run_number }}
-            seatable/seatable-python-${{ matrix.context }}:commit_${{ steps.get_commit.outputs.short_sha }}
-            seatable/seatable-python-${{ matrix.context }}:v${{ steps.get_version.outputs.version }}
+            seatable/seatable-python-${{ matrix.context }}:build-${{ github.run_number }}
+            seatable/seatable-python-${{ matrix.context }}:commit-${{ steps.get_commit.outputs.short_sha }}
+            seatable/seatable-python-${{ matrix.context }}:${{ steps.get_version.outputs.version }}
           labels: |
             org.opencontainers.image.title=seatable/seatable-python-${{ matrix.context }}
             org.opencontainers.image.version=v${{ steps.get_version.outputs.version }}
