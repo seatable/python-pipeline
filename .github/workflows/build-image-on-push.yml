@@ -11,9 +11,14 @@ on:
       - 'starter/**'
       - 'scheduler/**'
 
+env:
+  TESTING_BRANCH_PREFIX: 'refs/heads/testing-v'
+  RELEASE_BRANCH_PREFIX: 'refs/heads/release-v'
+
 jobs:
-  build-image-on-push:
+  build-testing-image-on-push:
     runs-on: ubuntu-latest
+    if: startsWith(github.ref, ${{ env.TESTING_BRANCH_PREFIX }})
     strategy:
       fail-fast: false
       matrix:
@@ -22,29 +27,14 @@ jobs:
           - dockerfile: ./runner/Dockerfile
             image: seatable/seatable-python-runner
             context: runner
-            ref: 'refs/heads/testing-v'
-          - dockerfile: ./runner/Dockerfile
-            image: seatable/seatable-python-runner
-            context: runner
-            ref: 'refs/heads/release-v'
 
           - dockerfile: ./starter/Dockerfile
             image: seatable/seatable-python-starter
             context: starter
-            ref: 'refs/heads/testing-v'
-          - dockerfile: ./starter/Dockerfile
-            image: seatable/seatable-python-starter
-            context: starter
-            ref: 'refs/heads/release-v'
 
           - dockerfile: ./scheduler/Dockerfile
             image: seatable/seatable-python-scheduler
             context: scheduler
-            ref: 'refs/heads/testing-v'
-          - dockerfile: ./scheduler/Dockerfile
-            image: seatable/seatable-python-scheduler
-            context: scheduler
-            ref: 'refs/heads/release-v'
 
     permissions:
       contents: read
@@ -53,42 +43,34 @@ jobs:
     steps:
 
       - name: Check out the repo
-        if: startsWith(github.ref, matrix.ref)
         uses: actions/checkout@v4
 
       - name: Set short git commit SHA
-        if: startsWith(github.ref, matrix.ref)
         id: get_commit
         run: echo "short_sha=$(git rev-parse --short ${{ github.sha }})" >> $GITHUB_OUTPUT
 
       - name: Read version files
-        if: startsWith(github.ref, matrix.ref)
         id: "get_version"
         run: echo "version=$(cat ./${{ matrix.context }}/version)" >> $GITHUB_OUTPUT
 
       - id: extract_branch_prefix
-        if: startsWith(github.ref, matrix.ref)
-        run: echo "branch_prefix=$(echo ${{ github.ref }} | awk -F/ '{print $3}' | awk -Fv '{print $1}')" >> $GITHUB_OUTPUT
+        run: echo "branch_prefix=$(echo ${{ github.ref }} | awk -F/ '{print $3}' | awk -Fv '{print $1}')v" >> $GITHUB_OUTPUT
 
 ###
       - name: Set up QEMU
-        if: startsWith(github.ref, matrix.ref)
         uses: docker/setup-qemu-action@v3
 
       - name: Set up Docker Buildx
-        if: startsWith(github.ref, matrix.ref)
         uses: docker/setup-buildx-action@v3
 
       - name: Login to Docker Hub
-        if: startsWith(github.ref, matrix.ref)
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
 ###
-      - name: Build and push runner test relase
-        if: startsWith(github.ref, matrix.ref)
+      - name: Build and push runner test release
         uses: docker/build-push-action@v5
         with:
           context: ${{ matrix.context }}
@@ -97,10 +79,10 @@ jobs:
           tags: |
             seatable/seatable-python-runner:build_${{ github.run_number }}
             seatable/seatable-python-runner:commit_${{ steps.get_commit.outputs.short_sha }}
-            seatable/seatable-python-runner:${{ steps.extract_branch_prefix.outputs.branch_prefix }}${{ steps.get_version.outputs.version }}
+            seatable/seatable-python-runner:${{ env.TESTING_BRANCH_PREFIX }}${{ steps.get_version.outputs.version }}
           labels: |
             org.opencontainers.image.title=seatable/seatable-python-${{ matrix.context }}
-            org.opencontainers.image.version=${{ steps.extract_branch_prefix.outputs.branch_prefix }}${{ steps.get_version.outputs.version }}
+            org.opencontainers.image.version=${{ env.TESTING_BRANCH_PREFIX }}${{ steps.get_version.outputs.version }}
             org.opencontainers.image.revision=${{ github.sha }}
             org.opencontainers.image.created=${{ github.event.head_commit.timestamp }}
             org.opencontainers.image.authors=SeaTable
