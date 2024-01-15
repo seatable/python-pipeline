@@ -6,7 +6,6 @@ on:
     branches:
       - "release-v*.*.*"
       - "testing-v*.*.*"
-      - "wip/workflow"
     paths:
       - 'runner/**'
       - 'starter/**'
