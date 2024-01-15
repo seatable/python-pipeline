@@ -4,9 +4,12 @@ name: Build & publish containers
 on:
   push:
     branches:
-      - main
+      - "release-v*.*.*"
+      - "testing-v*.*.*"
     paths:
       - 'runner/**'
+      - 'starter/**'
+      - 'scheduler/**'
 
 jobs:
   build-image-on-push:
@@ -19,11 +22,11 @@ jobs:
           - dockerfile: ./runner/Dockerfile
             image: seatable/seatable-python-runner
             context: runner
-            ref: 'refs/heads/testing'
+            ref: 'refs/heads/testing-v'
           - dockerfile: ./runner/Dockerfile
             image: seatable/seatable-python-runner
             context: runner
-            ref: 'refs/heads/release'
+            ref: 'refs/heads/release-v'
 
 
           # - dockerfile: ./scheduler/Dockerfile
