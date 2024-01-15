@@ -11,10 +11,6 @@ on:
       - 'starter/**'
       - 'scheduler/**'
 
-# env:
-#   TESTING_BRANCH_PREFIX: 'refs/heads/testing-v'
-#   RELEASE_BRANCH_PREFIX: 'refs/heads/release-v'
-
 jobs:
   build-testing-image-on-push:
     runs-on: ubuntu-latest
@@ -79,10 +75,10 @@ jobs:
           tags: |
             seatable/seatable-python-runner:build_${{ github.run_number }}
             seatable/seatable-python-runner:commit_${{ steps.get_commit.outputs.short_sha }}
-            seatable/seatable-python-runner:refs/heads/testing-v${{ steps.get_version.outputs.version }}
+            seatable/seatable-python-runner:testing-v${{ steps.get_version.outputs.version }}
           labels: |
             org.opencontainers.image.title=seatable/seatable-python-${{ matrix.context }}
-            org.opencontainers.image.version=refs/heads/testing-v${{ steps.get_version.outputs.version }}
+            org.opencontainers.image.version=testing-v${{ steps.get_version.outputs.version }}
             org.opencontainers.image.revision=${{ github.sha }}
             org.opencontainers.image.created=${{ github.event.head_commit.timestamp }}
             org.opencontainers.image.authors=SeaTable
