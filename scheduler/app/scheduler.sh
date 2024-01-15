@@ -40,9 +40,9 @@ function start_server() {
 
 function upgrade_sql() {
     if [ ! $DB_ROOT_PASSWD ]; then
-        mysql -h $DB_HOST -p$DB_ROOT_PASSWD faas_scheduler </opt/scheduler/upgrade/${*:2}.sql
-    else
         mysql -h $DB_HOST -u$DB_USER -p$DB_PASSWD faas_scheduler </opt/scheduler/upgrade/${*:2}.sql
+    else
+        mysql -h $DB_HOST -p$DB_ROOT_PASSWD faas_scheduler </opt/scheduler/upgrade/${*:2}.sql
     fi
 }
 
