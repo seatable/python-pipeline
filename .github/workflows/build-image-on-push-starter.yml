@@ -45,7 +45,7 @@ jobs:
       - name: Compare versions
         run: |
           if [[ "${{ steps.get_version.outputs.version }}" != "${{ steps.extract_branch_version.outputs.branch_version }}" ]]; then
-            echo "Version from file and branch don't match, container image build aborted"
+            echo "Version number from version file and branch name don't match, container image build aborted"
             exit 1
           fi
 
@@ -115,7 +115,7 @@ jobs:
       - name: Compare versions
         run: |
           if [[ "${{ steps.get_version.outputs.version }}" != "${{ steps.extract_branch_version.outputs.branch_version }}" ]]; then
-            echo "Version from file and branch don't match, container image build aborted"
+            echo "Version number from version file and branch name don't match, container image build aborted"
             exit 1
           fi
 
