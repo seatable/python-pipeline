@@ -1,4 +1,4 @@
-name: Build & publish containers
+name: Build & push containers
 # on main pushes (includes merged pull requests)
 
 on:
