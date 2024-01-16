@@ -27,6 +27,7 @@ jobs:
           elif [[ "${{ github.ref }}" == refs/heads/release-v* ]]; then
             dynamic_includes='[{"dockerfile": "./${{ env.component }}/Dockerfile", "image": "seatable/seatable-python-${{ env.component }}", "context": "${{ env.component }}", "ref": "refs/heads/release-v", "version_prefix": ""}]'
           fi
+
           echo "matrix={'include': $dynamic_includes}" >> $GITHUB_OUTPUT
 
   # echo:
