@@ -68,7 +68,7 @@ jobs:
 
 ### TEST IMAGES ###
       - name: Build and push runner test release
-        if: github.ref == matrix.ref
+        if: ${{ startsWith(github.ref, matrix.ref) }}
         uses: docker/build-push-action@v5
         with:
           context: ${{ matrix.context }}
