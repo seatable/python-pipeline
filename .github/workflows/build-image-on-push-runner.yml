@@ -4,7 +4,6 @@ name: Build & push containers
 on:
   push:
     tags:
-      ### set component
       - "testing-runner-v*.*.*"
       - "release-runner-v*.*.*"
       - "testing-scheduler-v*.*.*"
@@ -19,8 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
 
-      ### set component
-      #component: runner
+      # set ref prefix
       ref-prefix-testing: refs/tags/testing
       ref-prefix-release: refs/tags/release
 
@@ -59,12 +57,21 @@ jobs:
       - name: Set short git commit SHA
         id: get_commit
         run: echo "short_sha=$(git rev-parse --short ${{ github.sha }})" >> $GITHUB_OUTPUT
-      - name: Read version files
-        id: "get_version"
-        run: echo "version=$(cat ./${{ matrix.context }}/version)" >> $GITHUB_OUTPUT
-
       - id: extract_github_ref_version
         run: echo "version=$(echo ${{ github.ref }} | awk -F/ '{print $3}' | awk -Fv '{print $2}')" >> $GITHUB_OUTPUT
+      - id: extract_github_ref_component
+        run: echo "github_ref_component=$(echo ${{ github.ref }} | awk -F/ '{print $3}' | awk -F- '{print $2}')" >> $GITHUB_OUTPUT
+
+      # writes version file
+      - name: Write version to file
+        run: |
+          echo "${{ steps.extract_github_ref_version.outputs.github_ref_version }}" > ${{ steps.extract_github_ref_component.outputs.github_ref_component }}/version
+
+      # - name: Read version files
+      #   id: "get_version_from_file"
+      #   run: echo "version=$(cat ./${{ matrix.context }}/version)" >> $GITHUB_OUTPUT
+
+
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -86,10 +93,10 @@ jobs:
           tags: |
             seatable/seatable-python-${{ matrix.context }}:build-${{ github.run_number }}
             seatable/seatable-python-${{ matrix.context }}:commit-${{ steps.get_commit.outputs.short_sha }}
-            seatable/seatable-python-${{ matrix.context }}:${{ matrix.version_prefix }}${{ steps.get_version.outputs.version }}
+            seatable/seatable-python-${{ matrix.context }}:${{ matrix.version_prefix }}${{ steps.extract_github_ref_version.outputs.version }}
           labels: |
             org.opencontainers.image.title=seatable/seatable-python-${{ matrix.context }}
-            org.opencontainers.image.version=${{ matrix.version_prefix }}${{ steps.get_version.outputs.version }}
+            org.opencontainers.image.version=${{ matrix.version_prefix }}${{ steps.extract_github_ref_version.outputs.version }}
             org.opencontainers.image.revision=${{ github.sha }}
             org.opencontainers.image.created=${{ github.event.head_commit.timestamp }}
             org.opencontainers.image.authors=SeaTable
