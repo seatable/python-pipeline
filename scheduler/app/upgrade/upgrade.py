@@ -98,7 +98,7 @@ def read_version_stamp():
 
 def update_version_stamp(version):
     db_session = DBSession()
-    sql = 'INSERT INTO version_history (version, update_at) VALUES ("%s", "%s");' % (CURRENT_VERSION, datetime.now())
+    sql = 'INSERT INTO version_history (version, update_at) VALUES ("%s", "%s");' % (version, datetime.now())
     try:
         db_session.execute(text(sql))
         db_session.commit()
