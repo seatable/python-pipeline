@@ -65,7 +65,7 @@ jobs:
       # writes version file
       - name: Write version to file
         run: |
-          echo "${{ steps.extract_github_ref_version.outputs.github_ref_version }}" > ${{ steps.extract_github_ref_component.outputs.github_ref_component }}/version
+          echo "${{ steps.extract_github_ref_version.outputs.version }}" > "${{ steps.extract_github_ref_component.outputs.github_ref_component }}/version"
 
       # - name: Read version files
       #   id: "get_version_from_file"
