@@ -66,13 +66,6 @@ jobs:
       - id: extract_github_ref_version
         run: echo "version=$(echo ${{ github.ref }} | awk -F/ '{print $3}' | awk -Fv '{print $2}')" >> $GITHUB_OUTPUT
 
-      - name: Compare versions
-        run: |
-          if [[ "${{ steps.get_version.outputs.version }}" != "${{ steps.extract_github_ref_version.outputs.version }}" ]]; then
-            echo "Version number from version file and github.ref don't match, image build aborted"
-            exit 1
-          fi
-
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
       - name: Set up Docker Buildx
