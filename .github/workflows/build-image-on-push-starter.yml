@@ -12,7 +12,7 @@ jobs:
 ###### TESTING IMAGES
   build-testing-image-on-push:
     runs-on: ubuntu-latest
-    if: ${{ startsWith(github.ref, 'refs/heads/testing-starter-v') }}
+    if: ${{ startsWith(github.ref, 'refs/tags/testing-starter-v') }}
     strategy:
       fail-fast: false
       matrix:
@@ -82,7 +82,7 @@ jobs:
 ###### RELEASE IMAGES
   build-release-image-on-push:
     runs-on: ubuntu-latest
-    if: ${{ startsWith(github.ref, 'refs/heads/release-starter-v') }}
+    if: ${{ startsWith(github.ref, 'refs/tags/release-starter-v') }}
     strategy:
       fail-fast: false
       matrix:
