@@ -18,28 +18,12 @@ jobs:
     steps:
       - id: set-matrix
         run: |
-          if [[ "${{ github.ref }}" == refs/heads/testing-v* ]]; then
-            dynamic_includes='[
-              {
-                "dockerfile": "./runner/Dockerfile",
-                "image": "seatable/seatable-python-runner",
-                "context": "runner",
-                "ref": "refs/heads/testing-v",
-                "version_prefix": "testing-"
-              }
-            ]'
-          elif [[ "${{ github.ref }}" == refs/heads/release-v* ]]; then
-            dynamic_includes='[
-              {
-                "dockerfile": "./runner/Dockerfile",
-                "image": "seatable/seatable-python-runner",
-                "context": "runner",
-                "ref": "refs/heads/release-v",
-                "version_prefix": ""
-              }
-            ]'
-          fi
-          echo "matrix={'include': $dynamic_includes}" >> $GITHUB_OUTPUT
+        if [[ "${{ github.ref }}" == refs/heads/testing-v* ]]; then
+          dynamic_includes='[{"dockerfile": "./runner/Dockerfile", "image": "seatable/seatable-python-runner", "context": "runner", "ref": "refs/heads/testing-v", "version_prefix": "testing-"}]'
+        elif [[ "${{ github.ref }}" == refs/heads/release-v* ]]; then
+          dynamic_includes='[{"dockerfile": "./runner/Dockerfile", "image": "seatable/seatable-python-runner", "context": "runner", "ref": "refs/heads/release-v", "version_prefix": ""}]'
+        fi
+        echo "matrix={'include': $dynamic_includes}" >> $GITHUB_OUTPUT
 
   echo:
     runs-on: ubuntu-latest
