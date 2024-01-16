@@ -7,41 +7,25 @@ on:
       - "release-v*.*.*"
       - "testing-v*.*.*"
     paths:
+      ### set component path
       - 'runner/**'
 
 jobs:
 
   matrix-init:
     runs-on: ubuntu-latest
+    env:
+      ### set component
+      component: runner
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
     steps:
       - id: set-matrix
         run: |
           if [[ "${{ github.ref }}" == refs/heads/testing-v* ]]; then
-            read -r -d '' dynamic_includes <<-'EOF'
-            [
-              {
-                "dockerfile": "./runner/Dockerfile",
-                "image": "seatable/seatable-python-runner",
-                "context": "runner",
-                "ref": "refs/heads/testing-v",
-                "version_prefix": "testing-"
-              }
-            ]
-            EOF
+            dynamic_includes='[{"dockerfile": "./${{ env.component }}/Dockerfile", "image": "seatable/seatable-python-${{ env.component }}", "context": "${{ env.component }}", "ref": "refs/heads/testing-v", "version_prefix": "testing-"}]'
           elif [[ "${{ github.ref }}" == refs/heads/release-v* ]]; then
-            read -r -d '' dynamic_includes <<-'EOF'
-            [
-              {
-                "dockerfile": "./runner/Dockerfile",
-                "image": "seatable/seatable-python-runner",
-                "context": "runner",
-                "ref": "refs/heads/release-v",
-                "version_prefix": ""
-              }
-            ]
-            EOF
+            dynamic_includes='[{"dockerfile": "./${{ env.component }}/Dockerfile", "image": "seatable/seatable-python-${{ env.component }}", "context": "${{ env.component }}", "ref": "refs/heads/release-v", "version_prefix": ""}]'
           fi
           echo "matrix={'include': $dynamic_includes}" >> $GITHUB_OUTPUT
 
