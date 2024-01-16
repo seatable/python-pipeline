@@ -48,7 +48,8 @@ jobs:
           ]
           EOF
           )
-        fi
+          fi
+          echo "matrix={'include': $dynamic_includes}" >> $GITHUB_OUTPUT
 
   # echo:
   #   runs-on: ubuntu-latest
