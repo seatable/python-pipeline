@@ -3,11 +3,9 @@ name: Build & push containers
 
 on:
   push:
-    branches:
-      - "release-v*.*.*"
-      - "testing-v*.*.*"
-    paths:
-      - 'starter/**'
+    tags:
+      - "release-starter-v*.*.*"
+      - "testing-starter-v*.*.*"
 
 jobs:
 

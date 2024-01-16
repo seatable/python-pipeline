@@ -3,18 +3,16 @@ name: Build & push containers
 
 on:
   push:
-    branches:
-      - "release-v*.*.*"
-      - "testing-v*.*.*"
-    paths:
-      - 'runner/**'
+    tags:
+        - "release-runner-v*.*.*"
+        - "testing-runner-v*.*.*"
 
 jobs:
 
 ###### TESTING IMAGES
   build-testing-image-on-push:
     runs-on: ubuntu-latest
-    if: ${{ startsWith(github.ref, 'refs/heads/testing-v') }}
+    if: ${{ startsWith(github.ref, 'refs/tags/testing-v') }}
     strategy:
       fail-fast: false
       matrix:
@@ -83,7 +81,7 @@ jobs:
 ###### RELEASE IMAGES
   build-release-image-on-push:
     runs-on: ubuntu-latest
-    if: ${{ startsWith(github.ref, 'refs/heads/release-v') }}
+    if: ${{ startsWith(github.ref, 'refs/tags/release-v') }}
     strategy:
       fail-fast: false
       matrix:
