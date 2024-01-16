@@ -61,7 +61,7 @@ def collect_upgrade_scripts(from_version, to_version):
     scripts = []
     from_version = tuple(int(v) for v in from_version.split('.'))
     to_version = tuple(int(v) for v in to_version.split('.'))
-    for fn in sorted(glob.glob(join(sql_dir, '*.*.*.sql'))):
+    for fn in sorted(glob.glob(join(sql_dir, '*.*.*.sql')), key=parse_upgrade_script_version):
         v = parse_upgrade_script_version(fn)
         if from_version < v and v <= to_version:
             scripts.append(fn)
