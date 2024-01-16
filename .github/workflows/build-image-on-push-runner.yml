@@ -11,7 +11,7 @@ on:
 
 jobs:
 
-  build-testing-image-on-push:
+  build-image-on-push:
     runs-on: ubuntu-latest
     if: ${{ startsWith(github.ref, 'refs/heads/testing-v') }}
     strategy:
@@ -23,11 +23,13 @@ jobs:
             image: seatable/seatable-python-runner
             context: runner
             ref: refs/heads/testing-v
+            version_prefix: "testing-"
 
           - dockerfile: ./runner/Dockerfile
             image: seatable/seatable-python-runner
             context: runner
             ref: refs/heads/release-v
+            version_prefix: ""
 
     permissions:
       contents: read
@@ -75,10 +77,10 @@ jobs:
           tags: |
             seatable/seatable-python-${{ matrix.context }}:build-${{ github.run_number }}
             seatable/seatable-python-${{ matrix.context }}:commit-${{ steps.get_commit.outputs.short_sha }}
-            seatable/seatable-python-${{ matrix.context }}:testing-${{ steps.get_version.outputs.version }}
+            seatable/seatable-python-${{ matrix.context }}:${{ matrix.version_prefix }}${{ steps.get_version.outputs.version }}
           labels: |
             org.opencontainers.image.title=seatable/seatable-python-${{ matrix.context }}
-            org.opencontainers.image.version=testing-${{ steps.get_version.outputs.version }}
+            org.opencontainers.image.version=${{ matrix.version_prefix }}${{ steps.get_version.outputs.version }}
             org.opencontainers.image.revision=${{ github.sha }}
             org.opencontainers.image.created=${{ github.event.head_commit.timestamp }}
             org.opencontainers.image.authors=SeaTable
@@ -86,24 +88,25 @@ jobs:
             org.opencontainers.image.documentation=https://admin.seatable.io/
             org.opencontainers.image.vendor=SeaTable
 
-### RELEASE IMAGES ###
-      - name: Build and push runner release release
-        if: github.ref == matrix.ref
-        uses: docker/build-push-action@v5
-        with:
-          context: ${{ matrix.context }}
-          file: ${{ matrix.dockerfile }}
-          push: true
-          tags: |
-            seatable/seatable-python-${{ matrix.context }}:build-${{ github.run_number }}
-            seatable/seatable-python-${{ matrix.context }}:commit-${{ steps.get_commit.outputs.short_sha }}
-            seatable/seatable-python-${{ matrix.context }}:${{ steps.get_version.outputs.version }}
-          labels: |
-            org.opencontainers.image.title=seatable/seatable-python-${{ matrix.context }}
-            org.opencontainers.image.version=${{ steps.get_version.outputs.version }}
-            org.opencontainers.image.revision=${{ github.sha }}
-            org.opencontainers.image.created=${{ github.event.head_commit.timestamp }}
-            org.opencontainers.image.authors=SeaTable
-            org.opencontainers.image.url=https://www.seatable.io/
-            org.opencontainers.image.documentation=https://admin.seatable.io/
-            org.opencontainers.image.vendor=SeaTable
+
+# ### RELEASE IMAGES ###
+#       - name: Build and push runner release
+#         if: github.ref == matrix.ref
+#         uses: docker/build-push-action@v5
+#         with:
+#           context: ${{ matrix.context }}
+#           file: ${{ matrix.dockerfile }}
+#           push: true
+#           tags: |
+#             seatable/seatable-python-${{ matrix.context }}:build-${{ github.run_number }}
+#             seatable/seatable-python-${{ matrix.context }}:commit-${{ steps.get_commit.outputs.short_sha }}
+#             seatable/seatable-python-${{ matrix.context }}:${{ steps.get_version.outputs.version }}
+#           labels: |
+#             org.opencontainers.image.title=seatable/seatable-python-${{ matrix.context }}
+#             org.opencontainers.image.version=${{ steps.get_version.outputs.version }}
+#             org.opencontainers.image.revision=${{ github.sha }}
+#             org.opencontainers.image.created=${{ github.event.head_commit.timestamp }}
+#             org.opencontainers.image.authors=SeaTable
+#             org.opencontainers.image.url=https://www.seatable.io/
+#             org.opencontainers.image.documentation=https://admin.seatable.io/
+#             org.opencontainers.image.vendor=SeaTable
