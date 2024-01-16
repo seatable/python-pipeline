@@ -7,6 +7,10 @@ on:
       ### set component
       - "testing-runner-v*.*.*"
       - "release-runner-v*.*.*"
+      - "testing-scheduler-v*.*.*"
+      - "release-scheduler-v*.*.*"
+      - "testing-starter-v*.*.*"
+      - "release-starter-v*.*.*"
 
 jobs:
 
@@ -16,19 +20,25 @@ jobs:
     env:
 
       ### set component
-      component: runner
-      ref-prefix-testing: refs/tags/testing-runner-v
-      ref-prefix-release: refs/tags/release-runner-v
+      #component: runner
+      ref-prefix-testing: refs/tags/testing
+      ref-prefix-release: refs/tags/release
 
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
     steps:
+
+      - id: extract_github_ref_prefix
+        run: echo "github_ref_prefix=$(echo ${{ github.ref }} | awk -F/ '{print $3}' | awk -Fv '{print $1}')" >> $GITHUB_OUTPUT
+      - id: extract_github_ref_component
+        run: echo "github_ref_component=$(echo ${{ github.ref }} | awk -F/ '{print $3}' | awk -F- '{print $2}')" >> $GITHUB_OUTPUT
+
       - id: set-matrix
         run: |
           if [[ "${{ github.ref }}" == ${{ env.ref-prefix-testing }}* ]]; then
-            dynamic_includes='[{"dockerfile": "./${{ env.component }}/Dockerfile", "image": "seatable/seatable-python-${{ env.component }}", "context": "${{ env.component }}", "ref": "${{ env.ref-prefix-testing }}", "version_prefix": "testing-"}]'
+            dynamic_includes='[{"dockerfile": "./${{ steps.extract_github_ref_component.outputs.github_ref_component }}/Dockerfile", "image": "seatable/seatable-python-${{ steps.extract_github_ref_component.outputs.github_ref_component }}", "context": "${{ steps.extract_github_ref_component.outputs.github_ref_component }}", "version_prefix": "testing-"}]'
           elif [[ "${{ github.ref }}" == ${{ env.ref-prefix-release }}* ]]; then
-            dynamic_includes='[{"dockerfile": "./${{ env.component }}/Dockerfile", "image": "seatable/seatable-python-${{ env.component }}", "context": "${{ env.component }}", "ref": "${{ env.ref-prefix-release }}", "version_prefix": ""}]'
+            dynamic_includes='[{"dockerfile": "./${{ steps.extract_github_ref_component.outputs.github_ref_component }}/Dockerfile", "image": "seatable/seatable-python-${{ steps.extract_github_ref_component.outputs.github_ref_component }}", "context": "${{ steps.extract_github_ref_component.outputs.github_ref_component }}", "version_prefix": ""}]'
           fi
           echo "matrix={'include': $dynamic_includes}" >> $GITHUB_OUTPUT
 
