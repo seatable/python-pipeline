@@ -7,18 +7,19 @@ During a typical SeaTable Deployment the images are pulled from Docker Hub by Do
 - Clone this repository
 - Checkout a new feature/testing branch "wip/xxx" or "testing/xxx"
 - Tag commits with the corresponding testing tags
-  - testing-runner-v*.*.*
-  - testing-scheduler-v*.*.*
-  - testing-starter-v*.*.*
+  - `testing-runner-v*.*.*`
+  - `testing-scheduler-v*.*.*`
+  - `testing-starter-v*.*.*`
 
 - Merge the testing branch into main via pull request
 
 - Tag the commit on main with the corresponding release tags
-  - release-runner-v*.*.*
-  - release-scheduler-v*.*.*
-  - release-starter-v*.*.*
+  - `release-runner-v*.*.*`
+  - `release-scheduler-v*.*.*`
+  - `release-starter-v*.*.*`
 
- Images are being build and pushed to dockerhub automatically after a tag is pushed to origin. Build from testing tags get the testing- prefix.
+ Images are being build and pushed to dockerhub automatically after a tag is pushed to the remote origin.
+ Build from testing tags get the "testing-" prefix, build numbers and commit ids are used for additional tags.
 
  ```bash
 git tag testing-runner-v*.*.*
@@ -29,7 +30,7 @@ git tag testing-starter-v*.*.*
 git tag testing-runner-v*.*.*
 git push origin --tags # push them all at once
  ```
-
+## Architecture Overview
 ```mermaid
 flowchart
     subgraph Python_Script_Pipeline

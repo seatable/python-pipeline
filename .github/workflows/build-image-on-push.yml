@@ -67,12 +67,6 @@ jobs:
         run: |
           echo "${{ steps.extract_github_ref_version.outputs.version }}" > "${{ steps.extract_github_ref_component.outputs.github_ref_component }}/version"
 
-      # - name: Read version files
-      #   id: "get_version_from_file"
-      #   run: echo "version=$(cat ./${{ matrix.context }}/version)" >> $GITHUB_OUTPUT
-
-
-
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
       - name: Set up Docker Buildx
