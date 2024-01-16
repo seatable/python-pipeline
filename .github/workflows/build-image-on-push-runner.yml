@@ -23,19 +23,40 @@ jobs:
       - id: set-matrix
         run: |
           if [[ "${{ github.ref }}" == refs/heads/testing-v* ]]; then
-            dynamic_includes='[{"dockerfile": "./${{ env.component }}/Dockerfile", "image": "seatable/seatable-python-${{ env.component }}", "context": "${{ env.component }}", "ref": "refs/heads/testing-v", "version_prefix": "testing-"}]'
+          dynamic_includes=$(cat <<EOF
+          [
+            {
+              "dockerfile": "./${{ env.component }}/Dockerfile",
+              "image": "seatable/seatable-python-${{ env.component }}",
+              "context": "${{ env.component }}",
+              "ref": "refs/heads/testing-v",
+              "version_prefix": "testing-"
+            }
+          ]
+          EOF
+          )
           elif [[ "${{ github.ref }}" == refs/heads/release-v* ]]; then
-            dynamic_includes='[{"dockerfile": "./${{ env.component }}/Dockerfile", "image": "seatable/seatable-python-${{ env.component }}", "context": "${{ env.component }}", "ref": "refs/heads/release-v", "version_prefix": ""}]'
-          fi
-          echo "matrix={'include': $dynamic_includes}" >> $GITHUB_OUTPUT
+          dynamic_includes=$(cat <<EOF
+          [
+            {
+              "dockerfile": "./${{ env.component }}/Dockerfile",
+              "image": "seatable/seatable-python-${{ env.component }}",
+              "context": "${{ env.component }}",
+              "ref": "refs/heads/release-v",
+              "version_prefix": ""
+            }
+          ]
+          EOF
+          )
+        fi
 
-  echo:
-    runs-on: ubuntu-latest
-    needs:
-      - matrix-init
-    steps:
-      - name: Echo previous outputs
-        run: echo "${{ toJSON(needs.matrix-init.outputs) }}"
+  # echo:
+  #   runs-on: ubuntu-latest
+  #   needs:
+  #     - matrix-init
+  #   steps:
+  #     - name: Echo previous outputs
+  #       run: echo "${{ toJSON(needs.matrix-init.outputs) }}"
 
   build-image-on-push:
     runs-on: ubuntu-latest
@@ -44,26 +65,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.matrix-init.outputs.matrix) }}
-      # matrix:
-      #   include:
-
-      #     - dockerfile: ./runner/Dockerfile
-      #       image: seatable/seatable-python-runner
-      #       context: runner
-      #       ref: refs/heads/testing-v
-      #       version_prefix: "testing-"
-
-      #     - dockerfile: ./runner/Dockerfile
-      #       image: seatable/seatable-python-runner
-      #       context: runner
-      #       ref: refs/heads/release-v
-      #       version_prefix: ""
 
     permissions:
       contents: read
       packages: write
     steps:
-
       - name: Check out the repo
         uses: actions/checkout@v4
       - name: Set short git commit SHA
