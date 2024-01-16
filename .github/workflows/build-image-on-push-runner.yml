@@ -16,10 +16,12 @@ jobs:
   matrix-init:
     runs-on: ubuntu-latest
     env:
+
       ### set component
       component: runner
       ref-prefix-testing: refs/heads/testing-v
       ref-prefix-release: refs/heads/release-v
+
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
     steps:
