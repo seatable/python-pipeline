@@ -5,11 +5,30 @@ During a typical SeaTable Deployment the images are pulled from Docker Hub by Do
 
 ## Usage
 - Clone this repository
-- Checkout a new testing branch "testing-v*.*.*"
-- Make your changes / Images are being build and pushed automatically after a push or merged pull request.
-They use the same repo  as releases, but get the testing- prefix  (seatable/seatable-python-starter, seatable/seatable-python-runner, seatable/seatable-python-scheduler)tag.
-- Create new branch "release-v*.*.*" and create a pull request from the testing branch to the release branch.
+- Checkout a new feature/testing branch "wip/xxx" or "testing/xxx"
+- Tag commits with the corresponding testing tags
+  - testing-runner-v*.*.*
+  - testing-scheduler-v*.*.*
+  - testing-starter-v*.*.*
 
+- Merge the testing branch into main via pull request
+
+- Tag the commit on main with the corresponding release tags
+  - release-runner-v*.*.*
+  - release-scheduler-v*.*.*
+  - release-starter-v*.*.*
+
+ Images are being build and pushed to dockerhub automatically after a tag is pushed to origin. Build from testing tags get the testing- prefix.
+
+ ```bash
+git tag testing-runner-v*.*.*
+git push origin testing-runner-v*.*.*
+## you can create and push multiple tags on the same commit
+git tag testing-scheduler-v*.*.*
+git tag testing-starter-v*.*.*
+git tag testing-runner-v*.*.*
+git push origin --tags # push them all at once
+ ```
 
 ```mermaid
 flowchart
