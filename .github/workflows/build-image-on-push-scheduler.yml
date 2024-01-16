@@ -5,8 +5,8 @@ on:
   push:
     tags:
       ### set component
-      - "testing-runner-v*.*.*"
-      - "release-runner-v*.*.*"
+      - "testing-scheduler-v*.*.*"
+      - "release-scheduler-v*.*.*"
 
 jobs:
 
@@ -16,9 +16,9 @@ jobs:
     env:
 
       ### set component
-      component: runner
-      ref-prefix-testing: refs/tags/testing-runner-v
-      ref-prefix-release: refs/tags/release-runner-v
+      component: scheduler
+      ref-prefix-testing: refs/tags/testing-scheduler-v
+      ref-prefix-release: refs/tags/release-scheduler-v
 
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
