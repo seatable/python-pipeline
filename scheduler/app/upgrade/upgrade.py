@@ -112,17 +112,19 @@ def check_upgrade():
         return
 
     if last_version == None:
-        update_version_stamp(CURRENT_VERSION)    
+        update_version_stamp(CURRENT_VERSION)
         return
 
     # Now we do the upgrade, if versions are different
     scripts_to_run = collect_upgrade_scripts(from_version=last_version, to_version=CURRENT_VERSION)
+    new_version_str = None
     for script in scripts_to_run:
         print('Running database update: {}'.format(script))
-        new_version = parse_upgrade_script_version(script)
-        run_script_and_update_version_stamp(script, new_version)
+        new_version_str = '.'.join([str(v) for v in parse_upgrade_script_version(script)])
+        run_script_and_update_version_stamp(script, new_version_str)
 
-    update_version_stamp(CURRENT_VERSION)
+    if new_version_str != CURRENT_VERSION:
+        update_version_stamp(CURRENT_VERSION)
     print('Database upgrade successful.')
 
 
