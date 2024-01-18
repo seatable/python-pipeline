@@ -4,68 +4,68 @@ name: Build & push containers
 on:
   push:
     tags:
-      - "testing-runner-v*.*.*"
-      - "release-runner-v*.*.*"
       - "testing-scheduler-v*.*.*"
-      - "release-scheduler-v*.*.*"
       - "testing-starter-v*.*.*"
+      - "testing-runner-v*.*.*"
+
+      - "release-scheduler-v*.*.*"
       - "release-starter-v*.*.*"
+      - "release-runner-v*.*.*"
 
 jobs:
 
-  # Generate Matrix with "testing" or "release" job depending on gitub.ref
-  matrix-init:
+  init-vars:
     runs-on: ubuntu-latest
-    env:
-
-      # set ref prefix
-      ref-prefix-testing: refs/tags/testing
-      ref-prefix-release: refs/tags/release
-
     outputs:
-      matrix: ${{ steps.set-matrix.outputs.matrix }}
+      git_tag_prefix: ${{ steps.extract_github_ref_prefix.outputs.git_tag_prefix }}
+      image_tag_prefix: ${{ steps.set_image_tag_prefix.outputs.image_tag_prefix }}
+      component: ${{ steps.extract_github_ref_component.outputs.component }}
+      version: ${{ steps.extract_github_ref_version.outputs.version }}
     steps:
-
-      - id: extract_github_ref_prefix
-        run: echo "github_ref_prefix=$(echo ${{ github.ref }} | awk -F/ '{print $3}' | awk -Fv '{print $1}')" >> $GITHUB_OUTPUT
-      - id: extract_github_ref_component
-        run: echo "github_ref_component=$(echo ${{ github.ref }} | awk -F/ '{print $3}' | awk -F- '{print $2}')" >> $GITHUB_OUTPUT
-
-      - id: set-matrix
+      - name : Validate github.ref format in case of others triggers used
+        id: validate_github_ref
         run: |
-          if [[ "${{ github.ref }}" == ${{ env.ref-prefix-testing }}* ]]; then
-            dynamic_includes='[{"dockerfile": "./${{ steps.extract_github_ref_component.outputs.github_ref_component }}/Dockerfile", "image": "seatable/seatable-python-${{ steps.extract_github_ref_component.outputs.github_ref_component }}", "context": "${{ steps.extract_github_ref_component.outputs.github_ref_component }}", "version_prefix": "testing-"}]'
-          elif [[ "${{ github.ref }}" == ${{ env.ref-prefix-release }}* ]]; then
-            dynamic_includes='[{"dockerfile": "./${{ steps.extract_github_ref_component.outputs.github_ref_component }}/Dockerfile", "image": "seatable/seatable-python-${{ steps.extract_github_ref_component.outputs.github_ref_component }}", "context": "${{ steps.extract_github_ref_component.outputs.github_ref_component }}", "version_prefix": ""}]'
+          if [[ ! "${{ github.ref }}" =~ ^refs/tags/(testing|release)-(scheduler|runner|starter)-v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Invalid github.ref format"
+            exit 1
           fi
-          echo "matrix={'include': $dynamic_includes}" >> $GITHUB_OUTPUT
+
+      - name: Set git_tag_prefix to testing or release depending on git tag
+        id: extract_github_ref_prefix
+        run: echo "git_tag_prefix=$(echo ${{ github.ref }} | awk -F/ '{print $3}' | awk -F- '{print $1}')" >> $GITHUB_OUTPUT
+      - name: Set component to scheduler, runner or starter depending on git tag
+        id: extract_github_ref_component
+        run: echo "component=$(echo ${{ github.ref }} | awk -F/ '{print $3}' | awk -F- '{print $2}')" >> $GITHUB_OUTPUT
+      - name: Extract version from github.ref
+        id: extract_github_ref_version
+        run: echo "version=$(echo ${{ github.ref }} | awk -F/ '{print $3}' | awk -Fv '{print $2}')" >> $GITHUB_OUTPUT
+      - name: Set set_image_tag_prefix to empty or "testing" depending on git tag prefix
+        id: set_image_tag_prefix
+        run: |
+          if [[ "${{ steps.extract_github_ref_prefix.outputs.git_tag_prefix }}" == "testing" ]]; then
+            echo "image_tag_prefix=testing-" >> $GITHUB_OUTPUT
+          elif [[ "${{ steps.extract_github_ref_prefix.outputs.git_tag_prefix }}" == "release" ]]; then
+            echo "image_tag_prefix=" >> $GITHUB_OUTPUT
+          fi
 
   build-image-on-push:
     runs-on: ubuntu-latest
     needs:
-      - matrix-init
-    strategy:
-      fail-fast: false
-      matrix: ${{ fromJson(needs.matrix-init.outputs.matrix) }}
-
+      - init-vars
     permissions:
       contents: read
       packages: write
     steps:
       - name: Check out the repo
         uses: actions/checkout@v4
-      - name: Set short git commit SHA
+
+      # this var is initalized here to prevent a second repo checkout
+      - name: Set short git commit SHA / needs repo checkout
         id: get_commit
         run: echo "short_sha=$(git rev-parse --short ${{ github.sha }})" >> $GITHUB_OUTPUT
-      - id: extract_github_ref_version
-        run: echo "version=$(echo ${{ github.ref }} | awk -F/ '{print $3}' | awk -Fv '{print $2}')" >> $GITHUB_OUTPUT
-      - id: extract_github_ref_component
-        run: echo "github_ref_component=$(echo ${{ github.ref }} | awk -F/ '{print $3}' | awk -F- '{print $2}')" >> $GITHUB_OUTPUT
-
-      # writes version file
-      - name: Write version to file
+      - name: Write version from github.ref to version file
         run: |
-          echo "${{ steps.extract_github_ref_version.outputs.version }}" > "${{ steps.extract_github_ref_component.outputs.github_ref_component }}/version"
+          echo "${{ needs.init-vars.outputs.version }}" > "${{ needs.init-vars.outputs.component }}/version"
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -78,21 +78,20 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Build and push image
-        if: ${{ startsWith(github.ref, matrix.ref) }}
         uses: docker/build-push-action@v5
         with:
-          context: ${{ matrix.context }}
+          context: ${{ needs.init-vars.outputs.component }}
           file: ${{ matrix.dockerfile }}
           push: true
           tags: |
-            seatable/seatable-python-${{ matrix.context }}:build-${{ github.run_number }}
-            seatable/seatable-python-${{ matrix.context }}:commit-${{ steps.get_commit.outputs.short_sha }}
-            seatable/seatable-python-${{ matrix.context }}:${{ matrix.version_prefix }}${{ steps.extract_github_ref_version.outputs.version }}
+            seatable/seatable-python-${{ needs.init-vars.outputs.component }}:build-${{ github.run_number }}
+            seatable/seatable-python-${{ needs.init-vars.outputs.component }}:commit-${{ steps.get_commit.outputs.short_sha }}
+            seatable/seatable-python-${{ needs.init-vars.outputs.component }}:${{ needs.init-vars.outputs.image_tag_prefix }}${{ needs.init-vars.outputs.version }}
           labels: |
-            org.opencontainers.image.title=seatable/seatable-python-${{ matrix.context }}
-            org.opencontainers.image.version=${{ matrix.version_prefix }}${{ steps.extract_github_ref_version.outputs.version }}
+            org.opencontainers.image.title=seatable/seatable-python-${{ needs.init-vars.outputs.component }}
+            org.opencontainers.image.version=${{ needs.init-vars.outputs.image_tag_prefix }}${{ needs.init-vars.outputs.version }}
             org.opencontainers.image.revision=${{ github.sha }}
-            org.opencontainers.image.created=${{ github.event.head_commit.timestamp }}
+            org.opencontainers.image.created=${{ github.event.created_at }}
             org.opencontainers.image.authors=SeaTable
             org.opencontainers.image.url=https://www.seatable.io/
             org.opencontainers.image.documentation=https://admin.seatable.io/
