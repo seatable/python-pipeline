@@ -6,3 +6,5 @@ pandas
 python-barcode[images]
 qrcode[pil]
 openai
+ldap3
+scipy
