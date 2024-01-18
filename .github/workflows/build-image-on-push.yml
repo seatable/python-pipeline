@@ -22,8 +22,8 @@ jobs:
       component: ${{ steps.extract_github_ref_component.outputs.component }}
       version: ${{ steps.extract_github_ref_version.outputs.version }}
     steps:
-      # vaildate github.ref format in case of others triggers used
-      - id: validate_github_ref
+      - name : Validate github.ref format in case of others triggers used
+        id: validate_github_ref
         run: |
           if [[ ! "${{ github.ref }}" =~ ^refs/tags/(testing|release)-(scheduler|runner|starter)-v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
             echo "Invalid github.ref format"
@@ -47,13 +47,6 @@ jobs:
           elif [[ "${{ steps.extract_github_ref_prefix.outputs.git_tag_prefix }}" == "release" ]]; then
             echo "image_tag_prefix=" >> $GITHUB_OUTPUT
           fi
-
-      - name: Debug output
-        run: |
-          echo "git_tag_prefix: ${{ steps.extract_github_ref_prefix.outputs.prefix }}"
-          echo "image_tag_prefix: ${{ steps.extract_github_ref_prefix.outputs.prefix }}"
-          echo "component: ${{ steps.extract_github_ref_component.outputs.component }}"
-          echo "version: ${{ steps.extract_github_ref_version.outputs.version }}"
 
   build-image-on-push:
     runs-on: ubuntu-latest
@@ -98,7 +91,7 @@ jobs:
             org.opencontainers.image.title=seatable/seatable-python-${{ needs.init-vars.outputs.component }}
             org.opencontainers.image.version=${{ needs.init-vars.outputs.image_tag_prefix }}${{ needs.init-vars.outputs.version }}
             org.opencontainers.image.revision=${{ github.sha }}
-            org.opencontainers.image.created=${{ github.event.push.timestamp }}
+            org.opencontainers.image.created=${{ github.event.created_at }}
             org.opencontainers.image.authors=SeaTable
             org.opencontainers.image.url=https://www.seatable.io/
             org.opencontainers.image.documentation=https://admin.seatable.io/
