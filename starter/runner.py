@@ -51,8 +51,8 @@ DEFAULT_SUB_PROCESS_TIMEOUT = SUB_PROCESS_TIMEOUT
 
 # timezone command
 SYSTEM_TIMEZONE_COMMAND = None
-if os.environ.get('TIMEZONE'):
-    SYSTEM_TIMEZONE_COMMAND = ['-e', 'TZ=%s' % os.environ.get('TIMEZONE')]
+if os.environ.get('TIME_ZONE'):
+    SYSTEM_TIMEZONE_COMMAND = ['-e', 'TZ=%s' % os.environ.get('TIME_ZONE')]
 elif os.path.isfile('/etc/localtime'):
     SYSTEM_TIMEZONE_COMMAND = ['-v', '/etc/localtime:/etc/localtime']
 elif os.path.isfile('/etc/timezone'):
