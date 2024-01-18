@@ -59,13 +59,17 @@ jobs:
       - name: Check out the repo
         uses: actions/checkout@v4
 
-      # this var is initalized here to prevent a second repo checkout
+      # Initalized here to prevent a second repo checkout
       - name: Set short git commit SHA / needs repo checkout
         id: get_commit
         run: echo "short_sha=$(git rev-parse --short ${{ github.sha }})" >> $GITHUB_OUTPUT
+      # Write version from github.ref to version file
       - name: Write version from github.ref to version file
         run: |
           echo "${{ needs.init-vars.outputs.version }}" > "${{ needs.init-vars.outputs.component }}/version"
+      - name: Set current time
+        id: current_time
+        run: echo "time=$(date --iso-8601=seconds)" >> $GITHUB_OUTPUT
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -81,7 +85,6 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: ${{ needs.init-vars.outputs.component }}
-          file: ${{ matrix.dockerfile }}
           push: true
           tags: |
             seatable/seatable-python-${{ needs.init-vars.outputs.component }}:build-${{ github.run_number }}
@@ -91,7 +94,7 @@ jobs:
             org.opencontainers.image.title=seatable/seatable-python-${{ needs.init-vars.outputs.component }}
             org.opencontainers.image.version=${{ needs.init-vars.outputs.image_tag_prefix }}${{ needs.init-vars.outputs.version }}
             org.opencontainers.image.revision=${{ github.sha }}
-            org.opencontainers.image.created=${{ github.event.created_at }}
+            org.opencontainers.image.created=${{ steps.current_time.outputs.time }}
             org.opencontainers.image.authors=SeaTable
             org.opencontainers.image.url=https://www.seatable.io/
             org.opencontainers.image.documentation=https://admin.seatable.io/
