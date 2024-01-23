@@ -17,11 +17,12 @@ During a typical SeaTable Deployment the images are pulled from Docker Hub by Do
   - `release-starter-v*.*.*`
 
  Images are being build and pushed to dockerhub automatically after a tag is pushed to the remote origin.
- Build from testing tags get the "testing-" prefix, build numbers and commit ids are used for additional tags.
+ Build from testing tags get the "testing-" prefix. Commit ids are used for additional tags.
 
- - Please note that the version number from the tag is used to generate the version file in the root of each container image
+ ### Please note that the version number from the tag is used to generate the version file in the root of each container image
 
  ```bash
+## create a new branch, set origin, commit and push tag to orgin
 git tag testing-runner-v*.*.*
 git push origin testing-runner-v*.*.*
 ## you can create and push multiple tags on the same commit
@@ -30,10 +31,10 @@ git tag testing-starter-v*.*.*
 git tag testing-runner-v*.*.*
 git push origin --tags # push them all at once
 ## you can move a tag to another commit and reuse it / for example for emergency fixes or to only use one testing version
-git push --delete origin <tagname>
-git tag <tagname> <commit-hash> # you can use "git rev-parse --short HEAD" to get the current local checkout commit hash
-git push origin <tagname>
-git tag -d <tagname> # delete the local tag
+git push --delete origin testing-runner-v*.*.*
+git tag testing-runner-v*.*.* <commit-hash> # you can use "git rev-parse --short HEAD" to get the current local checkout commit hash
+git push origin tag testing-runner-v*.*.*
+git tag -d tag testing-runner-v*.*.* # delete the local tag
  ```
 ## Architecture Overview
 ```mermaid
