@@ -1,5 +1,8 @@
+ARG IMAGE=docker:24.0.7-cli
+ARG IMAGE_DIGEST=sha256:8a5e8d1346479822d16cd0de1b61d3f0e623c41f0240b54736780c4c47f75527
+
 ## Compile Image
-FROM docker:cli AS compile-image
+FROM ${IMAGE}@${IMAGE_DIGEST} AS compile-image
 
 # bash (convenience) and linux-headers (uswgi build dependency) added
 # build-essentials to build-base, python3-pip to py3-pip
@@ -17,7 +20,7 @@ RUN pip install -r /opt/seatable-python-starter/requirements.txt --user --break-
 #####
 
 ## Runtime image
-FROM docker:cli AS runtime-image
+FROM ${IMAGE}@${IMAGE_DIGEST} AS runtime-image
 
 RUN apk add --no-cache bash \
                        curl \

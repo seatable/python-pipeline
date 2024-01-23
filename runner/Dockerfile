@@ -1,4 +1,8 @@
-FROM python:3.11-alpine AS compile-image
+
+ARG IMAGE=python:3.11-alpine
+ARG IMAGE_DIGEST=sha256:b9cc19c4f422bd75cfcbef7b6ea563270629da3fd8652c4f9ec94217ce1a9693
+
+FROM ${IMAGE}@${IMAGE_DIGEST} AS compile-image
 
 RUN apk add --no-cache \
         cargo \
@@ -34,7 +38,7 @@ RUN pip install -r requirements.txt --no-cache-dir --user
 
 
 ## Runtime image
-FROM python:3.11-alpine AS runtime-image
+FROM ${IMAGE}@${IMAGE_DIGEST} AS runtime-image
 
 RUN apk add --no-cache bash \
                        python3-dev
