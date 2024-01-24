@@ -1,0 +1,15 @@
+{
+  "extends": [
+    "config:base"
+  ],
+  "packageRules": [
+    {
+      "datasources": ["docker"],
+      "updateTypes": ["major", "minor", "patch"],
+      "enabled": true
+    }
+  ],
+  "docker": {
+    "pinDigests": true
+  }
+}
