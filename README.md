@@ -6,6 +6,7 @@ During a typical SeaTable Deployment the images are pulled from Docker Hub by Do
 ## Usage
 - Clone this repository
 - Checkout a new feature/testing branch "wip/xxx" or "testing/xxx"
+- Run ./python-code-quality.sh to check the code quality with black and pylint
 - Tag commits with the corresponding testing tags
   - `testing-scheduler-v*.*.*`
   - `testing-starter-v*.*.*`
