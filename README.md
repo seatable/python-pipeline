@@ -7,6 +7,7 @@ During a typical SeaTable Deployment the images are pulled from Docker Hub by Do
 - Clone this repository
 - Checkout a new feature/testing branch "wip/xxx" or "testing/xxx"
 - Run ./python-code-quality.sh to check the code quality with black and pylint
+
 - Tag commits with the corresponding testing tags
   - `testing-scheduler-v*.*.*`
   - `testing-starter-v*.*.*`
@@ -16,6 +17,9 @@ During a typical SeaTable Deployment the images are pulled from Docker Hub by Do
   - `release-runner-v*.*.*`
   - `release-scheduler-v*.*.*`
   - `release-starter-v*.*.*`
+- Push the tags to the remote origin
+
+- On any push python black and pylint will be run on the code remotely
 
  Images are being build and pushed to dockerhub automatically after a tag is pushed to the remote origin.
  Build from testing tags get the "testing-" prefix. Commit ids are used for additional tags.
