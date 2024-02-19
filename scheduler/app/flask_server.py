@@ -1,4 +1,5 @@
 from gevent import monkey
+
 monkey.patch_all()
 
 import sys
@@ -11,107 +12,142 @@ from gevent.pywsgi import WSGIServer
 from concurrent.futures import ThreadPoolExecutor
 
 from database import DBSession
-from faas_scheduler.utils import check_auth_token, \
-    run_script, get_script, add_script, \
-    get_run_script_statistics_by_month, hook_update_script, \
-    can_run_task, get_run_scripts_count_monthly, ping_starter, \
-    get_task_log, list_task_logs
+from faas_scheduler.utils import (
+    check_auth_token,
+    run_script,
+    get_script,
+    add_script,
+    get_run_script_statistics_by_month,
+    hook_update_script,
+    can_run_task,
+    get_run_scripts_count_monthly,
+    ping_starter,
+    get_task_log,
+    list_task_logs,
+)
 
 
-LOG_LEVEL = os.environ.get('PYTHON_SCHEDULER_LOG_LEVEL', 'INFO')
+LOG_LEVEL = os.environ.get("PYTHON_SCHEDULER_LOG_LEVEL", "INFO")
 
 # defaults...
-SCRIPT_WORKERS = int(os.environ.get('PYTHON_SCHEDULER_SCRIPT_WORKERS', 5))
-SUB_PROCESS_TIMEOUT = int(os.environ.get('PYTHON_PROCESS_TIMEOUT', 60 * 15))
-TIMEOUT_OUTPUT = 'Script running for too long time!'
-
+SCRIPT_WORKERS = int(os.environ.get("PYTHON_SCHEDULER_SCRIPT_WORKERS", 5))
+SUB_PROCESS_TIMEOUT = int(os.environ.get("PYTHON_PROCESS_TIMEOUT", 60 * 15))
+TIMEOUT_OUTPUT = "Script running for too long time!"
 
 
 app = Flask(__name__)
-#logging.basicConfig(format='[%(asctime)s] [%(levelname)s] %(name)s:%(lineno)s %(funcName)s %(message)s')
+# logging.basicConfig(format='[%(asctime)s] [%(levelname)s] %(name)s:%(lineno)s %(funcName)s %(message)s')
 
-logging.basicConfig(stream=sys.stdout, format="[%(asctime)s] [%(levelname)s] %(name)s:%(lineno)s %(funcName)s %(message)s", level=LOG_LEVEL)
+logging.basicConfig(
+    stream=sys.stdout,
+    format="[%(asctime)s] [%(levelname)s] %(name)s:%(lineno)s %(funcName)s %(message)s",
+    level=LOG_LEVEL,
+)
 logger = logging.getLogger(__name__)
 executor = ThreadPoolExecutor(max_workers=SCRIPT_WORKERS)
 
-@app.route('/ping/', methods=['GET'])
+
+@app.route("/ping/", methods=["GET"])
 def ping():
     if not ping_starter(request):
-        return make_response(('Error: Python Scheduler can not reach the Python Starter. Check PYTHON_STARTER_URL.', 400))
-    return make_response(('Pong', 200))
+        return make_response(
+            (
+                "Error: Python Scheduler can not reach the Python Starter. Check PYTHON_STARTER_URL.",
+                400,
+            )
+        )
+    return make_response(("Pong", 200))
 
 
 # called from dtable-web to start the python run
-@app.route('/run-script/', methods=['POST'])
+@app.route("/run-script/", methods=["POST"])
 def scripts_api():
     if not check_auth_token(request):
-        return make_response(('Forbidden: the auth token is not correct.', 403))
+        return make_response(("Forbidden: the auth token is not correct.", 403))
 
-    logger.debug('dtable-web initialized the execution of a python script...')
+    logger.debug("dtable-web initialized the execution of a python script...")
     try:
         data = json.loads(request.data)
         if not isinstance(data, dict):
-            return make_response(('Bad request', 400))
+            return make_response(("Bad request", 400))
     except Exception as e:
-        return make_response(('Bad request', 400))
+        return make_response(("Bad request", 400))
 
-    dtable_uuid = data.get('dtable_uuid')
-    script_name = data.get('script_name')
-    context_data = data.get('context_data')
-    owner = data.get('owner')
-    org_id = data.get('org_id')
-    script_url = data.get('script_url')
-    temp_api_token = data.get('temp_api_token')
-    scripts_running_limit = data.get('scripts_running_limit', -1)
-    operate_from = data.get('operate_from', 'manualy')
-    if not dtable_uuid \
-            or not script_name \
-            or not owner:
-        return make_response(('Parameters invalid', 400))
+    dtable_uuid = data.get("dtable_uuid")
+    script_name = data.get("script_name")
+    context_data = data.get("context_data")
+    owner = data.get("owner")
+    org_id = data.get("org_id")
+    script_url = data.get("script_url")
+    temp_api_token = data.get("temp_api_token")
+    scripts_running_limit = data.get("scripts_running_limit", -1)
+    operate_from = data.get("operate_from", "manualy")
+    if not dtable_uuid or not script_name or not owner:
+        return make_response(("Parameters invalid", 400))
 
     # main
     db_session = DBSession()
-    logger.debug('create a database entry for this python run...')
+    logger.debug("create a database entry for this python run...")
     try:
-        if scripts_running_limit != -1 and not can_run_task(owner, org_id, db_session, scripts_running_limit=scripts_running_limit):
-            return make_response(('The number of runs exceeds the limit'), 400)
-        script = add_script(db_session, dtable_uuid, owner, org_id, script_name, context_data, operate_from)
-        logger.debug('lets call the starter to fire up the runner...')
-        executor.submit(run_script, script.id, dtable_uuid, script_name, script_url, temp_api_token, context_data)
+        if scripts_running_limit != -1 and not can_run_task(
+            owner, org_id, db_session, scripts_running_limit=scripts_running_limit
+        ):
+            return make_response(("The number of runs exceeds the limit"), 400)
+        script = add_script(
+            db_session,
+            dtable_uuid,
+            owner,
+            org_id,
+            script_name,
+            context_data,
+            operate_from,
+        )
+        logger.debug("lets call the starter to fire up the runner...")
+        executor.submit(
+            run_script,
+            script.id,
+            dtable_uuid,
+            script_name,
+            script_url,
+            temp_api_token,
+            context_data,
+        )
 
-        return make_response(({'script_id': script.id}, 200))
+        return make_response(({"script_id": script.id}, 200))
     except Exception as e:
         logger.exception(e)
-        return make_response(('Internal server error', 500))
+        return make_response(("Internal server error", 500))
     finally:
         db_session.close()
 
 
 # called from dtable-web to get the status of a specific run.
-@app.route('/run-script/<script_id>/', methods=['GET'])
+@app.route("/run-script/<script_id>/", methods=["GET"])
 def script_api(script_id):
     if not check_auth_token(request):
-        return make_response(('Forbidden: the auth token is not correct.', 403))
+        return make_response(("Forbidden: the auth token is not correct.", 403))
 
-    logger.debug('dtable-web asks for the status of the execution of the python script with the id %s' % script_id)
+    logger.debug(
+        "dtable-web asks for the status of the execution of the python script with the id %s"
+        % script_id
+    )
     try:
         script_id = int(script_id)
     except Exception as e:
-        return make_response(('Bad request', 400))
-    dtable_uuid = request.args.get('dtable_uuid')
-    script_name = request.args.get('script_name')
+        return make_response(("Bad request", 400))
+    dtable_uuid = request.args.get("dtable_uuid")
+    script_name = request.args.get("script_name")
     if not dtable_uuid or not script_name:
-        return make_response(('Parameters invalid', 400))
+        return make_response(("Parameters invalid", 400))
 
     # main
     db_session = DBSession()
     try:
         script = get_script(db_session, script_id)
         if not script:
-            return make_response(('Not found', 404))
-        if dtable_uuid != script.dtable_uuid \
-                or script_name != script.script_name:
-            return make_response(('Bad request', 400))
+            return make_response(("Not found", 404))
+        if dtable_uuid != script.dtable_uuid or script_name != script.script_name:
+            return make_response(("Bad request", 400))
 
         if SUB_PROCESS_TIMEOUT and isinstance(SUB_PROCESS_TIMEOUT, int):
             now = datetime.now()
@@ -123,31 +159,31 @@ def script_api(script_id):
                 script.output = TIMEOUT_OUTPUT
                 db_session.commit()
 
-        return make_response(({'script': script.to_dict()}, 200))
+        return make_response(({"script": script.to_dict()}, 200))
 
     except Exception as e:
         logger.exception(e)
-        return make_response(('Internal server error', 500))
+        return make_response(("Internal server error", 500))
     finally:
         db_session.close()
 
 
 # get python script statistics logs...
-@app.route('/tasks/<dtable_uuid>/<script_name>/logs/', methods=['GET'])
+@app.route("/tasks/<dtable_uuid>/<script_name>/logs/", methods=["GET"])
 def task_logs_api(dtable_uuid, script_name):
     if not check_auth_token(request):
-        return make_response(('Forbidden', 403))
+        return make_response(("Forbidden", 403))
 
     try:
-        current_page = int(request.args.get('page', '1'))
-        per_page = int(request.args.get('per_page', '20'))
-        order_by = request.args.get('org_by', '-id')
+        current_page = int(request.args.get("page", "1"))
+        per_page = int(request.args.get("per_page", "20"))
+        order_by = request.args.get("org_by", "-id")
     except ValueError:
         current_page = 1
         per_page = 20
 
-    if order_by.strip('-') not in ('id',):
-        return make_response(('order_by invalid.', 400))
+    if order_by.strip("-") not in ("id",):
+        return make_response(("order_by invalid.", 400))
 
     start = per_page * (current_page - 1)
     end = start + per_page
@@ -156,80 +192,87 @@ def task_logs_api(dtable_uuid, script_name):
     try:
         task_logs = list_task_logs(db_session, dtable_uuid, script_name, order_by)
         count = task_logs.count()
-        task_logs = task_logs[start: end]
+        task_logs = task_logs[start:end]
         task_log_list = [task_log.to_dict() for task_log in task_logs]
-        return make_response(({
-            'task_logs': task_log_list,
-            'count': count,
-        }, 200))
+        return make_response(
+            (
+                {
+                    "task_logs": task_log_list,
+                    "count": count,
+                },
+                200,
+            )
+        )
 
     except Exception as e:
         logger.exception(e)
-        return make_response(('Internal server error', 500))
+        return make_response(("Internal server error", 500))
     finally:
         db_session.close()
 
+
 # get python script statistics logs details!
-@app.route('/tasks/<dtable_uuid>/<script_name>/logs/<log_id>/', methods=['GET'])
+@app.route("/tasks/<dtable_uuid>/<script_name>/logs/<log_id>/", methods=["GET"])
 def task_log_api(dtable_uuid, script_name, log_id):
     if not check_auth_token(request):
-        return make_response(('Forbidden', 403))
+        return make_response(("Forbidden", 403))
 
     db_session = DBSession()
     try:
         task_log = get_task_log(db_session, log_id)
-        task_log_info= task_log.to_dict()
+        task_log_info = task_log.to_dict()
 
-        return make_response(({'task_log': task_log_info}, 200))
+        return make_response(({"task_log": task_log_info}, 200))
 
     except Exception as e:
         logger.exception(e)
-        return make_response(('Internal server error', 500))
+        return make_response(("Internal server error", 500))
     finally:
         db_session.close()
 
+
 # needed for api endpoint "show account info"
-@app.route('/scripts-running-count/', methods=['GET'])
+@app.route("/scripts-running-count/", methods=["GET"])
 def scripts_running_count():
     if not check_auth_token(request):
-        return make_response(('Forbidden: the auth token is not correct.', 403))
+        return make_response(("Forbidden: the auth token is not correct.", 403))
 
-    username = request.args.get('username')
-    org_id = request.args.get('org_id')
-    raw_month = request.args.get('month')
+    username = request.args.get("username")
+    org_id = request.args.get("org_id")
+    raw_month = request.args.get("month")
     if raw_month:
         try:
-            month = datetime.strptime(raw_month, '%Y-%m').strftime('%Y-%m')
+            month = datetime.strptime(raw_month, "%Y-%m").strftime("%Y-%m")
         except:
-            return make_response(('month invalid.', 400))
+            return make_response(("month invalid.", 400))
     else:
         month = None
 
     if not username and not org_id:
-        return make_response(('username or org_id invalid.', 400))
+        return make_response(("username or org_id invalid.", 400))
 
     if org_id:
         try:
             org_id = int(org_id)
         except:
-            return make_response(('org_id invalid.', 400))
+            return make_response(("org_id invalid.", 400))
         if org_id == -1:
-            return make_response(('org_id invalid.', 400))
+            return make_response(("org_id invalid.", 400))
 
     db_session = DBSession()
     try:
         count = get_run_scripts_count_monthly(username, org_id, db_session, month=month)
     except Exception as e:
         logger.error(e)
-        return make_response(('Internal server error', 500))
+        return make_response(("Internal server error", 500))
     finally:
         db_session.close()
 
-    return make_response(({'count': count}, 200))
+    return make_response(({"count": count}, 200))
 
 
 # endpoint to be informed that the execution of python code is done. (from starter)
-@app.route('/script-result/', methods=['POST'])
+@app.route("/script-result/", methods=["POST"])
 def record_script_result():
     """
     Receive result of script from python-starter
@@ -237,52 +280,54 @@ def record_script_result():
     try:
         data = request.get_json()
     except:
-        return make_response('Bad Request.', 400)
-    success = data.get('success', False)
-    return_code = data.get('return_code')
-    output = data.get('output')
-    spend_time = data.get('spend_time')
-    script_id = data.get('script_id')
+        return make_response("Bad Request.", 400)
+    success = data.get("success", False)
+    return_code = data.get("return_code")
+    output = data.get("output")
+    spend_time = data.get("spend_time")
+    script_id = data.get("script_id")
 
     db_session = DBSession()
 
     # update script_log and run-time statistics
     try:
         if script_id:
-            hook_update_script(db_session, script_id, success, return_code, output, spend_time)
+            hook_update_script(
+                db_session, script_id, success, return_code, output, spend_time
+            )
 
     except Exception as e:
         logger.exception(e)
-        return make_response(('Internal server error', 500))
+        return make_response(("Internal server error", 500))
     finally:
         db_session.close()
 
-    return 'success'
+    return "success"
 
 
 # internal function...
 def get_scripts_running_statistics_by_request(request, target):
-    raw_month = request.args.get('month')
+    raw_month = request.args.get("month")
     if raw_month:
         try:
-            month = datetime.strptime(raw_month, '%Y-%m')
+            month = datetime.strptime(raw_month, "%Y-%m")
         except:
-            return make_response(('month invalid.', 400))
+            return make_response(("month invalid.", 400))
     else:
         month = None
 
-    order_by = request.args.get('order_by')
+    order_by = request.args.get("order_by")
     if order_by:
-        if order_by.strip('-') not in ('total_run_time', 'total_run_count'):
-            return make_response(('order_by invalid.', 400))
-        if '-' in order_by:
-            order_by = order_by.strip('-') + ' DESC'
+        if order_by.strip("-") not in ("total_run_time", "total_run_count"):
+            return make_response(("order_by invalid.", 400))
+        if "-" in order_by:
+            order_by = order_by.strip("-") + " DESC"
 
-    direction = request.args.get('direction')
+    direction = request.args.get("direction")
 
     try:
-        page = int(request.args.get('page', 1))
-        per_page = int(request.args.get('per_page', 25))
+        page = int(request.args.get("page", 1))
+        per_page = int(request.args.get("per_page", 25))
     except:
         page, per_page = 1, 25
 
@@ -290,43 +335,54 @@ def get_scripts_running_statistics_by_request(request, target):
 
     db_session = DBSession()
     try:
-        month, total_count, results = get_run_script_statistics_by_month(db_session, target, month=month, start=start, limit=limit, order_by=order_by, direction=direction)
+        month, total_count, results = get_run_script_statistics_by_month(
+            db_session,
+            target,
+            month=month,
+            start=start,
+            limit=limit,
+            order_by=order_by,
+            direction=direction,
+        )
     except Exception as e:
         logger.error(e)
         logger.exception(e)
-        return make_response(('Internal Server Error.', 500))
+        return make_response(("Internal Server Error.", 500))
     finally:
         db_session.close()
 
-    return make_response(({'month': month, 'count': total_count, 'results': results}, 200))
+    return make_response(
+        ({"month": month, "count": total_count, "results": results}, 200)
+    )
 
 
 # admin statistics
-@app.route('/admin/statistics/scripts-running/by-user/', methods=['GET'])
+@app.route("/admin/statistics/scripts-running/by-user/", methods=["GET"])
 def user_run_python_statistics():
     if not check_auth_token(request):
-        return make_response(('Forbidden: the auth token is not correct.', 403))
+        return make_response(("Forbidden: the auth token is not correct.", 403))
 
     return get_scripts_running_statistics_by_request(request, target="user")
 
 
 # admin statistics
-@app.route('/admin/statistics/scripts-running/by-org/', methods=['GET'])
+@app.route("/admin/statistics/scripts-running/by-org/", methods=["GET"])
 def org_run_python_statistics():
     if not check_auth_token(request):
-        return make_response(('Forbidden: the auth token is not correct.', 403))
+        return make_response(("Forbidden: the auth token is not correct.", 403))
 
     return get_scripts_running_statistics_by_request(request, target="org")
 
+
 # admin statistics
-@app.route('/admin/statistics/scripts-running/by-base/', methods=['GET'])
+@app.route("/admin/statistics/scripts-running/by-base/", methods=["GET"])
 def base_run_python_statistics():
     if not check_auth_token(request):
-        return make_response(('Forbidden: the auth token is not correct.', 403))
+        return make_response(("Forbidden: the auth token is not correct.", 403))
 
     return get_scripts_running_statistics_by_request(request, target="base")
 
 
-if __name__ == '__main__':
-    http_server = WSGIServer(('127.0.0.1', 5055), app)
+if __name__ == "__main__":
+    http_server = WSGIServer(("127.0.0.1", 5055), app)
     http_server.serve_forever()
