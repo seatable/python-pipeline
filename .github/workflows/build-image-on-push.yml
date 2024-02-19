@@ -120,3 +120,14 @@ jobs:
             org.opencontainers.image.url=https://www.seatable.io/
             org.opencontainers.image.documentation=https://admin.seatable.io/
             org.opencontainers.image.vendor=SeaTable
+
+      - name: Docker Scout
+        id: docker-scout
+        uses: docker/scout-action@v1
+        with:
+          command: cves,recommendations,compare
+          image: seatable/seatable-python-${{ needs.init-vars.outputs.component }}:${{ needs.init-vars.outputs.image_tag_prefix }}${{ needs.init-vars.outputs.version }}
+          to-latest: true
+          ignore-base: true
+          ignore-unchanged: true
+          only-fixed: true
