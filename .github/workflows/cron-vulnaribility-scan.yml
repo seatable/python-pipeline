@@ -1,0 +1,24 @@
+name: Docker Image Scan
+
+on:
+  schedule:
+    - cron: '0 0 * * *' # Runs every day at 00:00 GMT
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Docker Scout
+      id: docker-scout
+      uses: docker/scout-action@v1
+      with:
+        command: cves,recommendations,compare
+        image: seatable/seatable-python-${{ needs.init-vars.outputs.component }}:${{ needs.init-vars.outputs.image_tag_prefix }}${{ needs.init-vars.outputs.version }}
+        to-latest: true
+        ignore-base: true
+        ignore-unchanged: true
+        only-fixed: true
