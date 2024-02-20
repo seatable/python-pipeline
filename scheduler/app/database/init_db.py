@@ -26,12 +26,15 @@ DATABASE_NAME = os.getenv("DATABASE_NAME", "scheduler")
 def wait_for_mysql():
     while True:
         try:
-            pymysql.connect(host=DB_HOST, port=DB_PORT, user=db_user, passwd=db_passwd)
+            connection = pymysql.connect(
+                host=DB_HOST, port=DB_PORT, user=db_user, passwd=db_passwd
+            )
         except Exception as e:
             print("waiting for mysql server to be ready: %s", e)
             time.sleep(10)
             continue
         print("mysql server ready")
+        connection.close()
         return
 
 
