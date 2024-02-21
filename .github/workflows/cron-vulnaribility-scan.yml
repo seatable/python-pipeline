@@ -1,8 +1,8 @@
-name: Cron Docker Scout Image Scan
+name: Cron docker scout image scan
 
-on:
-  schedule:
-    - cron: '0 0 * * *' # Runs every day at 00:00 GMT
+# on:
+#   schedule:
+#     - cron: '0 0 * * *' # Runs every day at 00:00 GMT
 
   workflow_dispatch:
 

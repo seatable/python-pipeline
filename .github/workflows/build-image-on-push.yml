@@ -1,4 +1,4 @@
-name: Build & push containers
+name: Build and push containers
 # "on push" includes merged pull requests
 
 on:
