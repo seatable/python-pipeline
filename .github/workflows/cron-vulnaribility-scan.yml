@@ -19,4 +19,4 @@ jobs:
       uses: docker://ghcr.io/aquasecurity/trivy
       with:
         entrypoint: /bin/sh
-        args: -c "trivy image --clear-cache; for img in seatable/seatable-python-runner:sha256:1a77508f02c84aeeb5dbdbf657642d78cba0083e979b2f0fc25ebe737bbb7ef4; do trivy image --exit-code 1 --severity CRITICAL --no-progress $img; done"
+        args: -c "trivy image --clear-cache; for img in seatable/seatable-python-runner@sha256:1a77508f02c84aeeb5dbdbf657642d78cba0083e979b2f0fc25ebe737bbb7ef4; do trivy image --exit-code 1 --severity CRITICAL --no-progress $img; done"
