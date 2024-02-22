@@ -28,16 +28,17 @@ jobs:
       id: get_digests
       env:
         DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
-        DOCKERHUB_PASSWORD: ${{ secrets.DOCKERHUB_PASSWORD }}
+        DOCKERHUB_PASSWORD: ${{ secrets.DOCKERHUB_TOKEN }}
       run: |
         namespace='seatable'
         repository='${{ matrix.docker_image }}'
 
-        # Login and get token
-        auth_response=$(curl -s -H "Content-Type: application/json" -X POST -d '{"username": "'"$DOCKERHUB_USERNAME"'", "password": "'"$DOCKERHUB_PASSWORD"'"}' https://hub.docker.com/v2/users/login)
+        # Get Bearer Token
+        payload=$(jq -n --arg u "$DOCKERHUB_USERNAME" --arg p "$DOCKERHUB_PASSWORD" '{username: $u, password: $p}')
+        auth_response=$(curl -s -H "Content-Type: application/json" -X POST -d "$payload" https://hub.docker.com/v2/users/login)
         token=$(echo $auth_response | jq -r .token)
 
-        # Use token to make API call / pagianted, we only care about the first page
+        # Use token to make repo tag list API call / pagianted, we only care about the first page
         tag_list=$(curl -s -H "Authorization: Bearer $token" https://hub.docker.com/v2/namespaces/$namespace/repositories/$repository/tags)
 
         # Intermediate Step / defacto debug / Print tag_list with jq
@@ -51,8 +52,12 @@ jobs:
             last_updater_username: .last_updater_username
         }]')
 
+        echo "tag_list_short: $tag_list_short"
+
         # Unique digest, without "unique" to keep the order of the list (sorted by last date pushed)
         echo "digests=$(echo $tag_list_short | jq -r '[ .[] | .digest ] | map({key:.,value:1}) | from_entries | keys_unsorted | join(" ")')" >> $GITHUB_OUTPUT
+
+        echo "digests: $digests"
 
       shell: bash
 
