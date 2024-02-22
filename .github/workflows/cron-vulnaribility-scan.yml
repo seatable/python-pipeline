@@ -35,13 +35,11 @@ jobs:
         DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
         DOCKERHUB_PASSWORD: ${{ secrets.DOCKERHUB_PASSWORD }}
       run: |
-        username='${{ DOCKERHUB_USERNAME }}'
-        password='${{ DOCKERHUB_PASSWORD }}'
         namespace='seatable'
         repository='${{ matrix.docker_image }}'
 
         # Login and get token
-        auth_response=$(curl -s -H "Content-Type: application/json" -X POST -d '{"username": "'"$username"'", "password": "'"$password"'"}' https://hub.docker.com/v2/users/login)
+        auth_response=$(curl -s -H "Content-Type: application/json" -X POST -d '{"username": "'"$DOCKERHUB_USERNAME"'", "password": "'"$DOCKERHUB_PASSWORD"'"}' https://hub.docker.com/v2/users/login)
         token=$(echo $auth_response | jq -r .token)
 
         # Use token to make API call / pagianted, we only care about the first page
