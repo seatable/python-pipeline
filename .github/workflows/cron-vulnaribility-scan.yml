@@ -36,6 +36,8 @@ jobs:
         # Get Bearer Token
         payload=$(jq -n --arg u "$DOCKERHUB_USERNAME" --arg p "$DOCKERHUB_PASSWORD" '{username: $u, password: $p}')
         auth_response=$(curl -s -H "Content-Type: application/json" -X POST -d "$payload" https://hub.docker.com/v2/users/login)
+        echo "Auth response: $auth_response"
+
         token=$(echo $auth_response | jq -r .token)
 
         # Use token to make repo tag list API call / pagianted, we only care about the first page
