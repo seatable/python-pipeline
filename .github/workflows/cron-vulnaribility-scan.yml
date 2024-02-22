@@ -29,6 +29,8 @@ jobs:
       env:
         DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
         DOCKERHUB_PASSWORD: ${{ secrets.DOCKERHUB_TOKEN }}
+        DOCKER_NAMESPACE: seatable
+        DOCKER_REPOSITORY: ${{ matrix.docker_image }}
       run: |
         namespace='seatable'
         repository='${{ matrix.docker_image }}'
@@ -39,7 +41,7 @@ jobs:
         echo "token: $token"
 
         # Use token to make repo tag list API call / pagianted, we only care about the first page
-        tag_list=$(curl -s -H "Authorization: Bearer $token" https://hub.docker.com/v2/namespaces/$namespace/repositories/$repository/tags)
+        tag_list=$(curl -s -H "Authorization: Bearer $token" https://hub.docker.com/v2/namespaces/$DOCKER_NAMESPACE/repositories/$DOCKER_REPOSITORY/tags)
         echo "tag_list: $tag_list"
 
         # Intermediate Step / defacto debug / Print tag_list with jq
