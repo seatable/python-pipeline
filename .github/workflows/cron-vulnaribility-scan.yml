@@ -24,11 +24,6 @@ jobs:
         username: ${{ secrets.DOCKERHUB_USERNAME }}
         password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-    - name: Make API call
-      run: |
-        curl -H "Authorization: Bearer ${{ secrets.API_KEY }}" https://api.example.com/data
-
-
     - name: Fetch and sort Docker tags
       id: get_digests
       env:
