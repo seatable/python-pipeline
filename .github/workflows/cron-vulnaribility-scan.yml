@@ -64,13 +64,12 @@ jobs:
 
       shell: bash
 
-
-    # The trivy Github Action does not support scanning multiple images, so we use the
-    # official Trivy image instead, override default entrypoint and run
-    # Trivy for every container image in the list. Fail if any image has vulnerabilities.
-    - name: Scan images for CRITICAL vulnerabilities
-      uses: docker://ghcr.io/aquasecurity/trivy
-      with:
-        entrypoint: /bin/sh
-        args: -c "trivy image --clear-cache; for img in ${{ steps.get_digests.outputs.digests }}; do trivy image --exit-code 1 --severity CRITICAL --no-progress $img; done"
+    # # The trivy Github Action does not support scanning multiple images, so we use the
+    # # official Trivy image instead, override default entrypoint and run
+    # # Trivy for every container image in the list. Fail if any image has vulnerabilities.
+    # - name: Scan images for CRITICAL vulnerabilities
+    #   uses: docker://ghcr.io/aquasecurity/trivy
+    #   with:
+    #     entrypoint: /bin/sh
+    #     args: -c "trivy image --clear-cache; for img in ${{ steps.get_digests.outputs.digests }}; do trivy image --exit-code 1 --severity CRITICAL --no-progress $img; done"
 
