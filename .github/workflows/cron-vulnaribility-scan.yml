@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        docker_image: ['seatable/seatable-python-runner', 'seatable/seatable-python-scheduler', 'seatable/seatable-python-starter']
+        docker_image: ['seatable-python-runner', 'seatable-python-scheduler', 'seatable-python-starter']
 
     steps:
     - name: Checkout repository
