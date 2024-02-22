@@ -23,7 +23,7 @@ jobs:
     #   run: |
     #     git fetch --tags
     #     latest_tag=$(git tag --sort=-creatordate | grep -E '^(testing|release)-' | head -n  1)
-    #     echo "latest_short_sha=$(git rev-parse --short $latest_tag)"" >> $GITHUB_OUTPUT
+    #     echo "latest_short_sha=$(git rev-parse --short $latest_tag)" >> $GITHUB_OUTPUT
 
     - name: Login to Docker Hub
       uses: docker/login-action@v3
@@ -32,10 +32,44 @@ jobs:
         password: ${{ secrets.DOCKERHUB_TOKEN }}
 
     - name: Fetch and sort Docker tags
+      id: get_digests
       run: |
-        docker pull ${{ matrix.docker_image }}
-        docker images --format "{{.Tag}} {{.CreatedSince}}" your-image-name | sort -r
+        username="${{ secrets.DOCKERHUB_USERNAME }}"
+        password="${{ secrets.DOCKERHUB_PASSWORD }}"
+        namespace="seatable"
+        repository="${{ matrix.docker_image }}"
+
+        # Login and get token
+        auth_response=$(curl -s -H "Content-Type: application/json" -X POST -d '{"username": "'"$username"'", "password": "'"$password"'"}' https://hub.docker.com/v2/users/login)
+        token=$(echo $auth_response | jq -r .token)
+
+        # Use token to make API call / pagianted, we only care about the first page
+        tag_list=$(curl -s -H "Authorization: Bearer $token" https://hub.docker.com/v2/namespaces/$namespace/repositories/$repository/tags)
+
+        # Intermediate Step / defacto debug / Print tag_list with jq
+        tag_list_short=$(echo $tag_list | jq '[.results[] | {
+            digest: .digest,
+            name: .name,
+            tag_last_pushed: .tag_last_pushed,
+            tag_last_pulled: .tag_last_pulled,
+            last_updated: .last_updated,
+            last_updater: .last_updater,
+            last_updater_username: .last_updater_username
+        }]')
+
+        # Unique digest, without "unique" to keep the order of the list (sorted by last date pushed)
+        echo "digests=$(echo $tag_list_short | jq -r '[ .[] | .digest ] | map({key:.,value:1}) | from_entries | keys_unsorted | join(" ")')" >> $GITHUB_OUTPUT
+
       shell: bash
+
+    # The trivy Github Action does not support scanning multiple images, so we use the
+    # official Trivy image instead, override default entrypoint and run
+    # Trivy for every container image in the list. Fail if any image has vulnerabilities.
+    - name: Scan images for CRITICAL vulnerabilities
+      uses: docker://dockerhub.io/aquasecurity/trivy
+      with:
+        entrypoint: /bin/sh
+        args: -c "trivy image --clear-cache; for img in ${{ steps.get_digests.outputs.digests }}; do trivy image --exit-code 1 --severity CRITICAL --no-progress $img; done"
 
     # - name: Docker Scout
     #   uses: docker/scout-action@v1
