@@ -30,7 +30,7 @@ jobs:
         DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
         DOCKERHUB_PASSWORD: ${{ secrets.DOCKERHUB_PASSWORD }}
       run: |
-        payload=$(jq -n --arg u "$DOCKERHUB_PASSWORD" --arg p "$DOCKERHUB_PASSWORD" '{username: $u, password: $p}')
+        payload=$(jq -n --arg u "$DOCKERHUB_USERNAME" --arg p "$DOCKERHUB_PASSWORD" '{username: $u, password: $p}')
         auth_response=$(curl -s -H "Content-Type: application/json" -X POST -d "$payload" https://hub.docker.com/v2/users/login)
         echo "Auth response: $auth_response"
       shell: bash
