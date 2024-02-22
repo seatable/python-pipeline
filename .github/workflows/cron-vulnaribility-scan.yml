@@ -34,10 +34,10 @@ jobs:
     - name: Fetch and sort Docker tags
       id: get_digests
       run: |
-        username="${{ secrets.DOCKERHUB_USERNAME }}"
-        password="${{ secrets.DOCKERHUB_PASSWORD }}"
-        namespace="seatable"
-        repository="${{ matrix.docker_image }}"
+        username='${{ secrets.DOCKERHUB_USERNAME }}'
+        password='${{ secrets.DOCKERHUB_PASSWORD }}'
+        namespace='seatable'
+        repository='${{ matrix.docker_image }}'
 
         # Login and get token
         auth_response=$(curl -s -H "Content-Type: application/json" -X POST -d '{"username": "'"$username"'", "password": "'"$password"'"}' https://hub.docker.com/v2/users/login)
