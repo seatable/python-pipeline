@@ -59,7 +59,7 @@ jobs:
 
         # Unique digest, without "unique" to keep the order of the list (sorted by last date pushed)
         echo "digests=$(echo $tag_list_short | jq -r '[ .[] | .digest ] | map({key:.,value:1}) | from_entries | keys_unsorted | join(" ")')" >> $GITHUB_OUTPUT
-        digests=$(echo $tag_list_short | jq -r '[ .[] | .digest ] | map({key:.,value:1}) | from_entries | keys_unsorted | join(" ")')"
+        digests=$(echo $tag_list_short | jq -r '[ .[] | .digest ] | map({key:.,value:1}) | from_entries | keys_unsorted | join(" ")')
         echo "digests: $digests"
 
       shell: bash
