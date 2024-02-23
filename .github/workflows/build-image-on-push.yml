@@ -1,4 +1,4 @@
-name: Build and push containers
+name: testflow
 # "on push" includes merged pull requests
 
 on:
@@ -47,7 +47,6 @@ jobs:
           elif [[ "${{ steps.extract_github_ref_prefix.outputs.git_tag_prefix }}" == "release" ]]; then
             echo "image_tag_prefix=" >> $GITHUB_OUTPUT
           fi
-
 
   # python-code-quality:
   #   runs-on: ubuntu-latest
@@ -109,8 +108,8 @@ jobs:
           context: ${{ needs.init-vars.outputs.component }}
           push: true
           tags: |
-            seatable/seatable-python-${{ needs.init-vars.outputs.component }}:commit-${{ steps.get_commit.outputs.short_sha }}
-            seatable/seatable-python-${{ needs.init-vars.outputs.component }}:${{ needs.init-vars.outputs.image_tag_prefix }}${{ needs.init-vars.outputs.version }}
+            seatable/seatable-python-${{ needs.init-vars.outputs.component }}-verify:commit-${{ steps.get_commit.outputs.short_sha }}
+            seatable/seatable-python-${{ needs.init-vars.outputs.component }}-verify:${{ needs.init-vars.outputs.image_tag_prefix }}${{ needs.init-vars.outputs.version }}
           labels: |
             org.opencontainers.image.title=seatable/seatable-python-${{ needs.init-vars.outputs.component }}
             org.opencontainers.image.version=${{ needs.init-vars.outputs.image_tag_prefix }}${{ needs.init-vars.outputs.version }}
@@ -121,13 +120,22 @@ jobs:
             org.opencontainers.image.documentation=https://admin.seatable.io/
             org.opencontainers.image.vendor=SeaTable
 
-      - name: Docker Scout
-        id: docker-scout
-        uses: docker/scout-action@v1
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
         with:
-          command: cves,recommendations,compare
-          image: seatable/seatable-python-${{ needs.init-vars.outputs.component }}:${{ needs.init-vars.outputs.image_tag_prefix }}${{ needs.init-vars.outputs.version }}
-          to-latest: true
-          ignore-base: true
-          ignore-unchanged: true
-          only-fixed: true
+          image-ref: 'docker.io/seatable/seatable-python-${{ needs.init-vars.outputs.component }}-verify:commit-${{ steps.get_commit.outputs.short_sha }}'
+          format: 'table'
+          exit-code: '1'
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+          severity: 'CRITICAL,HIGH'
+        env:
+          TRIVY_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          TRIVY_PASSWORD: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Move image to non verify repository
+        id: move_image
+        run: |
+          docker pull seatable/seatable-python-${{ needs.init-vars.outputs.component }}-verify:commit-${{ steps.get_commit.outputs.short_sha }}
+          docker tag seatable/seatable-python-${{ needs.init-vars.outputs.component }}-verify:commit-${{ steps.get_commit.outputs.short_sha }} seatable/seatable-python-${{ needs.init-vars.outputs.component }}-:commit-${{ steps.get_commit.outputs.short_sha }}
+          docker push seatable/seatable-python-${{ needs.init-vars.outputs.component }}:commit-${{ steps.get_commit.outputs.short_sha }}
