@@ -1,6 +1,11 @@
 #!/bin/bash
 #
-# builds the python-code-quality image and runs black & lint it to provide a local format and lint
+# builds the python-code-quality image if necessesary and runs black & pylint locally
+
+set -euo pipefail
+
+# FIXME only fixable on system level.
+# sudo calls should be removed. Addinng the local user in the docker group is preferred.
 
 set -euo pipefail
 
