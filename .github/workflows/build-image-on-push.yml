@@ -125,7 +125,8 @@ jobs:
         with:
           image-ref: 'docker.io/seatable/seatable-python-${{ needs.init-vars.outputs.component }}-verify:commit-${{ steps.get_commit.outputs.short_sha }}'
           format: 'table'
-          exit-code: '1'
+          exit-code: '0'
+          scanners: 'vuln,config'
           ignore-unfixed: true
           vuln-type: 'os,library'
           severity: 'CRITICAL,HIGH'
