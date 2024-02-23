@@ -1,4 +1,4 @@
-name: testflow
+name: Build and push containers
 # "on push" includes merged pull requests
 
 on:
