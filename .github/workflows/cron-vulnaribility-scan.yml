@@ -31,45 +31,42 @@ jobs:
         DOCKERHUB_PASSWORD: ${{ secrets.DOCKERHUB_TOKEN }}
         DOCKER_NAMESPACE: seatable
         DOCKER_REPOSITORY: ${{ matrix.docker_image }}
+        NAME_REPO: ${{ env.DOCKER_NAMESPACE }}/${{ matrix.docker_image }}
       run: |
         # Get Bearer Token
         payload=$(jq -n --arg u "$DOCKERHUB_USERNAME" --arg p "$DOCKERHUB_PASSWORD" '{username: $u, password: $p}')
         token=$(curl -s -H "Content-Type: application/json" -X POST -d "$payload" https://hub.docker.com/v2/users/login | jq -r .token)
-        echo "token: $token"
-
-        echo "DOCKER_NAMESPACE: $DOCKER_NAMESPACE"
-        echo "DOCKER_REPOSITORY: $DOCKER_REPOSITORY"
 
         # Use token to make repo tag list API call / pagianted, we only care about the first page
         tag_list=$(curl -s -H "Authorization: Bearer $token" https://hub.docker.com/v2/namespaces/$DOCKER_NAMESPACE/repositories/$DOCKER_REPOSITORY/tags)
-        echo "tag_list: $tag_list"
 
-        # DEBUG Intermediate Step / Print tag_list with jq
-        tag_list_short=$(echo $tag_list | jq '[.results[] | {
-            digest: .digest,
-            name: .name,
-            tag_last_pushed: .tag_last_pushed,
-            tag_last_pulled: .tag_last_pulled,
-            last_updated: .last_updated,
-            last_updater: .last_updater,
-            last_updater_username: .last_updater_username
-        }]')
+        # Filter for unique digests and prefix with repo and image name / without "unique" to keep the order of the list (sorted by last date pushed)
+        digests=$(echo $tag_list | jq -r '[ .results[] | .digest ] | map({key:.,value:1}) | from_entries | keys_unsorted | join(" ")')
 
-        echo "tag_list_short: $tag_list_short"
-
-        # Unique digest, without "unique" to keep the order of the list (sorted by last date pushed)
-        echo "digests=$(echo $tag_list_short | jq -r '[ .[] | .digest ] | map({key:.,value:1}) | from_entries | keys_unsorted | join(" ")')" >> $GITHUB_OUTPUT
-        digests=$(echo $tag_list_short | jq -r '[ .[] | .digest ] | map({key:.,value:1}) | from_entries | keys_unsorted | join(" ")')
         echo "digests: $digests"
+
+        prefixed_digests=""
+        for digest in $digests; do
+          prefixed_digests+="$NAME_REPO@$digest "
+        done
+
+        echo "prefixed_digests: $prefixed_digest"
+        echo "prefixed_digests=${prefixed_digests}" >> $GITHUB_OUTPUT
 
       shell: bash
 
-    # # The trivy Github Action does not support scanning multiple images, so we use the
-    # # official Trivy image instead, override default entrypoint and run
-    # # Trivy for every container image in the list. Fail if any image has vulnerabilities.
-    # - name: Scan images for CRITICAL vulnerabilities
-    #   uses: docker://ghcr.io/aquasecurity/trivy
-    #   with:
-    #     entrypoint: /bin/sh
-    #     args: -c "trivy image --clear-cache; for img in ${{ steps.get_digests.outputs.digests }}; do trivy image --exit-code 1 --severity CRITICAL --no-progress $img; done"
 
+    - name: Print output value
+      run: echo "The output value is ${{ steps.get_digests.outputs.prefixed_digests }}"
+
+
+    # The trivy Github Action does not support scanning multiple images, so we use the
+    # official Trivy image instead, override default entrypoint and run
+    # Trivy for every container image in the list. Fail if any image has critical vulnerabilities.
+
+    - name: Scan images for CRITICAL vulnerabilities
+      id: trivy_scan
+      uses: docker://ghcr.io/aquasecurity/trivy
+      with:
+        entrypoint: /bin/sh
+        args: -c "trivy image --clear-cache; for img in ${{ steps.get_digests.outputs.prefixed_digests }}; do trivy image --exit-code 1 --severity CRITICAL --no-progress $img; done"
