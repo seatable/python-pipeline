@@ -126,7 +126,7 @@ jobs:
           image-ref: 'docker.io/seatable/seatable-python-${{ needs.init-vars.outputs.component }}-verify:commit-${{ steps.get_commit.outputs.short_sha }}'
           format: 'table'
           exit-code: '0'
-          scanners: 'vuln,config'
+          scanners: 'vuln,misconfig'
           ignore-unfixed: true
           vuln-type: 'os,library'
           severity: 'CRITICAL,HIGH'
@@ -138,5 +138,5 @@ jobs:
         id: move_image
         run: |
           docker pull seatable/seatable-python-${{ needs.init-vars.outputs.component }}-verify:commit-${{ steps.get_commit.outputs.short_sha }}
-          docker tag seatable/seatable-python-${{ needs.init-vars.outputs.component }}-verify:commit-${{ steps.get_commit.outputs.short_sha }} seatable/seatable-python-${{ needs.init-vars.outputs.component }}-:commit-${{ steps.get_commit.outputs.short_sha }}
+          docker tag seatable/seatable-python-${{ needs.init-vars.outputs.component }}-verify:commit-${{ steps.get_commit.outputs.short_sha }} seatable/seatable-python-${{ needs.init-vars.outputs.component }}:commit-${{ steps.get_commit.outputs.short_sha }}
           docker push seatable/seatable-python-${{ needs.init-vars.outputs.component }}:commit-${{ steps.get_commit.outputs.short_sha }}
