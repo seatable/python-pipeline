@@ -7,13 +7,6 @@ set -euo pipefail
 # FIXME only fixable on system level.
 # sudo calls should be removed. Addinng the local user in the docker group is preferred.
 
-set -euo pipefail
-
-#
-
-# FIXME only fixable on system level.
-# the relaince on sudo should be removed, local user in the docker group is preferred
-
 image_name="python-code-quality"
 
 if sudo docker inspect "${image_name}" &> /dev/null; then
