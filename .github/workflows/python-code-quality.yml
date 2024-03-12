@@ -25,6 +25,7 @@ jobs:
           black --check --diff .
       - name: Run pylint
         run: |
+          set -x
           cd $GITHUB_WORKSPACE/scheduler/app
           pylint flask_server.py --disable=all --enable=W,E --disable=broad-exception-caught
           pylint scheduler.py --disable=all --enable=W,E --disable=broad-exception-caught
@@ -50,5 +51,6 @@ jobs:
           black --check --diff .
       - name: Run pylint
         run: |
+          set -x
           cd $GITHUB_WORKSPACE/starter
           pylint *.py --disable=all --enable=W,E --disable=broad-exception-caught,unspecified-encoding
