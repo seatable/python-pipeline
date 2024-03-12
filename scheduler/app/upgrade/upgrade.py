@@ -7,9 +7,7 @@ This script is used to run proper upgrade scripts automatically.
 
 import glob
 import os
-from os.path import abspath, basename, exists, dirname, join, isdir, islink
-import time
-import pymysql
+from os.path import basename, join
 from sqlalchemy import text
 from datetime import datetime
 
@@ -99,7 +97,7 @@ def read_version_stamp():
         if not last_one:  # version_history exists but no records
             return "2.2.4"
         return last_one[0]
-    except Exception as e:
+    except Exception:
         return None
 
 
@@ -150,8 +148,8 @@ def main():
 if __name__ == "__main__":
     try:
         main()
-    except Exception as e:
-        print("Error:", type(e), e)
+    except Exception as err:
+        print("Error:", type(err), err)
         print(
             "Auto upgrade failed, please run the folloging command manually: scheduler.sh upgrade-sql x.x.x"
         )

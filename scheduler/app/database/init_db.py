@@ -19,7 +19,7 @@ else:
     db_passwd = ""
 
 DB_HOST = os.getenv("DB_HOST", "seatable-mysql")
-DB_PORT = int(os.getenv("DB_PORT", 3306))
+DB_PORT = int(os.getenv("DB_PORT", "3306"))
 DATABASE_NAME = os.getenv("DATABASE_NAME", "scheduler")
 
 

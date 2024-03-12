@@ -6,7 +6,7 @@ on:
       - '*'
 
 jobs:
-  python-code-quality:
+  scheduler-python-code-quality:
     runs-on: ubuntu-latest
     steps:
       - name: Check out source repository
@@ -19,9 +19,36 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install pylint black
+          pip install -r $GITHUB_WORKSPACE/scheduler/app/requirements.txt
       - name: Run Black
         run: |
           black --check --diff .
       - name: Run pylint
         run: |
-          find . -name '*.py' | xargs pylint
+          cd $GITHUB_WORKSPACE/scheduler/app
+          pylint flask_server.py --disable=all --enable=W,E --disable=broad-exception-caught
+          pylint scheduler.py --disable=all --enable=W,E --disable=broad-exception-caught
+          pylint database --disable=all --enable=W,E --disable=broad-exception-caught
+          pylint faas_scheduler --source-roots=['database', 'faas_scheduler'] --disable=all --enable=W,E --disable=broad-exception-caught
+
+  starter-python-code-quality:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source repository
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.11
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pylint black
+          cat $GITHUB_WORKSPACE/starter/requirements.txt | grep -vi uwsgi | xargs pip install
+      - name: Run Black
+        run: |
+          black --check --diff .
+      - name: Run pylint
+        run: |
+          cd $GITHUB_WORKSPACE/starter
+          pylint *.py --disable=all --enable=W,E --disable=broad-exception-caught,unspecified-encoding

@@ -2,11 +2,11 @@ import os
 import json
 import logging
 import requests
-from datetime import datetime, timedelta
+from datetime import datetime
 from uuid import UUID
 
 from tzlocal import get_localzone
-from sqlalchemy import desc, distinct, text
+from sqlalchemy import desc, text
 from faas_scheduler.models import ScriptLog
 
 import sys
@@ -35,8 +35,8 @@ class ScriptInvalidException(Exception):
 
 
 ## part of ping to get the check if the python starter can be reached.
-def ping_starter(request):
-    response = requests.get(STARTER_URL.rstrip("/") + "/ping/")
+def ping_starter():
+    response = requests.get(STARTER_URL.rstrip("/") + "/ping/", timeout=30)
     if response.status_code == 200:
         return True
 
@@ -118,8 +118,11 @@ def get_script_file(dtable_uuid, script_name):
         )
     if response.status_code != 200:
         logger.error(
-            "Fail to get script file: %s %s, error response: %s, %s"
-            % (dtable_uuid, script_name, response.status_code, response.text)
+            "Fail to get script file: %s %s, error response: %s, %s",
+            dtable_uuid,
+            script_name,
+            response.status_code,
+            response.text,
         )
         raise ValueError("script not found")
 
@@ -220,7 +223,7 @@ def update_statistics(db_session, dtable_uuid, owner, org_id, spend_time):
             )
         db_session.commit()
     except Exception as e:
-        logger.exception("update statistics sql error: %s" % (e,))
+        logger.exception("update statistics sql error: %s", e)
 
 
 # required to get "script logs" in dtable-web
@@ -257,8 +260,6 @@ def get_run_scripts_count_monthly(username, org_id, db_session, month=None):
         owner_username = username
     if not month:
         month = datetime.strftime(datetime.now(), "%Y-%m")
-    else:
-        month = month
     count = db_session.execute(
         text(sql), {"month": month, "owner_username": owner_username}
     ).fetchone()[0]
@@ -285,7 +286,7 @@ def can_run_task(owner, org_id, db_session, scripts_running_limit=None):
             return True
         scripts_running_limit = -1
         try:
-            response = requests.get(url, headers=headers, params=params)
+            response = requests.get(url, headers=headers, params=params, timeout=30)
         except Exception as e:
             logger.error("request run-scripts-limit error: %s", e)
             return False
@@ -380,7 +381,7 @@ def run_script(
         logger.debug("run_script executed...")
         call_faas_func(script_url, temp_api_token, context_data, script_id=script_id)
     except Exception as e:
-        logger.exception("Run script %d error: %s" % (script_id, e))
+        logger.exception("Run script %d error: %s", script_id, e)
     finally:
         db_session.close()
 
@@ -463,15 +464,23 @@ def get_run_script_statistics_by_month(
     return month.strftime("%Y-%m"), total_count, results
 
 
-def datetime_to_isoformat_timestr(datetime):
-    if not datetime:
+def datetime_to_isoformat_timestr(datetime_obj):
+    if not datetime_obj:
         return ""
     try:
-        datetime = datetime.replace(microsecond=0)
+        datetime_obj = datetime_obj.replace(microsecond=0)
         current_timezone = get_localzone()
-        localized_datetime = datetime.astimezone(current_timezone)
+        localized_datetime = datetime_obj.astimezone(current_timezone)
         isoformat_timestr = localized_datetime.isoformat()
         return isoformat_timestr
     except Exception as e:
         logger.error(e)
         return ""
+
+
+def uuid_str_to_32_chars(uuid_str):
+    return uuid_str.replace("-", "")
+
+
+def uuid_str_to_36_chars(uuid_str):
+    return str(UUID(uuid_str))
