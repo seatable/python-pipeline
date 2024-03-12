@@ -28,5 +28,12 @@ else
   sudo docker build -t "${image_name}" python-code-quality/
 fi
 
-sudo docker run -v .:/app/ "${image_name}" black /app/
-sudo docker run -v .:/app/ "${image_name}" bash -c "find /app/ -name '*.py' | xargs pylint"
+sudo docker run -v "`pwd`":/app/ --rm "${image_name}" black /app/
+
+SOURCE_PATH=/app
+
+echo 'pylint scheduler'
+sudo docker run -v "`pwd`":/app/ -e SOURCE_PATH=$SOURCE_PATH --rm "${image_name}" bash $SOURCE_PATH/python-code-quality/pylint-scheduler.sh
+
+echo 'pylint starter'
+sudo docker run -v "`pwd`":/app/ -e SOURCE_PATH=$SOURCE_PATH --rm "${image_name}" bash $SOURCE_PATH/python-code-quality/pylint-starter.sh

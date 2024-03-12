@@ -24,6 +24,7 @@ from faas_scheduler.utils import (
     ping_starter,
     get_task_log,
     list_task_logs,
+    uuid_str_to_32_chars,
 )
 
 
@@ -49,7 +50,7 @@ executor = ThreadPoolExecutor(max_workers=SCRIPT_WORKERS)
 
 @app.route("/ping/", methods=["GET"])
 def ping():
-    if not ping_starter(request):
+    if not ping_starter():
         return make_response(
             (
                 "Error: Python Scheduler can not reach the Python Starter. Check PYTHON_STARTER_URL.",
@@ -70,7 +71,7 @@ def scripts_api():
         data = json.loads(request.data)
         if not isinstance(data, dict):
             return make_response(("Bad request", 400))
-    except Exception as e:
+    except Exception:
         return make_response(("Bad request", 400))
 
     dtable_uuid = data.get("dtable_uuid")
@@ -128,12 +129,12 @@ def script_api(script_id):
         return make_response(("Forbidden: the auth token is not correct.", 403))
 
     logger.debug(
-        "dtable-web asks for the status of the execution of the python script with the id %s"
-        % script_id
+        "dtable-web asks for the status of the execution of the python script with the id %s",
+        script_id,
     )
     try:
         script_id = int(script_id)
-    except Exception as e:
+    except Exception:
         return make_response(("Bad request", 400))
     dtable_uuid = request.args.get("dtable_uuid")
     script_name = request.args.get("script_name")
@@ -220,6 +221,12 @@ def task_log_api(dtable_uuid, script_name, log_id):
     db_session = DBSession()
     try:
         task_log = get_task_log(db_session, log_id)
+        if uuid_str_to_32_chars(task_log.dtable_uuid) != uuid_str_to_32_chars(
+            dtable_uuid
+        ):
+            return make_response(({"error_msg": "Script log not found"}, 404))
+        if task_log.script_name != script_name:
+            return make_response(({"error_msg": "Script log not found"}, 404))
         task_log_info = task_log.to_dict()
 
         return make_response(({"task_log": task_log_info}, 200))
@@ -243,7 +250,7 @@ def scripts_running_count():
     if raw_month:
         try:
             month = datetime.strptime(raw_month, "%Y-%m").strftime("%Y-%m")
-        except:
+        except Exception:
             return make_response(("month invalid.", 400))
     else:
         month = None
@@ -254,7 +261,7 @@ def scripts_running_count():
     if org_id:
         try:
             org_id = int(org_id)
-        except:
+        except Exception:
             return make_response(("org_id invalid.", 400))
         if org_id == -1:
             return make_response(("org_id invalid.", 400))
@@ -279,7 +286,7 @@ def record_script_result():
     """
     try:
         data = request.get_json()
-    except:
+    except Exception:
         return make_response("Bad Request.", 400)
     success = data.get("success", False)
     return_code = data.get("return_code")
@@ -306,29 +313,29 @@ def record_script_result():
 
 
 # internal function...
-def get_scripts_running_statistics_by_request(request, target):
-    raw_month = request.args.get("month")
+def get_scripts_running_statistics_by_request(api_request, target):
+    raw_month = api_request.args.get("month")
     if raw_month:
         try:
             month = datetime.strptime(raw_month, "%Y-%m")
-        except:
+        except Exception:
             return make_response(("month invalid.", 400))
     else:
         month = None
 
-    order_by = request.args.get("order_by")
+    order_by = api_request.args.get("order_by")
     if order_by:
         if order_by.strip("-") not in ("total_run_time", "total_run_count"):
             return make_response(("order_by invalid.", 400))
         if "-" in order_by:
             order_by = order_by.strip("-") + " DESC"
 
-    direction = request.args.get("direction")
+    direction = api_request.args.get("direction")
 
     try:
-        page = int(request.args.get("page", 1))
-        per_page = int(request.args.get("per_page", 25))
-    except:
+        page = int(api_request.args.get("page", 1))
+        per_page = int(api_request.args.get("per_page", 25))
+    except Exception:
         page, per_page = 1, 25
 
     start, limit = (page - 1) * per_page, per_page

@@ -3,7 +3,6 @@ import gc
 import sys
 import time
 import logging
-from concurrent.futures import ThreadPoolExecutor, wait, ALL_COMPLETED
 from threading import Thread
 
 from database import DBSession
@@ -40,19 +39,19 @@ class FAASTaskTimeoutSetter(Thread):
                 try:
                     check_and_set_tasks_timeout(db_session)
                 except Exception as e:
-                    logger.exception("task cleaner error: %s" % e)
+                    logger.exception("task cleaner error: %s", e)
                 finally:
                     db_session.close()
 
                 # python garbage collection
-                logger.info("gc.collect: " + str(gc.collect()))
+                logger.info("gc.collect: %s", str(gc.collect()))
 
                 # remove old script_logs and statistics
                 delete_log_after_days(db_session)
                 delete_statistics_after_days(db_session)
 
                 # sleep
-                logger.info("Sleep for %d seconds ..." % self.interval)
+                logger.info("Sleep for %d seconds ...", self.interval)
                 time.sleep(self.interval)
 
 

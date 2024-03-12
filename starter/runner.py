@@ -1,16 +1,16 @@
 import json
 import logging
-import sys
 import os
 import re
-import requests
 import shutil
 import subprocess
+import sys
 import time
 import ast
-
 from concurrent.futures import ThreadPoolExecutor
 from uuid import uuid4
+
+import requests
 from flask import Flask, request, make_response
 
 working_dir = os.getcwd()
@@ -44,7 +44,7 @@ GROUP = os.environ.get("PYTHON_RUNNER_GROUP", "")
 OTHER_OPTIONS = os.environ.get("PYTHON_RUNNER_OTHER_OPTIONS", "[]")
 try:
     OTHER_OPTIONS = ast.literal_eval(OTHER_OPTIONS)
-except:
+except Exception:
     OTHER_OPTIONS = []
 
 
@@ -67,9 +67,9 @@ elif os.path.isfile("/etc/localtime"):
     SYSTEM_TIMEZONE_COMMAND = ["-v", "/etc/localtime:/etc/localtime"]
 elif os.path.isfile("/etc/timezone"):
     try:
-        with open("/etc/timezone", "r") as f:
-            time_zone_str = f.readline()
-    except Exception as e:
+        with open("/etc/timezone", "r") as time_f:
+            time_zone_str = time_f.readline()
+    except Exception:
         pass
     else:
         time_zone_str = time_zone_str.strip()
@@ -111,7 +111,7 @@ def send_to_scheduler(success, return_code, output, spend_time, request_data):
         response = requests.post(url, json=result_data, timeout=30, headers=headers)
     except Exception as e:
         logging.error(
-            "request could not be send to scheduler. error: %s, result_data: %s",
+            "request could not be send to scheduler: %s. error: %s, result_data: %s",
             url,
             e,
             result_data,
@@ -163,7 +163,7 @@ def run_python(data):
     logging.debug("try to get script from seatable server")
     try:
         headers = {"User-Agent": "python-starter/" + VERSION}
-        resp = requests.get(script_url, headers=headers)
+        resp = requests.get(script_url, headers=headers, timeout=60)
         logging.debug("response from seatable server: resp: %s", resp)
         if resp.status_code < 200 or resp.status_code >= 300:
             logging.error(
@@ -267,6 +267,7 @@ def run_python(data):
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             timeout=DEFAULT_SUB_PROCESS_TIMEOUT,
+            check=False,
         )
         return_code = result.returncode
         logging.debug("run resulted in this return_code: %s", return_code)
@@ -276,13 +277,14 @@ def run_python(data):
                 ["docker", "stop", container_name],
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.STDOUT,
+                check=False,
             )
-        except Exception as e:
+        except Exception as stop_e:
             logging.warning(
                 "stop script: %s container: %s, error: %s",
                 script_url,
                 container_name,
-                e,
+                stop_e,
             )
         send_to_scheduler(
             False,
@@ -329,6 +331,7 @@ def run_python(data):
                 ["docker", "container", "rm", "-f", container_name],
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.STDOUT,
+                check=False,
             )
             os.chdir(working_dir)
         except Exception as e:
@@ -355,11 +358,11 @@ def ping():
 
 
 @app.route("/", defaults={"path": ""}, methods=["POST", "GET"])
-@app.route("/function/run-python", defaults={"path": ""}, methods=["POST", "GET"])
-def main_route(path):
+@app.route("/function/run-python", methods=["POST", "GET"])
+def main_route():
     try:
         data = request.get_json()
-    except:
+    except Exception:
         return make_response("Bad Request.", 400)
     try:
         executor.submit(run_python, data)
