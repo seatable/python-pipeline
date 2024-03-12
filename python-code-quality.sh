@@ -30,23 +30,10 @@ fi
 
 sudo docker run -v "`pwd`":/app/ --rm "${image_name}" black /app/
 
-echo 'pylint scheduler app'
-sudo docker run -v "`pwd`":/app/ --rm "${image_name}" bash -c "
-pip install -r /app/scheduler/app/requirements.txt
+SOURCE_PATH=/app
 
-set -x
-cd /app/scheduler/app
-pylint flask_server.py --disable=all --enable=W,E --disable=broad-exception-caught
-pylint scheduler.py --disable=all --enable=W,E --disable=broad-exception-caught
-pylint database --disable=all --enable=W,E --disable=broad-exception-caught
-pylint faas_scheduler --source-roots=['database', 'faas_scheduler'] --disable=all --enable=W,E --disable=broad-exception-caught
-"
+echo 'pylint scheduler'
+sudo docker run -v "`pwd`":/app/ -e SOURCE_PATH=$SOURCE_PATH --rm "${image_name}" bash $SOURCE_PATH/python-code-quality/pylint-scheduler.sh
 
-echo ''pylint starter
-sudo docker run -v "`pwd`":/app/ --rm "${image_name}" bash -c "
-cat /app/starter/requirements.txt | grep -vi 'uwsgi' | xargs pip install
-
-set -x
-cd /app/starter
-pylint *.py --disable=all --enable=W,E --disable=broad-exception-caught,unspecified-encoding
-"
+echo 'pylint starter'
+sudo docker run -v "`pwd`":/app/ -e SOURCE_PATH=$SOURCE_PATH --rm "${image_name}" bash $SOURCE_PATH/python-code-quality/pylint-starter.sh
