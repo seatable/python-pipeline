@@ -24,7 +24,7 @@ jobs:
           black --check --diff .
       - name: Run pylint
         run: |
-          SOURCE_PATH=$GITHUB_WORKSPACE
+          export SOURCE_PATH=$GITHUB_WORKSPACE
           bash $GITHUB_WORKSPACE/python-code-quality/pylint-scheduler.sh
 
   starter-python-code-quality:
@@ -45,5 +45,5 @@ jobs:
           black --check --diff .
       - name: Run pylint
         run: |
-          SOURCE_PATH=$GITHUB_WORKSPACE
+          export SOURCE_PATH=$GITHUB_WORKSPACE
           bash $GITHUB_WORKSPACE/python-code-quality/pylint-starter.sh
