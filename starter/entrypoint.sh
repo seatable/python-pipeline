@@ -56,8 +56,8 @@ check_starter_config() {
     check_empty "${PYTHON_RUNNER_IMAGE}" "PYTHON_RUNNER_IMAGE"
 }
 
-#################################################
 
+####
 check_starter_config
 
 echo "** uWSGI is starting now"
