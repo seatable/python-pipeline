@@ -4,9 +4,9 @@ import os
 import re
 import shutil
 import subprocess
-import sys
 import time
 import ast
+from logging import handlers
 from concurrent.futures import ThreadPoolExecutor
 from uuid import uuid4
 
@@ -47,13 +47,40 @@ try:
 except Exception:
     OTHER_OPTIONS = []
 
+# defaults...
+LOG_DIR = "/opt/seatable-python-starter/logs/"
 
-# log to stdout
-logging.basicConfig(
-    stream=sys.stdout,
-    format="[%(asctime)s] [%(levelname)s] %(name)s:%(lineno)s %(funcName)s %(message)s",
-    level=LOG_LEVEL,
-)
+
+def get_log_level(level):
+    if level.lower() == 'info':
+        return logging.INFO
+    elif level.lower() == 'warning':
+        return logging.WARNING
+    elif level.lower() == 'debug':
+        return logging.DEBUG
+    elif level.lower() == 'error':
+        return logging.ERROR
+    elif level.lower() == 'critical':
+        return logging.CRITICAL
+    return logging.INFO
+
+
+# log to file
+def basic_log(log_file):
+    handler = handlers.TimedRotatingFileHandler(
+        os.path.join(LOG_DIR, log_file), when="W0", interval=1, backupCount=7
+    )
+    log_level = get_log_level(LOG_LEVEL)
+    handler.setLevel(log_level)
+    formatter = logging.Formatter(
+        "[%(asctime)s] [%(levelname)s] %(name)s %(filename)s:%(lineno)s %(funcName)s %(message)s"
+    )
+    handler.setFormatter(formatter)
+    logging.root.setLevel(log_level)
+    logging.root.addHandler(handler)
+
+
+basic_log("starter.log")
 
 app = Flask(__name__)
 executor = ThreadPoolExecutor(THREAD_COUNT)
@@ -74,6 +101,14 @@ elif os.path.isfile("/etc/timezone"):
     else:
         time_zone_str = time_zone_str.strip()
         SYSTEM_TIMEZONE_COMMAND = ["-e", "TZ=%s" % time_zone_str]
+
+
+def to_python_bool(value):
+    if isinstance(value, bool):
+        return value
+    if not isinstance(value, str):
+        return False
+    return value.lower() == 'true'
 
 
 def send_to_scheduler(success, return_code, output, spend_time, request_data):
@@ -134,7 +169,7 @@ def run_python(data):
     if not script_url:
         send_to_scheduler(False, None, "Script URL is missing", None, data)
         return
-    if USE_ALTERNATIVE_FILE_SERVER_ROOT and ALTERNATIVE_FILE_SERVER_ROOT:
+    if to_python_bool(USE_ALTERNATIVE_FILE_SERVER_ROOT) and ALTERNATIVE_FILE_SERVER_ROOT:
         logging.info("old script_url: %s", script_url)
         script_url = re.sub(
             r"https?://.*?/", ALTERNATIVE_FILE_SERVER_ROOT.strip("/") + "/", script_url

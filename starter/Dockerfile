@@ -29,7 +29,9 @@ COPY ["./", "./"]
 
 # copy compiled pip packages in runtime-image
 COPY --from=compile-image /root/.local /root/.local
+RUN mkdir -p /opt/seatable-python-starter/logs
 ENV PATH=/root/.local/bin:$PATH
+ENV LOG_DIR=/opt/seatable-python-starter/logs
 
 RUN chmod +x entrypoint.sh
 ENTRYPOINT ["/bin/sh", "/opt/seatable-python-starter/entrypoint.sh"]

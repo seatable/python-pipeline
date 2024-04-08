@@ -23,7 +23,7 @@ function start_server() {
     sleep 0.5
 
     cd /opt/scheduler/
-    python3 flask_server.py &
+    python3 flask_server.py > /opt/scheduler/logs/gevent.log 2>&1 &
     # &>>/opt/scheduler/logs/scheduler2.log &
     sleep 0.2
 
