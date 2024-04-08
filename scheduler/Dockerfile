@@ -34,6 +34,7 @@ WORKDIR /opt/scheduler
 COPY ["app/", "/opt/scheduler/"]
 COPY ["version", "/opt/scheduler/version"]
 RUN mkdir -p /opt/scheduler/logs
+RUN mkdir -p /opt/seatable/logs
 RUN pip3 install -r /opt/scheduler/requirements.txt --user
 
 # Add Tini
