@@ -141,4 +141,4 @@ jobs:
           docker tag seatable/seatable-python-${{ needs.init-vars.outputs.component }}-verify:commit-${{ steps.get_commit.outputs.short_sha }} seatable/seatable-python-${{ needs.init-vars.outputs.component }}:commit-${{ steps.get_commit.outputs.short_sha }}
           docker tag seatable/seatable-python-${{ needs.init-vars.outputs.component }}:commit-${{ steps.get_commit.outputs.short_sha }} seatable/seatable-python-${{ needs.init-vars.outputs.component }}:${{ needs.init-vars.outputs.image_tag_prefix }}${{ needs.init-vars.outputs.version }}
           docker push seatable/seatable-python-${{ needs.init-vars.outputs.component }}:commit-${{ steps.get_commit.outputs.short_sha }}
-          docker psuh seatable/seatable-python-${{ needs.init-vars.outputs.component }}:${{ needs.init-vars.outputs.image_tag_prefix }}${{ needs.init-vars.outputs.version }}
+          docker push seatable/seatable-python-${{ needs.init-vars.outputs.component }}:${{ needs.init-vars.outputs.image_tag_prefix }}${{ needs.init-vars.outputs.version }}
