@@ -1,4 +1,4 @@
-## Compile Image
+### Compile Image
 FROM python:3.11-slim-bookworm AS compile-image
 
 # Installation of the pip packages
@@ -6,9 +6,8 @@ WORKDIR /opt/scheduler
 COPY ["app/requirements.txt", "/opt/scheduler/requirements.txt"]
 RUN pip3 install -r /opt/scheduler/requirements.txt --user
 
-#####
 
-## Runtime Image
+### Runtime Image
 FROM python:3.11-slim-bookworm AS runtime-image
 
 # Clean up && Installation of the apt packages

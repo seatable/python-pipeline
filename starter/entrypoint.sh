@@ -1,6 +1,7 @@
 #!/bin/bash
+#
+#
 
-## todo: helpful?
 set -o pipefail
 set +e
 
@@ -33,6 +34,15 @@ if [ $container_count -gt 0 ]; then
     docker container ls -a | grep '$IMAGE' | awk '{print $1}' | xargs docker container rm
 fi
 
+# update truststore
+log "Updating CA certificates..."
+for cert_file in /usr/local/share/ca-certificates/*.crt; do
+  cat "$cert_file" >> "/etc/ssl/certs/ca-certificates.crt"
+done
+# update-ca-certificates can´t be used in alpine without segmentation of chain in single certificates
+# update-ca-certificates --verbose &>> /opt/seatable/logs/init.log
+
+
 check_empty () {
     if [ -z "$1" ]; then
         echo "$2 is empty ot not defined."
@@ -46,8 +56,8 @@ check_starter_config() {
     check_empty "${PYTHON_RUNNER_IMAGE}" "PYTHON_RUNNER_IMAGE"
 }
 
-#################################################
 
+####
 check_starter_config
 
 echo "** uWSGI is starting now"
