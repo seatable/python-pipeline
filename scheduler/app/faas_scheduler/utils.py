@@ -33,15 +33,15 @@ VERSION = os.getenv("VERSION")
 
 
 def get_log_level(level):
-    if level.lower() == 'info':
+    if level.lower() == "info":
         return logging.INFO
-    elif level.lower() == 'warning':
+    elif level.lower() == "warning":
         return logging.WARNING
-    elif level.lower() == 'debug':
+    elif level.lower() == "debug":
         return logging.DEBUG
-    elif level.lower() == 'error':
+    elif level.lower() == "error":
         return logging.ERROR
-    elif level.lower() == 'critical':
+    elif level.lower() == "critical":
         return logging.CRITICAL
     return logging.INFO
 

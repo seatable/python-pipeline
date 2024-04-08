@@ -52,15 +52,15 @@ LOG_DIR = "/opt/seatable-python-starter/logs/"
 
 
 def get_log_level(level):
-    if level.lower() == 'info':
+    if level.lower() == "info":
         return logging.INFO
-    elif level.lower() == 'warning':
+    elif level.lower() == "warning":
         return logging.WARNING
-    elif level.lower() == 'debug':
+    elif level.lower() == "debug":
         return logging.DEBUG
-    elif level.lower() == 'error':
+    elif level.lower() == "error":
         return logging.ERROR
-    elif level.lower() == 'critical':
+    elif level.lower() == "critical":
         return logging.CRITICAL
     return logging.INFO
 
@@ -108,7 +108,7 @@ def to_python_bool(value):
         return value
     if not isinstance(value, str):
         return False
-    return value.lower() == 'true'
+    return value.lower() == "true"
 
 
 def send_to_scheduler(success, return_code, output, spend_time, request_data):
@@ -169,7 +169,10 @@ def run_python(data):
     if not script_url:
         send_to_scheduler(False, None, "Script URL is missing", None, data)
         return
-    if to_python_bool(USE_ALTERNATIVE_FILE_SERVER_ROOT) and ALTERNATIVE_FILE_SERVER_ROOT:
+    if (
+        to_python_bool(USE_ALTERNATIVE_FILE_SERVER_ROOT)
+        and ALTERNATIVE_FILE_SERVER_ROOT
+    ):
         logging.info("old script_url: %s", script_url)
         script_url = re.sub(
             r"https?://.*?/", ALTERNATIVE_FILE_SERVER_ROOT.strip("/") + "/", script_url
