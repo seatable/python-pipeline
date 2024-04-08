@@ -1,6 +1,7 @@
 #!/bin/bash
+#
+#
 
-## todo: helpful?
 set -o pipefail
 set +e
 
@@ -32,6 +33,15 @@ container_count=`docker container ls -a | grep '$IMAGE' | wc -l`
 if [ $container_count -gt 0 ]; then
     docker container ls -a | grep '$IMAGE' | awk '{print $1}' | xargs docker container rm
 fi
+
+# update truststore
+log "Updating CA certificates..."
+for cert_file in /usr/local/share/ca-certificates/*.crt; do
+  cat "$cert_file" >> "/etc/ssl/certs/ca-certificates.crt"
+done
+# update-ca-certificates can´t be used in alpine without segmentation of chain in single certificates
+# update-ca-certificates --verbose &>> /opt/seatable/logs/init.log
+
 
 check_empty () {
     if [ -z "$1" ]; then

@@ -40,9 +40,14 @@ echo "Initialize database ..."
 python3 /opt/scheduler/database/init_db.py
 
 # upgrade (später wieder einbauen...)
-#export CURRENT_VERSION = 
+#export CURRENT_VERSION =
 echo "Check for updates of Python Scheduler ..."
 python3 /opt/scheduler/upgrade/upgrade.py
+
+# update truststore
+# segmentation of chain in single certificates neccecary only on alpine
+log "Updating CA certificates..."
+update-ca-certificates --verbose &>> /opt/seatable/logs/init.log
 
 # check nginx
 log "Start nginx ..."
