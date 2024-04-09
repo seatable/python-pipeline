@@ -35,7 +35,7 @@ if [ $container_count -gt 0 ]; then
 fi
 
 # update truststore
-log "Updating CA certificates..."
+echo "Updating CA certificates..."
 for cert_file in /usr/local/share/ca-certificates/*.crt; do
   cat "$cert_file" >> "/etc/ssl/certs/ca-certificates.crt"
 done
