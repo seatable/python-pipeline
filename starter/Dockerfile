@@ -20,7 +20,8 @@ FROM docker:cli AS runtime-image
 
 RUN apk add --no-cache bash \
                        curl \
-                       python3-dev
+                       python3-dev \
+                       logrotate
 
 
 
