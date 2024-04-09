@@ -3,7 +3,6 @@ import json
 import logging
 import requests
 from datetime import datetime
-from logging import handlers
 from uuid import UUID
 
 from tzlocal import get_localzone
@@ -47,9 +46,7 @@ def get_log_level(level):
 
 
 def basic_log(log_file):
-    handler = handlers.TimedRotatingFileHandler(
-        os.path.join(LOG_DIR, log_file), when="W0", interval=1, backupCount=7
-    )
+    handler = logging.FileHandler(os.path.join(LOG_DIR, log_file))
     log_level = get_log_level(LOG_LEVEL)
     handler.setLevel(log_level)
     formatter = logging.Formatter(

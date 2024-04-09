@@ -6,7 +6,6 @@ import shutil
 import subprocess
 import time
 import ast
-from logging import handlers
 from concurrent.futures import ThreadPoolExecutor
 from uuid import uuid4
 
@@ -67,9 +66,7 @@ def get_log_level(level):
 
 # log to file
 def basic_log(log_file):
-    handler = handlers.TimedRotatingFileHandler(
-        os.path.join(LOG_DIR, log_file), when="W0", interval=1, backupCount=7
-    )
+    handler = logging.FileHandler(os.path.join(LOG_DIR, log_file))
     log_level = get_log_level(LOG_LEVEL)
     handler.setLevel(log_level)
     formatter = logging.Formatter(
