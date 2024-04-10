@@ -22,12 +22,39 @@ SEATABLE_SERVER_URL = os.getenv("SEATABLE_SERVER_URL", "")
 SCHEDULER_AUTH_TOKEN = os.getenv("PYTHON_SCHEDULER_AUTH_TOKEN", "")
 DELETE_LOG_DAYS = os.environ.get("DELETE_LOG_DAYS", "30")
 DELETE_STATISTICS_DAYS = os.environ.get("DELETE_STATISTICS_DAYS", "90")
+LOG_LEVEL = os.environ.get("PYTHON_SCHEDULER_LOG_LEVEL", "INFO")
 
 # defaults...
 LOG_DIR = "/opt/scheduler/logs/"
 SUB_PROCESS_TIMEOUT = int(os.environ.get("PYTHON_PROCESS_TIMEOUT", 60 * 15))
 TIMEOUT_OUTPUT = "Script running for too long time!"
 VERSION = os.getenv("VERSION")
+
+
+def get_log_level(level):
+    if level.lower() == "info":
+        return logging.INFO
+    elif level.lower() == "warning":
+        return logging.WARNING
+    elif level.lower() == "debug":
+        return logging.DEBUG
+    elif level.lower() == "error":
+        return logging.ERROR
+    elif level.lower() == "critical":
+        return logging.CRITICAL
+    return logging.INFO
+
+
+def basic_log(log_file):
+    handler = logging.FileHandler(os.path.join(LOG_DIR, log_file))
+    log_level = get_log_level(LOG_LEVEL)
+    handler.setLevel(log_level)
+    formatter = logging.Formatter(
+        "[%(asctime)s] [%(levelname)s] %(name)s %(filename)s:%(lineno)s %(funcName)s %(message)s"
+    )
+    handler.setFormatter(formatter)
+    logging.root.setLevel(log_level)
+    logging.root.addHandler(handler)
 
 
 class ScriptInvalidException(Exception):

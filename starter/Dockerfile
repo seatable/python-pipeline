@@ -20,7 +20,8 @@ FROM docker:cli AS runtime-image
 
 RUN apk add --no-cache bash \
                        curl \
-                       python3-dev
+                       python3-dev \
+                       logrotate
 
 
 
@@ -29,7 +30,9 @@ COPY ["./", "./"]
 
 # copy compiled pip packages in runtime-image
 COPY --from=compile-image /root/.local /root/.local
+RUN mkdir -p /opt/seatable-python-starter/logs
 ENV PATH=/root/.local/bin:$PATH
+ENV LOG_DIR=/opt/seatable-python-starter/logs
 
 RUN chmod +x entrypoint.sh
 ENTRYPOINT ["/bin/sh", "/opt/seatable-python-starter/entrypoint.sh"]

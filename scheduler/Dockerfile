@@ -15,7 +15,7 @@ RUN apt-get update --fix-missing && \
     apt-get autoremove -y && \
     apt-get clean && \
     export DEBIAN_FRONTEND=noninteractive && \
-    apt-get install -y tzdata nginx default-mysql-client procps
+    apt-get install -y tzdata default-mysql-client procps cron logrotate nginx
 
 # Comment this line for production
 # RUN apt-get install -y curl net-tools nano
@@ -27,13 +27,15 @@ ENV PATH=/root/.local/bin:$PATH
 # nginx configuration
 COPY ["nginx/nginx.conf", "/etc/nginx/nginx.conf"]
 COPY ["nginx/scheduler.conf", "/etc/nginx/conf.d/scheduler.conf"]
-RUN rm -r /etc/nginx/sites-enabled /etc/nginx/sites-available
+RUN rm -rf /etc/nginx/sites-enabled /etc/nginx/sites-available /etc/nginx/conf.d/default.conf
 
 # copy scheduler app
 WORKDIR /opt/scheduler
 COPY ["app/", "/opt/scheduler/"]
 COPY ["version", "/opt/scheduler/version"]
+COPY ["logrotate/", "/opt/scheduler/logrotate/"]
 RUN mkdir -p /opt/scheduler/logs
+RUN mkdir -p /opt/seatable/logs
 RUN pip3 install -r /opt/scheduler/requirements.txt --user
 
 # Add Tini

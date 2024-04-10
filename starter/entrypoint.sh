@@ -69,6 +69,10 @@ else
     echo "** Error: SeaTable Python Starter is not ready. uWSGI is not answering."
 fi
 
+# logrotate
+chmod 0644 /opt/seatable-python-starter/logrotate/logrotate-cron
+/usr/bin/crontab /opt/seatable-python-starter/logrotate/logrotate-cron
+
 function cleanup() {
     kill -s SIGTERM $!
     exit 0

@@ -2,7 +2,6 @@ from gevent import monkey
 
 monkey.patch_all()
 
-import sys
 import os
 import json
 import logging
@@ -25,25 +24,19 @@ from faas_scheduler.utils import (
     get_task_log,
     list_task_logs,
     uuid_str_to_32_chars,
+    basic_log,
 )
 
 
-LOG_LEVEL = os.environ.get("PYTHON_SCHEDULER_LOG_LEVEL", "INFO")
+basic_log("scheduler.log")
 
 # defaults...
 SCRIPT_WORKERS = int(os.environ.get("PYTHON_SCHEDULER_SCRIPT_WORKERS", 5))
 SUB_PROCESS_TIMEOUT = int(os.environ.get("PYTHON_PROCESS_TIMEOUT", 60 * 15))
 TIMEOUT_OUTPUT = "Script running for too long time!"
 
-
 app = Flask(__name__)
-# logging.basicConfig(format='[%(asctime)s] [%(levelname)s] %(name)s:%(lineno)s %(funcName)s %(message)s')
 
-logging.basicConfig(
-    stream=sys.stdout,
-    format="[%(asctime)s] [%(levelname)s] %(name)s:%(lineno)s %(funcName)s %(message)s",
-    level=LOG_LEVEL,
-)
 logger = logging.getLogger(__name__)
 executor = ThreadPoolExecutor(max_workers=SCRIPT_WORKERS)
 

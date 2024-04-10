@@ -64,6 +64,10 @@ while [ 1 ]; do
     fi
 done
 
+# logrotate
+chmod 0644 /opt/scheduler/logrotate/logrotate-cron
+/usr/bin/crontab /opt/scheduler/logrotate/logrotate-cron
+
 # autorun
 log "Starting SeaTable Python Scheduler ..."
 /opt/scheduler/scheduler.sh start

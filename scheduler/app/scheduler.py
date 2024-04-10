@@ -1,6 +1,5 @@
 import os
 import gc
-import sys
 import time
 import logging
 from threading import Thread
@@ -10,18 +9,15 @@ from faas_scheduler.utils import (
     check_and_set_tasks_timeout,
     delete_log_after_days,
     delete_statistics_after_days,
+    basic_log,
 )
 
-LOG_LEVEL = os.environ.get("PYTHON_SCHEDULER_LOG_LEVEL", "INFO")
+basic_log("scheduler.log")
+
 SUB_PROCESS_TIMEOUT = int(
     os.environ.get("PYTHON_PROCESS_TIMEOUT", 60 * 15)
 )  # 15 minutes
 
-logging.basicConfig(
-    stream=sys.stdout,
-    format="[%(asctime)s] [%(levelname)s] %(name)s:%(lineno)s %(funcName)s %(message)s",
-    level=LOG_LEVEL,
-)
 logger = logging.getLogger(__name__)
 
 
