@@ -29,7 +29,7 @@ function monitor_flask_server() {
         log "Start $process_name"
         sleep 0.2
         cd /opt/scheduler/
-        python3 flask_server.py
+        python3 -u flask_server.py >> /opt/scheduler/logs/scheduler.log 2>&1 &
         sleep 0.2
     fi
 }
@@ -41,7 +41,7 @@ function monitor_scheduler() {
         log "Start $process_name"
         sleep 0.2
         cd /opt/scheduler/
-        python3 scheduler.py
+        python3 -u scheduler.py >> /opt/scheduler/logs/scheduler.log 2>&1 &
         sleep 0.2
     fi
 }
