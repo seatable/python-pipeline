@@ -15,7 +15,13 @@ RUN apt-get update --fix-missing && \
     apt-get autoremove -y && \
     apt-get clean && \
     export DEBIAN_FRONTEND=noninteractive && \
-    apt-get install -y tzdata nginx default-mysql-client procps cron logrotate
+    apt-get install -y tzdata default-mysql-client procps cron logrotate
+
+# Install latest nginx
+RUN apt-get install -y curl gnupg2 lsb-release
+RUN curl -fsSL https://nginx.org/keys/nginx_signing.key | apt-key add -
+RUN echo "deb https://nginx.org/packages/mainline/debian/ $(lsb_release -cs) nginx" > /etc/apt/sources.list.d/nginx.list
+RUN apt-get update && apt-get install -y nginx
 
 # Comment this line for production
 # RUN apt-get install -y curl net-tools nano
@@ -27,7 +33,7 @@ ENV PATH=/root/.local/bin:$PATH
 # nginx configuration
 COPY ["nginx/nginx.conf", "/etc/nginx/nginx.conf"]
 COPY ["nginx/scheduler.conf", "/etc/nginx/conf.d/scheduler.conf"]
-RUN rm -r /etc/nginx/sites-enabled /etc/nginx/sites-available
+RUN rm -rf /etc/nginx/sites-enabled /etc/nginx/sites-available /etc/nginx/conf.d/default.conf
 
 # copy scheduler app
 WORKDIR /opt/scheduler
