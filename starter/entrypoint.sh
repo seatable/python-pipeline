@@ -14,6 +14,20 @@ echo "
 *******************
 "
 
+# time zone
+if [[ $TIME_ZONE != "" ]]; then
+    time_zone=/usr/share/zoneinfo/$TIME_ZONE
+    echo "$time_zone"
+    ls $time_zone
+    if [[ ! -e $time_zone ]]; then
+        echo "invalid time zone"
+        exit 1
+    else
+        ln -snf $time_zone /etc/localtime
+        echo "$TIME_ZONE" > /etc/timezone
+    fi
+fi
+
 echo "** Clean old uwsgi and python-runner containers"
 
 # kill old uwsgi
@@ -68,6 +82,13 @@ if curl -IsSf http://127.0.0.1:8080/ping/ >/dev/null 2>&1; then
 else
     echo "** Error: SeaTable Python Starter is not ready. uWSGI is not answering."
 fi
+
+# check cron
+crond >> /opt/seatable-python-starter/logs/crond.log 2>&1 &
+mkdir -p /etc/periodic/daily_logrotate
+cp /opt/seatable-python-starter/logrotate/logrotate-log /etc/periodic/daily_logrotate
+chmod a+x /etc/periodic/daily_logrotate/logrotate-log
+cat /opt/seatable-python-starter/logrotate/logrotate-cron >> /etc/crontabs/root
 
 # logrotate
 chmod 0644 /opt/seatable-python-starter/logrotate/logrotate-cron

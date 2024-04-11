@@ -1,0 +1,2 @@
+#!/bin/sh
+/usr/sbin/logrotate -vf /opt/seatable-python-starter/logrotate/logrotate.conf 2>> /opt/seatable-python-starter/logs/logrotate.log
