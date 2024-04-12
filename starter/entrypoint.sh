@@ -2,7 +2,6 @@
 #
 #
 
-set -o pipefail
 set +e
 
 version=`cat /opt/seatable-python-starter/version`
@@ -28,24 +27,13 @@ if [[ $TIME_ZONE != "" ]]; then
     fi
 fi
 
-echo "** Clean old uwsgi and python-runner containers"
-
-# kill old uwsgi
-grep_uwsgi_count=`ps aux | grep 'run-pythonuWSGI' | wc -l`
-if [ $grep_uwsgi_count -gt 1 ]; then
-    ps aux | grep 'run-pythonuWSGI' | grep -v grep | awk '{print $1}' | xargs kill -9
-fi
-
-# stop/remove python-runner containers
-alive_container_count=`docker ps | grep '$IMAGE' | wc -l`
-if [ $alive_container_count -gt 0 ]; then
-    docker ps | grep '$IMAGE' | awk '{print $1}' | xargs docker container stop
-fi
+echo "** Clean python-runner containers"
 
 # remove old python-runner images
-container_count=`docker container ls -a | grep '$IMAGE' | wc -l`
+container_count=`docker container ls -a | grep "$PYTHON_RUNNER_IMAGE" | wc -l`
+echo "container count: ${container_count}"
 if [ $container_count -gt 0 ]; then
-    docker container ls -a | grep '$IMAGE' | awk '{print $1}' | xargs docker container rm
+    docker container ls -a | grep "$PYTHON_RUNNER_IMAGE" | awk '{print $1}' | xargs docker container rm -f
 fi
 
 # update truststore
@@ -84,11 +72,7 @@ else
 fi
 
 # check cron
-crond >> /opt/seatable-python-starter/logs/crond.log 2>&1 &
-mkdir -p /etc/periodic/daily_logrotate
-cp /opt/seatable-python-starter/logrotate/logrotate-log /etc/periodic/daily_logrotate
-chmod a+x /etc/periodic/daily_logrotate/logrotate-log
-cat /opt/seatable-python-starter/logrotate/logrotate-cron >> /etc/crontabs/root
+service cron start &
 
 # logrotate
 chmod 0644 /opt/seatable-python-starter/logrotate/logrotate-cron

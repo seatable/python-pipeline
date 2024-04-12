@@ -15,7 +15,7 @@ RUN apt-get update --fix-missing && \
     apt-get autoremove -y && \
     apt-get clean && \
     export DEBIAN_FRONTEND=noninteractive && \
-    apt-get install -y tzdata default-mysql-client procps vim cron logrotate nginx
+    apt-get install -y tzdata default-mysql-client procps cron logrotate nginx
 
 # Comment this line for production
 # RUN apt-get install -y curl net-tools nano

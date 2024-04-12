@@ -1,1 +1,1 @@
-54 23 * * * run-parts /etc/periodic/daily_logrotate
+54 23 * * * /usr/sbin/logrotate -vf /opt/seatable-python-starter/logrotate/logrotate.conf 2>> /opt/seatable-python-starter/logs/logrotate.log
