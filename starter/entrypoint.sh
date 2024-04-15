@@ -2,7 +2,6 @@
 #
 #
 
-set -o pipefail
 set +e
 
 version=`cat /opt/seatable-python-starter/version`
@@ -14,24 +13,27 @@ echo "
 *******************
 "
 
-echo "** Clean old uwsgi and python-runner containers"
-
-# kill old uwsgi
-grep_uwsgi_count=`ps aux | grep 'run-pythonuWSGI' | wc -l`
-if [ $grep_uwsgi_count -gt 1 ]; then
-    ps aux | grep 'run-pythonuWSGI' | grep -v grep | awk '{print $1}' | xargs kill -9
+# time zone
+if [[ $TIME_ZONE != "" ]]; then
+    time_zone=/usr/share/zoneinfo/$TIME_ZONE
+    echo "$time_zone"
+    ls $time_zone
+    if [[ ! -e $time_zone ]]; then
+        echo "invalid time zone"
+        exit 1
+    else
+        ln -snf $time_zone /etc/localtime
+        echo "$TIME_ZONE" > /etc/timezone
+    fi
 fi
 
-# stop/remove python-runner containers
-alive_container_count=`docker ps | grep '$IMAGE' | wc -l`
-if [ $alive_container_count -gt 0 ]; then
-    docker ps | grep '$IMAGE' | awk '{print $1}' | xargs docker container stop
-fi
+echo "** Clean python-runner containers"
 
 # remove old python-runner images
-container_count=`docker container ls -a | grep '$IMAGE' | wc -l`
+container_count=`docker container ls -a | grep "$PYTHON_RUNNER_IMAGE" | wc -l`
+echo "container count: ${container_count}"
 if [ $container_count -gt 0 ]; then
-    docker container ls -a | grep '$IMAGE' | awk '{print $1}' | xargs docker container rm
+    docker container ls -a | grep "$PYTHON_RUNNER_IMAGE" | awk '{print $1}' | xargs docker container rm -f
 fi
 
 # update truststore
@@ -68,6 +70,9 @@ if curl -IsSf http://127.0.0.1:8080/ping/ >/dev/null 2>&1; then
 else
     echo "** Error: SeaTable Python Starter is not ready. uWSGI is not answering."
 fi
+
+# check cron
+service cron start &
 
 # logrotate
 chmod 0644 /opt/seatable-python-starter/logrotate/logrotate-cron

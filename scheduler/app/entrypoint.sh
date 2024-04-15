@@ -64,6 +64,10 @@ while [ 1 ]; do
     fi
 done
 
+# check cron
+log "Start cron"
+service cron start &
+
 # logrotate
 chmod 0644 /opt/scheduler/logrotate/logrotate-cron
 /usr/bin/crontab /opt/scheduler/logrotate/logrotate-cron

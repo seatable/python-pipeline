@@ -1,14 +1,8 @@
 ### Compile Image
-FROM docker:cli AS compile-image
+FROM python:3.11-slim-bookworm AS compile-image
 
-# linux-headers (uswgi build dependency) added
-# build-essentials to build-base, python3-pip to py3-pip
-RUN apk add --no-cache unzip \
-                       python3-dev \
-                       py3-pip \
-                       linux-headers \
-                       gcc \
-                       build-base
+RUN apt-get update --fix-missing && \
+    apt-get install -y gcc
 
 WORKDIR /opt/seatable-python-starter
 COPY ["./requirements.txt", "/opt/seatable-python-starter/"]
@@ -16,14 +10,13 @@ RUN pip install -r /opt/seatable-python-starter/requirements.txt --user --break-
 
 
 ### Runtime image
-FROM docker:cli AS runtime-image
+FROM python:3.11-slim-bookworm AS runtime-image
 
-RUN apk add --no-cache bash \
-                       curl \
-                       python3-dev \
-                       logrotate
-
-
+RUN apt-get update --fix-missing && \
+    apt-get autoremove -y && \
+    apt-get clean && \
+    export DEBIAN_FRONTEND=noninteractive && \
+    apt-get install -y tzdata procps cron logrotate docker.io gcc
 
 WORKDIR /opt/seatable-python-starter
 COPY ["./", "./"]
@@ -35,4 +28,4 @@ ENV PATH=/root/.local/bin:$PATH
 ENV LOG_DIR=/opt/seatable-python-starter/logs
 
 RUN chmod +x entrypoint.sh
-ENTRYPOINT ["/bin/sh", "/opt/seatable-python-starter/entrypoint.sh"]
+ENTRYPOINT ["/bin/bash", "/opt/seatable-python-starter/entrypoint.sh"]
