@@ -8,3 +8,4 @@ qrcode[pil]
 openai
 ldap3
 scipy
+pyjwt
