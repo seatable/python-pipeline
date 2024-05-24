@@ -1,5 +1,5 @@
 requests
-seatable-api==2.7.2
+seatable-api==2.8.0
 dateutils
 pyOpenSSL
 pandas
