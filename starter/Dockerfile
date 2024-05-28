@@ -16,7 +16,7 @@ RUN apt-get update --fix-missing && \
     apt-get autoremove -y && \
     apt-get clean && \
     export DEBIAN_FRONTEND=noninteractive && \
-    apt-get install -y tzdata procps cron logrotate docker.io gcc
+    apt-get install -y tzdata procps cron logrotate docker.io gcc curl
 
 WORKDIR /opt/seatable-python-starter
 COPY ["./", "./"]
