@@ -24,6 +24,7 @@ RUN apk add --no-cache \
         tk-dev \
         zlib-dev
 
+# TODO: Modify settings -> /home/seatable (?)
 VOLUME [ "/scripts", "/settings" ]
 
 WORKDIR /settings
@@ -39,12 +40,14 @@ FROM python:3.11-alpine AS runtime-image
 RUN apk add --no-cache bash \
                        python3-dev
 
-WORKDIR /settings
+RUN adduser -D seatable
+USER seatable
+WORKDIR /home/seatable
 
-COPY --from=compile-image /root/.local /root/.local
-ENV PATH=/root/.local/bin:$PATH
+COPY --from=compile-image /root/.local /home/seatable/.local
+ENV PATH=/home/seatable/.local/bin:$PATH
 
-COPY ./entrypoint.sh .
+COPY --chown=seatable ./entrypoint.sh .
 RUN chmod +x entrypoint.sh
 
 ENTRYPOINT ["/bin/sh", "./entrypoint.sh"]
