@@ -49,6 +49,10 @@ except Exception:
 # defaults...
 LOG_DIR = "/opt/seatable-python-starter/logs/"
 
+# UID/GID of seatable user in python-runner image
+SEATABLE_USER_UID = 1000
+SEATABLE_USER_GID = 1000
+
 
 def get_log_level(level):
     if level.lower() == "info":
@@ -240,6 +244,13 @@ def run_python(data):
         return_code, output = None, ""  # init output
     except Exception as e:
         logging.error("Failed to save script %s, error: %s", script_url, e)
+        return
+
+    try:
+        logging.debug("Fix ownership of %s", tmp_dir)
+        os.chown(tmp_dir, SEATABLE_USER_UID, SEATABLE_USER_GID)
+    except Exception as e:
+        logging.error("Failed to chown %s, error: %s", tmp_dir, e)
         return
 
     logging.debug("prepare the command to start the python runner")
