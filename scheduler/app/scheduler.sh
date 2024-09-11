@@ -1,5 +1,11 @@
 #!/bin/bash
 
+LOG_FILE="/opt/scheduler/logs/scheduler.log"
+
+if [ "${LOG_TO_STDOUT:-false}" = "true" ]; then
+    LOG_FILE=/proc/1/fd/1
+fi
+
 function stop_server() {
     pkill -9 -f flask_server.py
     pkill -9 -f scheduler.py
@@ -23,10 +29,10 @@ function start_server() {
     sleep 0.5
 
     cd /opt/scheduler/
-    python3 -u flask_server.py >> /opt/scheduler/logs/scheduler.log 2>&1 &
+    python3 -u flask_server.py >> "${LOG_FILE}" 2>&1 &
     sleep 0.2
 
-    python3 -u scheduler.py >> /opt/scheduler/logs/scheduler.log 2>&1 &
+    python3 -u scheduler.py >> "${LOG_FILE}" 2>&1 &
     sleep 0.2
 
     ./monitor.sh &

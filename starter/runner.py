@@ -6,6 +6,7 @@ import shutil
 import subprocess
 import time
 import ast
+import sys
 from concurrent.futures import ThreadPoolExecutor
 from uuid import uuid4
 
@@ -70,7 +71,10 @@ def get_log_level(level):
 
 # log to file
 def basic_log(log_file):
-    handler = logging.FileHandler(os.path.join(LOG_DIR, log_file))
+    if os.environ.get("LOG_TO_STDOUT", "false").lower() == "true":
+        handler = logging.StreamHandler(sys.stdout)
+    else:
+        handler = logging.FileHandler(os.path.join(LOG_DIR, log_file))
     log_level = get_log_level(LOG_LEVEL)
     handler.setLevel(log_level)
     formatter = logging.Formatter(

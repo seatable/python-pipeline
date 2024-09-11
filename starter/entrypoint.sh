@@ -62,6 +62,10 @@ check_starter_config() {
 ####
 check_starter_config
 
+if [ "${LOG_TO_STDOUT:-false}" = "false" ]; then
+    export UWSGI_LOGTO="/opt/seatable-python-starter/logs/uwsgi.log"
+fi
+
 echo "** uWSGI is starting now"
 uwsgi --ini /opt/seatable-python-starter/uwsgi.ini 2>&1 &
 sleep 1
