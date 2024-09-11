@@ -44,7 +44,7 @@ RUN adduser -D seatable
 USER seatable
 WORKDIR /home/seatable
 
-COPY --from=compile-image /root/.local /home/seatable/.local
+COPY --from=compile-image --chown=seatable /root/.local /home/seatable/.local
 ENV PATH=/home/seatable/.local/bin:$PATH
 
 COPY --chown=seatable ./entrypoint.sh .
