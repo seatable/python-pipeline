@@ -24,8 +24,7 @@ RUN apk add --no-cache \
         tk-dev \
         zlib-dev
 
-# TODO: Modify settings -> /home/seatable (?)
-VOLUME [ "/scripts", "/settings" ]
+VOLUME [ "/scripts" ]
 
 WORKDIR /settings
 
