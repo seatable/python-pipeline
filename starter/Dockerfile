@@ -8,7 +8,7 @@ WORKDIR /opt/seatable-python-starter
 COPY ["./requirements.txt", "/opt/seatable-python-starter/"]
 
 # Upgrade setuptools to fix vulnerabilities
-RUN pip install --upgrade setuptools && \
+RUN pip install --upgrade --user setuptools && \
     pip install -r /opt/seatable-python-starter/requirements.txt --user --break-system-packages
 
 ### Runtime image
