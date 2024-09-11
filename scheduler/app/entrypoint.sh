@@ -6,12 +6,19 @@ set +e
 version=`cat /opt/scheduler/version`
 export VERSION=${version}
 
+LOG_FILE="/opt/scheduler/logs/scheduler.log"
+INIT_LOG_FILE="/opt/seatable/logs/init.log"
+
+if [ "${LOG_TO_STDOUT:-false}" = "true" ]; then
+    LOG_FILE=/proc/1/fd/1
+    INIT_LOG_FILE=/proc/1/fd/1
+fi
 
 # log function
 function log() {
     local time=$(date +"%F %T")
     echo "$time $1 "
-    echo "[$time] $1 " &>> /opt/scheduler/logs/scheduler.log
+    echo "[$time] $1 " &>> "{LOG_FILE}"
 }
 
 # time zone
@@ -47,7 +54,7 @@ python3 /opt/scheduler/upgrade/upgrade.py
 # update truststore
 # segmentation of chain in single certificates neccecary only on alpine
 log "Updating CA certificates..."
-update-ca-certificates --verbose &>> /opt/seatable/logs/init.log
+update-ca-certificates --verbose &>> "${INIT_LOG_FILE}"
 
 # check nginx
 log "Start nginx ..."
