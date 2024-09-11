@@ -46,7 +46,7 @@ def get_log_level(level):
 
 
 def basic_log(log_file):
-    if os.environ.get('LOG_TO_STDOUT', 'false').lower() == 'true':
+    if os.environ.get("LOG_TO_STDOUT", "false").lower() == "true":
         handler = logging.StreamHandler(sys.stdout)
     else:
         handler = logging.FileHandler(os.path.join(LOG_DIR, log_file))
