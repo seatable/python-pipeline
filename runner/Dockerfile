@@ -31,7 +31,8 @@ WORKDIR /settings
 COPY ./requirements.txt .
 
 # Upgrade setuptools to fix vulnerabilities
-RUN pip install --upgrade --user setuptools && \
+RUN pip install --upgrade setuptools && \
+    pip install --upgrade --user setuptools && \
     pip install -r requirements.txt --no-cache-dir --user
 
 

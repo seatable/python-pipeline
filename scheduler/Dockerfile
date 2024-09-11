@@ -38,7 +38,8 @@ RUN mkdir -p /opt/scheduler/logs
 RUN mkdir -p /opt/seatable/logs
 
 # Upgrade setuptools to fix vulnerabilities
-RUN pip3 install --upgrade --user setuptools && \
+RUN pip3 install --upgrade setuptools && \
+    pip3 install --upgrade --user setuptools && \
     pip3 install -r /opt/scheduler/requirements.txt --user
 
 # Add Tini
