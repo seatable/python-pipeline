@@ -36,7 +36,11 @@ COPY ["version", "/opt/scheduler/version"]
 COPY ["logrotate/", "/opt/scheduler/logrotate/"]
 RUN mkdir -p /opt/scheduler/logs
 RUN mkdir -p /opt/seatable/logs
-RUN pip3 install -r /opt/scheduler/requirements.txt --user
+
+# Upgrade setuptools to fix vulnerabilities
+RUN pip3 install --upgrade setuptools && \
+    pip3 install --upgrade --user setuptools && \
+    pip3 install -r /opt/scheduler/requirements.txt --user
 
 # Add Tini
 ENV TINI_VERSION v0.19.0
