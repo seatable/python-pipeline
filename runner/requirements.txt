@@ -9,3 +9,5 @@ openai
 ldap3
 scipy
 pyjwt
+pdfmerge
+pillow-heif
