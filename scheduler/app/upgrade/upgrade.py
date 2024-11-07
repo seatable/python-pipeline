@@ -7,6 +7,7 @@ This script is used to run proper upgrade scripts automatically.
 
 import glob
 import os
+import shlex
 from os.path import basename, join
 from sqlalchemy import text
 from datetime import datetime
@@ -79,11 +80,11 @@ def run_script_and_update_version_stamp(script, new_version):
     os.system(
         "mysql -h %(db_host)s -u%(db_user)s -p%(db_passwd)s %(database)s < %(script)s"
         % {
-            "db_host": DB_HOST,
-            "db_user": db_user,
-            "db_passwd": db_passwd,
-            "database": DATABASE_NAME,
-            "script": script,
+            "db_host": shlex.quote(DB_HOST),
+            "db_user": shlex.quote(db_user),
+            "db_passwd": shlex.quote(db_passwd),
+            "database": shlex.quote(DATABASE_NAME),
+            "script": shlex.quote(script),
         }
     )
     update_version_stamp(new_version)
