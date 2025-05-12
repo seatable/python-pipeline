@@ -1,5 +1,5 @@
 requests
-seatable-api==2.8.1
+seatable-api==2.8.2
 dateutils
 pyOpenSSL
 pandas
@@ -9,3 +9,5 @@ openai
 ldap3
 scipy
 pyjwt
+pdfmerge
+pillow-heif

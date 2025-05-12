@@ -86,6 +86,6 @@ Python Runner is a container that runs the python script in a sandboxed environm
 [seatable-python-runner python packages](https://github.com/seatable/python-pipeline/blob/main/runner/requirements.txt)
 Every time we update [seatable-api](https://pypi.org/project/seatable-api/), we update the runner and starter image so that the latest seatable-api version is included.
 
-## Testing / Linting
+## Testing & Linting
 
 Execute `python-code-quality.sh` for pylint and black testing.

@@ -1,4 +1,5 @@
 import os
+import shlex
 import time
 import pymysql
 
@@ -42,16 +43,16 @@ wait_for_mysql()
 
 if db_user == "root":
     sql = 'mysql -h %s -u%s -p%s -e "CREATE DATABASE IF NOT EXISTS %s;"' % (
-        DB_HOST,
-        db_user,
-        db_passwd,
+        shlex.quote(DB_HOST),
+        shlex.quote(db_user),
+        shlex.quote(db_passwd),
         DATABASE_NAME,
     )
     os.system(sql)
 sql = "mysql -h %s -u%s -p%s %s </opt/scheduler/database/initial_tables.sql" % (
-    DB_HOST,
-    db_user,
-    db_passwd,
+    shlex.quote(DB_HOST),
+    shlex.quote(db_user),
+    shlex.quote(db_passwd),
     DATABASE_NAME,
 )
 os.system(sql)
