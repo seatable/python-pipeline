@@ -41,6 +41,7 @@ UID = os.environ.get("PYTHON_RUNNER_UID", "")
 GID = os.environ.get("PYTHON_RUNNER_GID", "")
 USER = os.environ.get("PYTHON_RUNNER_USER", "")
 GROUP = os.environ.get("PYTHON_RUNNER_GROUP", "")
+NETWORK = os.environ.get("PYTHON_RUNNER_NETWORK", "runner-net")
 OTHER_OPTIONS = os.environ.get("PYTHON_RUNNER_OTHER_OPTIONS", "[]")
 try:
     OTHER_OPTIONS = ast.literal_eval(OTHER_OPTIONS)
@@ -268,6 +269,8 @@ def run_python(data):
         env_file,
         "-v",
         "{}:/scripts".format(tmp_dir),
+        "--network",
+        NETWORK,
     ]
     logging.debug("command: %s", command)
 
