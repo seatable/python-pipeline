@@ -42,6 +42,9 @@ GID = os.environ.get("PYTHON_RUNNER_GID", "")
 USER = os.environ.get("PYTHON_RUNNER_USER", "")
 GROUP = os.environ.get("PYTHON_RUNNER_GROUP", "")
 NETWORK = os.environ.get("PYTHON_RUNNER_NETWORK", "runner-net")
+READ_ONLY_FILESYSTEM = os.environ.get('PYTHON_RUNNER_READ_ONLY_FILESYSTEM', 'false').lower() == 'true'
+# 100MB by default
+TMPFS_MOUNT_SIZE_IN_BYTES = os.environ.get('PYTHON_RUNNER_TMPFS_MOUNT_SIZE_IN_BYTES', '104857600')
 OTHER_OPTIONS = os.environ.get("PYTHON_RUNNER_OTHER_OPTIONS", "[]")
 try:
     OTHER_OPTIONS = ast.literal_eval(OTHER_OPTIONS)
@@ -272,7 +275,6 @@ def run_python(data):
         "--network",
         NETWORK,
     ]
-    logging.debug("command: %s", command)
 
     # timezone, if not set TIME_ZONE in settings then set time zone use timezone_command
     if timezone_command:
@@ -296,6 +298,10 @@ def run_python(data):
             user_operation += ":" + str(GID)
     if user_operation:
         command.extend(["-u", user_operation])
+    if READ_ONLY_FILESYSTEM:
+        command.append("--read-only")
+        # Add tmpfs mount for /tmp (100MB)
+        command.extend(["--mount", f"type=tmpfs,dst=/tmp,tmpfs-size={TMPFS_MOUNT_SIZE_IN_BYTES}"])
     # other options, these options are experimental, may cause failure to start script
     if OTHER_OPTIONS and isinstance(OTHER_OPTIONS, list):
         for option in OTHER_OPTIONS:
@@ -310,6 +316,7 @@ def run_python(data):
     logging.debug("try to execute this python runner image: %s", PYTHON_RUNNER_IMAGE)
     command.append(PYTHON_RUNNER_IMAGE)
     command.append("run")  # override command
+    logging.debug("command: %s", command)
 
     start_at = time.time()
 
