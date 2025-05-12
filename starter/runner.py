@@ -42,9 +42,13 @@ GID = os.environ.get("PYTHON_RUNNER_GID", "")
 USER = os.environ.get("PYTHON_RUNNER_USER", "")
 GROUP = os.environ.get("PYTHON_RUNNER_GROUP", "")
 NETWORK = os.environ.get("PYTHON_RUNNER_NETWORK", "runner-net")
-READ_ONLY_FILESYSTEM = os.environ.get('PYTHON_RUNNER_READ_ONLY_FILESYSTEM', 'false').lower() == 'true'
+READ_ONLY_FILESYSTEM = (
+    os.environ.get("PYTHON_RUNNER_READ_ONLY_FILESYSTEM", "false").lower() == "true"
+)
 # 100MB by default
-TMPFS_MOUNT_SIZE_IN_BYTES = os.environ.get('PYTHON_RUNNER_TMPFS_MOUNT_SIZE_IN_BYTES', '104857600')
+TMPFS_MOUNT_SIZE_IN_BYTES = os.environ.get(
+    "PYTHON_RUNNER_TMPFS_MOUNT_SIZE_IN_BYTES", "104857600"
+)
 OTHER_OPTIONS = os.environ.get("PYTHON_RUNNER_OTHER_OPTIONS", "[]")
 try:
     OTHER_OPTIONS = ast.literal_eval(OTHER_OPTIONS)
@@ -301,7 +305,9 @@ def run_python(data):
     if READ_ONLY_FILESYSTEM:
         command.append("--read-only")
         # Add tmpfs mount for /tmp (100MB)
-        command.extend(["--mount", f"type=tmpfs,dst=/tmp,tmpfs-size={TMPFS_MOUNT_SIZE_IN_BYTES}"])
+        command.extend(
+            ["--mount", f"type=tmpfs,dst=/tmp,tmpfs-size={TMPFS_MOUNT_SIZE_IN_BYTES}"]
+        )
     # other options, these options are experimental, may cause failure to start script
     if OTHER_OPTIONS and isinstance(OTHER_OPTIONS, list):
         for option in OTHER_OPTIONS:
