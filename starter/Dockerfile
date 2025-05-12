@@ -33,7 +33,7 @@ RUN apt-get update --fix-missing && \
     apt-get autoremove -y && \
     apt-get clean
 
-COPY --from=build-image /tmp/docker /usr/local/bin/docker
+COPY --from=compile-image /tmp/docker /usr/local/bin/docker
 RUN chmod +x /usr/local/bin/docker
 
 WORKDIR /opt/seatable-python-starter
