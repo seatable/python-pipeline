@@ -69,7 +69,8 @@ fi
 echo "** uWSGI is starting now"
 uwsgi --ini /opt/seatable-python-starter/uwsgi.ini 2>&1 &
 sleep 1
-if curl -IsSf http://127.0.0.1:8080/ping/ >/dev/null 2>&1; then
+if echo -e "HEAD /ping/ HTTP/1.1\r\nHost: 127.0.0.1\r\nConnection: close\r\n\r\n" | \
+   timeout 2 bash -c 'cat < /dev/tcp/127.0.0.1/8080' >/dev/null 2>&1; then
     echo "** SeaTable Python Starter ready"
 else
     echo "** Error: SeaTable Python Starter is not ready. uWSGI is not answering."
