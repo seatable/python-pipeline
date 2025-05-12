@@ -2,6 +2,7 @@ ARG BASE_IMAGE="python:3.12-slim-bookworm@sha256:31a416db24bd8ade7dac5fd5999ba6c
 FROM ${BASE_IMAGE} AS compile-image
 
 RUN apt-get update --fix-missing && \
+    apt-get upgrade -y && \
     apt-get install -y gcc
 
 WORKDIR /opt/seatable-python-starter
@@ -16,10 +17,18 @@ RUN pip install --upgrade setuptools && \
 FROM ${BASE_IMAGE} AS runtime-image
 
 RUN apt-get update --fix-missing && \
-    apt-get autoremove -y && \
-    apt-get clean && \
+    apt-get upgrade -y && \
     export DEBIAN_FRONTEND=noninteractive && \
-    apt-get install -y tzdata procps cron logrotate docker.io gcc curl
+    apt-get install -y \
+        tzdata \
+        procps \
+        cron \
+        logrotate \
+        docker.io \
+        gcc \
+        curl && \
+    apt-get autoremove -y && \
+    apt-get clean
 
 WORKDIR /opt/seatable-python-starter
 COPY ["./", "./"]
