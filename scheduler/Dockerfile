@@ -6,18 +6,11 @@ WORKDIR /opt/scheduler
 COPY ["app/requirements.txt", "/opt/scheduler/requirements.txt"]
 RUN pip3 install -r /opt/scheduler/requirements.txt --user
 
-
 ### Runtime Image
 FROM ${BASE_IMAGE} AS runtime-image
 
 # Clean up && Installation of the apt packages
 RUN apt-get update --fix-missing && \
-    apt-get autoremove -y && \
-    apt-get clean && \
-    export DEBIAN_FRONTEND=noninteractive && \
-    apt-get install -y tzdata default-mysql-client procps cron logrotate nginx
-
-    RUN apt-get update --fix-missing && \
     apt-get upgrade -y && \
     export DEBIAN_FRONTEND=noninteractive && \
     apt-get install -y \
@@ -29,9 +22,6 @@ RUN apt-get update --fix-missing && \
         nginx && \
     apt-get autoremove -y && \
     apt-get clean
-
-# Comment this line for production
-# RUN apt-get install -y curl net-tools nano
 
 # copy compiled pip packages in runtime-image
 COPY --from=compile-image /root/.local /root/.local
