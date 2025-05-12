@@ -1,5 +1,5 @@
-### Compile Image
-FROM python:3.11-slim-bookworm AS compile-image
+ARG BASE_IMAGE="python:3.12-slim-bookworm@sha256:31a416db24bd8ade7dac5fd5999ba6c234d7fa79d4add8781e95f41b187f4c9a"
+FROM ${BASE_IMAGE} AS compile-image
 
 # Installation of the pip packages
 WORKDIR /opt/scheduler
@@ -8,7 +8,7 @@ RUN pip3 install -r /opt/scheduler/requirements.txt --user
 
 
 ### Runtime Image
-FROM python:3.11-slim-bookworm AS runtime-image
+FROM ${BASE_IMAGE} AS runtime-image
 
 # Clean up && Installation of the apt packages
 RUN apt-get update --fix-missing && \

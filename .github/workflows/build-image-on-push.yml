@@ -106,6 +106,8 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: ${{ needs.init-vars.outputs.component }}
+          provenance: true
+          sbom: true
           # Load build result to `docker images`
           load: true
           tags: |
