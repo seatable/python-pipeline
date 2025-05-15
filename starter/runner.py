@@ -50,6 +50,7 @@ TMPFS_MOUNT_SIZE_IN_BYTES = os.environ.get(
     "PYTHON_RUNNER_TMPFS_MOUNT_SIZE_IN_BYTES", "104857600"
 )
 DROPPED_CAPABILITIES = os.environ.get('PYTHON_RUNNER_DROPPED_CAPABILITIES', []).split(',')
+NO_NEW_PRIVILEGES = os.environ.get('PYTHON_RUNNER_NO_NEW_PRIVILEGES', 'false').lower() == "true"
 OTHER_OPTIONS = os.environ.get("PYTHON_RUNNER_OTHER_OPTIONS", "[]")
 try:
     OTHER_OPTIONS = ast.literal_eval(OTHER_OPTIONS)
@@ -311,6 +312,9 @@ def run_python(data):
         )
     if DROPPED_CAPABILITIES:
         command.extend(f'--cap-drop={capability}' for capability in DROPPED_CAPABILITIES)
+    if NO_NEW_PRIVILEGES:
+        # Prevent container from gaining additional privileges
+        command.append('--security-opt no-new-privileges')
     # other options, these options are experimental, may cause failure to start script
     if OTHER_OPTIONS and isinstance(OTHER_OPTIONS, list):
         for option in OTHER_OPTIONS:
