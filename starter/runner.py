@@ -49,6 +49,7 @@ READ_ONLY_FILESYSTEM = (
 TMPFS_MOUNT_SIZE_IN_BYTES = os.environ.get(
     "PYTHON_RUNNER_TMPFS_MOUNT_SIZE_IN_BYTES", "104857600"
 )
+DROPPED_CAPABILITIES = os.environ.get('PYTHON_RUNNER_DROPPED_CAPABILITIES', []).split(',')
 OTHER_OPTIONS = os.environ.get("PYTHON_RUNNER_OTHER_OPTIONS", "[]")
 try:
     OTHER_OPTIONS = ast.literal_eval(OTHER_OPTIONS)
@@ -308,6 +309,8 @@ def run_python(data):
         command.extend(
             ["--mount", f"type=tmpfs,dst=/tmp,tmpfs-size={TMPFS_MOUNT_SIZE_IN_BYTES}"]
         )
+    if DROPPED_CAPABILITIES:
+        command.extend(f'--cap-drop={capability}' for capability in DROPPED_CAPABILITIES)
     # other options, these options are experimental, may cause failure to start script
     if OTHER_OPTIONS and isinstance(OTHER_OPTIONS, list):
         for option in OTHER_OPTIONS:
