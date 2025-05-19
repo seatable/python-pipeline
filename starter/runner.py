@@ -50,7 +50,8 @@ TMPFS_MOUNT_SIZE_IN_BYTES = os.environ.get(
     "PYTHON_RUNNER_TMPFS_MOUNT_SIZE_IN_BYTES", "104857600"
 )
 DROPPED_CAPABILITIES = [
-    cap for cap in os.environ.get("PYTHON_RUNNER_DROPPED_CAPABILITIES", "").split(",")
+    cap
+    for cap in os.environ.get("PYTHON_RUNNER_DROPPED_CAPABILITIES", "").split(",")
     if cap.strip()
 ]
 NO_NEW_PRIVILEGES = (
