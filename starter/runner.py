@@ -322,7 +322,7 @@ def run_python(data):
         )
     if NO_NEW_PRIVILEGES:
         # Prevent container from gaining additional privileges
-        command.append("--security-opt no-new-privileges")
+        command.append('--security-opt="no-new-privileges=true"')
     # other options, these options are experimental, may cause failure to start script
     if OTHER_OPTIONS and isinstance(OTHER_OPTIONS, list):
         for option in OTHER_OPTIONS:
