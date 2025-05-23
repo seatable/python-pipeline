@@ -1,4 +1,6 @@
-FROM python:3.11-alpine AS compile-image
+ARG BASE_IMAGE="python:3.12.10-alpine@sha256:9c51ecce261773a684c8345b2d4673700055c513b4d54bc0719337d3e4ee552e"
+
+FROM ${BASE_IMAGE} AS compile-image
 
 RUN apk add --no-cache \
         cargo \
@@ -35,9 +37,8 @@ RUN pip install --upgrade setuptools && \
     pip install --upgrade --user setuptools && \
     pip install -r requirements.txt --no-cache-dir --user
 
-
 ## Runtime image
-FROM python:3.11-alpine AS runtime-image
+FROM ${BASE_IMAGE} AS runtime-image
 
 RUN apk add --no-cache bash \
                        python3-dev
