@@ -35,32 +35,38 @@ def wait_for_mysql():
         connection.close()
         return
 
+
 def check_and_create_mysql_user():
-    connection = pymysql.connect(host=DB_HOST, port=DB_PORT, user=DB_ROOT_USER, passwd=DB_ROOT_PASSWD)
+    connection = pymysql.connect(
+        host=DB_HOST, port=DB_PORT, user=DB_ROOT_USER, passwd=DB_ROOT_PASSWD
+    )
 
     try:
         with connection.cursor() as cursor:
-            if db_user != 'root':
+            if db_user != "root":
                 query_user_exists = f"SELECT EXISTS(SELECT 1 FROM mysql.user WHERE User='{db_user}' AND Host='%') AS user_exists;"
                 cursor.execute(query_user_exists)
                 result = cursor.fetchone()
                 user_exists = result[0] == 1
                 if not user_exists:
-                    create_user_sql = f"CREATE USER '{db_user}'@'%' IDENTIFIED BY '{db_passwd}';"
+                    create_user_sql = (
+                        f"CREATE USER '{db_user}'@'%' IDENTIFIED BY '{db_passwd}';"
+                    )
                     cursor.execute(create_user_sql)
                     print(f"Create user '{db_user}'@'%' sucessfully.")
-    
+
                 grant_privileges_sql = (
                     f"GRANT ALL PRIVILEGES ON {DATABASE_NAME}.* TO '{db_user}'@'%';"
                 )
-                for stmt in grant_privileges_sql.split(';'):
+                for stmt in grant_privileges_sql.split(";"):
                     if stmt.strip():
                         cursor.execute(stmt)
                 print(f"Granted user '{db_user}'@'%' privileges sucessfully.")
-    
+
                 cursor.execute("FLUSH PRIVILEGES;")
     finally:
         connection.close()
+
 
 wait_for_mysql()
 
