@@ -23,12 +23,15 @@ DB_USER = os.getenv("DB_USER")
 DB_PASSWD = os.getenv("DB_PASSWD")
 db_user = ""
 db_passwd = ""
-if DB_USER:
+if DB_ROOT_USER and DB_ROOT_PASSWD:
+    db_user = "root"
+    db_passwd = DB_ROOT_PASSWD
+elif DB_USER and DB_PASSWD:
     db_user = DB_USER
     db_passwd = DB_PASSWD
 else:
     db_user = "root"
-    db_passwd = DB_ROOT_PASSWD
+    db_passwd = ""
 
 DB_HOST = os.getenv("DB_HOST", "seatable-mysql")
 DB_PORT = os.getenv("DB_PORT", "3306")
