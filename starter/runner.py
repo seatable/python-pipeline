@@ -370,7 +370,7 @@ def run_python(data):
         send_to_scheduler(
             False,
             -1,
-            "Script running for too long time!",
+            "The script's running time exceeded the limit and the execution was aborted.",
             DEFAULT_SUB_PROCESS_TIMEOUT,
             data,
         )
