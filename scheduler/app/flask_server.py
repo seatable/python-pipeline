@@ -33,7 +33,7 @@ basic_log("scheduler.log")
 # defaults...
 SCRIPT_WORKERS = int(os.environ.get("PYTHON_SCHEDULER_SCRIPT_WORKERS", 5))
 SUB_PROCESS_TIMEOUT = int(os.environ.get("PYTHON_PROCESS_TIMEOUT", 60 * 15))
-TIMEOUT_OUTPUT = "Script running for too long time!"
+TIMEOUT_OUTPUT = "The script's running time exceeded the limit and the execution was aborted."
 
 app = Flask(__name__)
 
