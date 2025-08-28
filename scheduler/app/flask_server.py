@@ -8,14 +8,11 @@ import logging
 from datetime import datetime
 from flask import Flask, request, make_response
 from gevent.pywsgi import WSGIServer
-from concurrent.futures import ThreadPoolExecutor
 
 from database import DBSession
 from faas_scheduler.utils import (
     check_auth_token,
-    run_script,
     get_script,
-    add_script,
     get_run_script_statistics_by_month,
     hook_update_script,
     can_run_task,
@@ -26,6 +23,7 @@ from faas_scheduler.utils import (
     uuid_str_to_32_chars,
     basic_log,
 )
+from .scheduler import scheduler
 
 
 basic_log("scheduler.log")
@@ -40,7 +38,11 @@ TIMEOUT_OUTPUT = (
 app = Flask(__name__)
 
 logger = logging.getLogger(__name__)
-executor = ThreadPoolExecutor(max_workers=SCRIPT_WORKERS)
+
+
+@app.teardown_appcontext
+def shutdown_session(exception=None):
+    DBSession.remove()
 
 
 @app.route("/ping/", methods=["GET"])
@@ -74,8 +76,6 @@ def scripts_api():
     context_data = data.get("context_data")
     owner = data.get("owner")
     org_id = data.get("org_id")
-    script_url = data.get("script_url")
-    temp_api_token = data.get("temp_api_token")
     scripts_running_limit = data.get("scripts_running_limit", -1)
     operate_from = data.get("operate_from", "manualy")
     if not dtable_uuid or not script_name or not owner:
@@ -89,27 +89,16 @@ def scripts_api():
             owner, org_id, db_session, scripts_running_limit=scripts_running_limit
         ):
             return make_response(("The number of runs exceeds the limit"), 400)
-        script = add_script(
-            db_session,
-            dtable_uuid,
-            owner,
+        script_log = scheduler.add_script_log(
+            uuid_str_to_32_chars(dtable_uuid),
             org_id,
+            owner,
             script_name,
             context_data,
-            operate_from,
-        )
-        logger.debug("lets call the starter to fire up the runner...")
-        executor.submit(
-            run_script,
-            script.id,
-            dtable_uuid,
-            script_name,
-            script_url,
-            temp_api_token,
-            context_data,
+            operate_from
         )
 
-        return make_response(({"script_id": script.id}, 200))
+        return make_response(({"script_id": script_log.id}, 200))
     except Exception as e:
         logger.exception(e)
         return make_response(("Internal server error", 500))
@@ -145,15 +134,15 @@ def script_api(script_id):
         if dtable_uuid != script.dtable_uuid or script_name != script.script_name:
             return make_response(("Bad request", 400))
 
-        if SUB_PROCESS_TIMEOUT and isinstance(SUB_PROCESS_TIMEOUT, int):
-            now = datetime.now()
-            duration_seconds = (now - script.started_at).seconds
-            if duration_seconds > SUB_PROCESS_TIMEOUT:
-                script.success = False
-                script.return_code = -1
-                script.finished_at = now
-                script.output = TIMEOUT_OUTPUT
-                db_session.commit()
+        # if SUB_PROCESS_TIMEOUT and isinstance(SUB_PROCESS_TIMEOUT, int):
+        #     now = datetime.now()
+        #     duration_seconds = (now - script.started_at).seconds
+        #     if duration_seconds > SUB_PROCESS_TIMEOUT:
+        #         script.success = False
+        #         script.return_code = -1
+        #         script.finished_at = now
+        #         script.output = TIMEOUT_OUTPUT
+        #         db_session.commit()
 
         return make_response(({"script": script.to_dict()}, 200))
 
