@@ -31,6 +31,11 @@ class ScriptLog(Base):
     return_code = Column(Integer, nullable=True)
     output = Column(Text, nullable=True)
     operate_from = Column(String(255))
+    state = Column(String(10))
+
+    PENDING = 'pending'
+    RUNNING = 'running'
+    FINISHED = 'finished'
 
     def __init__(
         self,
@@ -40,6 +45,7 @@ class ScriptLog(Base):
         script_name,
         context_data,
         started_at,
+        state,
         operate_from=None,
     ):
         self.dtable_uuid = dtable_uuid
@@ -49,6 +55,7 @@ class ScriptLog(Base):
         self.context_data = context_data
         self.started_at = started_at
         self.operate_from = operate_from
+        self.state = state
 
     def to_dict(self):
         from faas_scheduler.utils import datetime_to_isoformat_timestr
@@ -68,6 +75,7 @@ class ScriptLog(Base):
             "return_code": self.return_code,
             "output": self.output,
             "operate_from": self.operate_from,
+            "state": self.state
         }
 
 
