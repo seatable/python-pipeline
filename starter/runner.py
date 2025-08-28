@@ -11,7 +11,8 @@ from concurrent.futures import ThreadPoolExecutor
 from uuid import uuid4
 
 import requests
-from flask import Flask, request, make_response
+
+from redis_client import RedisClient
 
 working_dir = os.getcwd()
 
@@ -70,6 +71,12 @@ LOG_DIR = "/opt/seatable-python-starter/logs/"
 SEATABLE_USER_UID = 1000
 SEATABLE_USER_GID = 1000
 
+# bind host
+HOST = os.environ.get("PYTHON_STARTER_BIND_HOST", "127.0.0.1")
+
+# redis
+SCRIPTS_KEY = "faas_scheduler:scripts"
+
 
 def get_log_level(level):
     if level.lower() == "info":
@@ -94,7 +101,7 @@ def basic_log(log_file):
     log_level = get_log_level(LOG_LEVEL)
     handler.setLevel(log_level)
     formatter = logging.Formatter(
-        "[%(asctime)s] [%(levelname)s] %(name)s %(filename)s:%(lineno)s %(funcName)s %(message)s"
+        "[%(asctime)s] [%(levelname)s] [%(threadName)s] %(name)s %(filename)s:%(lineno)s %(funcName)s %(message)s"
     )
     handler.setFormatter(formatter)
     logging.root.setLevel(log_level)
@@ -103,8 +110,6 @@ def basic_log(log_file):
 
 basic_log("starter.log")
 
-app = Flask(__name__)
-executor = ThreadPoolExecutor(THREAD_COUNT)
 DEFAULT_SUB_PROCESS_TIMEOUT = SUB_PROCESS_TIMEOUT
 
 # timezone command
@@ -132,12 +137,19 @@ def to_python_bool(value):
     return value.lower() == "true"
 
 
-def send_to_scheduler(success, return_code, output, spend_time, request_data):
+class CallbackScriptRunningError(Exception):
+    pass
+
+
+def send_to_scheduler(
+    success, return_code, output, started_at, spend_time, request_data
+):
     """
     This function is used to send result of script to scheduler
     - success: whether script running successfully
     - return_code: return-code of subprocess
     - output: output of subprocess or error message
+    - started_at: start timestamp
     - spend_time: time subprocess took
     - request_data: data from request
     """
@@ -152,7 +164,8 @@ def send_to_scheduler(success, return_code, output, spend_time, request_data):
         "success": success,
         "return_code": return_code,
         "output": output,
-        "spend_time": spend_time,
+        "started_at": started_at,
+        "spend_time": spend_time or 0,
     }
     result_data.update(
         {
@@ -182,13 +195,32 @@ def send_to_scheduler(success, return_code, output, spend_time, request_data):
         )
 
 
+def callback_script_running(script_id, started_at):
+    url = PYTHON_SCHEDULER_URL.strip("/") + "/script-running-callback/"
+    headers = {"User-Agent": "python-starter/" + VERSION}
+    resp = requests.post(
+        url,
+        headers=headers,
+        json={"script_id": script_id, "started_at": started_at},
+        timeout=30,
+    )
+    if not resp.ok:
+        raise CallbackScriptRunningError(
+            f"script {script_id} callback script running error status {resp.status_code} content {resp.content}"
+        )
+
+
 def run_python(data):
 
     logging.info("New python run initalized... (v%s)", VERSION)
 
+    started_at = time.time()
+
+    callback_script_running(data.get("script_id"), started_at)
+
     script_url = data.get("script_url")
     if not script_url:
-        send_to_scheduler(False, None, "Script URL is missing", None, data)
+        send_to_scheduler(False, None, "Script URL is missing", started_at, None, data)
         return
     if (
         to_python_bool(USE_ALTERNATIVE_FILE_SERVER_ROOT)
@@ -228,11 +260,11 @@ def run_python(data):
             logging.error(
                 "Failed to get script from %s, response: %s", script_url, resp
             )
-            send_to_scheduler(False, None, "Fail to get script", None, data)
+            send_to_scheduler(False, None, "Fail to get script", started_at, None, data)
             return
     except Exception as e:
         logging.error("Failed to get script from %s, error: %s", script_url, e)
-        send_to_scheduler(False, None, "Fail to get script", None, data)
+        send_to_scheduler(False, None, "Fail to get script", started_at, None, data)
         return
 
     logging.debug("Generate temporary random folder directory")
@@ -264,6 +296,7 @@ def run_python(data):
         return_code, output = None, ""  # init output
     except Exception as e:
         logging.error("Failed to save script %s, error: %s", script_url, e)
+        send_to_scheduler(False, -1, "", started_at, 0, data)
         return
 
     try:
@@ -271,6 +304,7 @@ def run_python(data):
         os.chown(tmp_dir, SEATABLE_USER_UID, SEATABLE_USER_GID)
     except Exception as e:
         logging.error("Failed to chown %s, error: %s", tmp_dir, e)
+        send_to_scheduler(False, -1, "", started_at, 0, data)
         return
 
     logging.debug("prepare the command to start the python runner")
@@ -339,8 +373,6 @@ def run_python(data):
     command.append("run")  # override command
     logging.debug("command: %s", command)
 
-    start_at = time.time()
-
     logging.debug("try to start the python runner image")
     try:
         result = subprocess.run(
@@ -371,6 +403,7 @@ def run_python(data):
             False,
             -1,
             "The script's running time exceeded the limit and the execution was aborted.",
+            started_at,
             DEFAULT_SUB_PROCESS_TIMEOUT,
             data,
         )
@@ -378,7 +411,7 @@ def run_python(data):
     except Exception as e:
         logging.exception(e)
         logging.error("Failed to run file %s error: %s", script_url, e)
-        send_to_scheduler(False, None, None, None, data)
+        send_to_scheduler(False, None, None, started_at, None, data)
         return
     else:
         logging.debug(
@@ -388,7 +421,12 @@ def run_python(data):
         if os.path.isfile(output_file_path):
             if os.path.islink(output_file_path):
                 send_to_scheduler(
-                    False, -1, "Script invalid!", time.time() - start_at, data
+                    False,
+                    -1,
+                    "Script invalid!",
+                    started_at,
+                    time.time() - started_at,
+                    data,
                 )
                 return
             with open(output_file_path, "r") as f:
@@ -418,7 +456,7 @@ def run_python(data):
         except Exception as e:
             logging.warning("Fail to remove container error: %s", e)
 
-    spend_time = time.time() - start_at
+    spend_time = time.time() - started_at
     logging.info("python run finished successful. duration was: %s", spend_time)
     logging.debug(
         "send this to the scheduler. return_code: %s, output: %s, spend_time: %s, data: %s",
@@ -427,36 +465,35 @@ def run_python(data):
         spend_time,
         data,
     )
-    send_to_scheduler(return_code == 0, return_code, output, spend_time, data)
+    send_to_scheduler(
+        return_code == 0, return_code, output, started_at, spend_time, data
+    )
 
 
-####################
+class Runner:
 
+    def __init__(self):
+        self.redis_client = RedisClient()
 
-@app.route("/ping/", methods=["POST", "GET"])
-def ping():
-    return make_response(("Pong", 200))
+    def worker(self):
+        while True:
+            data = self.redis_client.rpop(SCRIPTS_KEY)
+            if data:
+                data = json.loads(data)
+                try:
+                    run_python(data)
+                except Exception as e:
+                    logging.exception(e)
+            else:
+                time.sleep(0.1)
 
-
-@app.route("/", defaults={"path": ""}, methods=["POST", "GET"])
-@app.route("/function/run-python", methods=["POST", "GET"])
-def main_route():
-    try:
-        data = request.get_json()
-    except Exception:
-        return make_response("Bad Request.", 400)
-    try:
-        executor.submit(run_python, data)
-    except Exception as e:
-        logging.error(e)
-        return make_response("Internal Server Error.", 500)
-    return make_response("Received", 200)
-
-
-@app.route("/_/health", methods=["POST", "GET"])
-def health_check():
-    return "Everything is ok."
+    def start(self):
+        workers_executor = ThreadPoolExecutor(
+            max_workers=THREAD_COUNT, thread_name_prefix="worker"
+        )
+        for _ in range(THREAD_COUNT):
+            workers_executor.submit(self.worker)
 
 
 if __name__ == "__main__":
-    app.run(port=8088, debug=False)
+    Runner().start()

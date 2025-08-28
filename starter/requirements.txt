@@ -1,3 +1,2 @@
-uwsgi
-flask
 requests
+redis==7.1.0

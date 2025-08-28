@@ -13,3 +13,5 @@ local_settings.py
 
 seatable-python-runner/
 seatable-python-runner.zip
+
+.python-version

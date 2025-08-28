@@ -8,7 +8,6 @@ import logging
 from datetime import datetime, timedelta
 from flask import Flask, request, make_response
 from gevent.pywsgi import WSGIServer
-from concurrent.futures import ThreadPoolExecutor
 
 from database import DBSession
 from faas_scheduler.utils import (
@@ -17,45 +16,34 @@ from faas_scheduler.utils import (
     get_statistics_grouped_by_base,
     get_statistics_grouped_by_day,
     is_date_yyyy_mm_dd,
-    run_script,
     get_script,
-    add_script,
     get_run_script_statistics_by_month,
-    hook_update_script,
     can_run_task,
     get_run_scripts_count_monthly,
-    ping_starter,
     get_task_log,
     list_task_logs,
     uuid_str_to_32_chars,
+    uuid_str_to_36_chars,
     basic_log,
+    add_script,
+    on_script_done_update,
+    update_script_running,
 )
-
+from scheduler import Scheduler
 
 basic_log("scheduler.log")
 
-# defaults...
-SCRIPT_WORKERS = int(os.environ.get("PYTHON_SCHEDULER_SCRIPT_WORKERS", 5))
-SUB_PROCESS_TIMEOUT = int(os.environ.get("PYTHON_PROCESS_TIMEOUT", 60 * 15))
-TIMEOUT_OUTPUT = (
-    "The script's running time exceeded the limit and the execution was aborted."
-)
+
+HOST = os.environ.get("PYTHON_SCHEDULER_BIND_HOST", "127.0.0.1")
 
 app = Flask(__name__)
+scheduler = Scheduler()
 
 logger = logging.getLogger(__name__)
-executor = ThreadPoolExecutor(max_workers=SCRIPT_WORKERS)
 
 
 @app.route("/ping/", methods=["GET"])
 def ping():
-    if not ping_starter():
-        return make_response(
-            (
-                "Error: Python Scheduler can not reach the Python Starter. Check PYTHON_STARTER_URL.",
-                400,
-            )
-        )
     return make_response(("Pong", 200))
 
 
@@ -78,8 +66,6 @@ def scripts_api():
     context_data = data.get("context_data")
     owner = data.get("owner")
     org_id = data.get("org_id")
-    script_url = data.get("script_url")
-    temp_api_token = data.get("temp_api_token")
     scripts_running_limit = data.get("scripts_running_limit", -1)
     operate_from = data.get("operate_from", "manualy")
     if not dtable_uuid or not script_name or not owner:
@@ -93,7 +79,8 @@ def scripts_api():
             owner, org_id, db_session, scripts_running_limit=scripts_running_limit
         ):
             return make_response(("The number of runs exceeds the limit"), 400)
-        script = add_script(
+
+        script_log = add_script(
             db_session,
             dtable_uuid,
             owner,
@@ -102,18 +89,9 @@ def scripts_api():
             context_data,
             operate_from,
         )
-        logger.debug("lets call the starter to fire up the runner...")
-        executor.submit(
-            run_script,
-            script.id,
-            dtable_uuid,
-            script_name,
-            script_url,
-            temp_api_token,
-            context_data,
-        )
+        scheduler.add_script(script_log.to_dict())
 
-        return make_response(({"script_id": script.id}, 200))
+        return make_response(({"script_id": script_log.id}, 200))
     except Exception as e:
         logger.exception(e)
         return make_response(("Internal server error", 500))
@@ -146,18 +124,12 @@ def script_api(script_id):
         script = get_script(db_session, script_id)
         if not script:
             return make_response(("Not found", 404))
-        if dtable_uuid != script.dtable_uuid or script_name != script.script_name:
+        if (
+            uuid_str_to_32_chars(dtable_uuid)
+            != uuid_str_to_32_chars(script.dtable_uuid)
+            or script_name != script.script_name
+        ):
             return make_response(("Bad request", 400))
-
-        if SUB_PROCESS_TIMEOUT and isinstance(SUB_PROCESS_TIMEOUT, int):
-            now = datetime.now()
-            duration_seconds = (now - script.started_at).seconds
-            if duration_seconds > SUB_PROCESS_TIMEOUT:
-                script.success = False
-                script.return_code = -1
-                script.finished_at = now
-                script.output = TIMEOUT_OUTPUT
-                db_session.commit()
 
         return make_response(({"script": script.to_dict()}, 200))
 
@@ -190,7 +162,9 @@ def task_logs_api(dtable_uuid, script_name):
 
     db_session = DBSession()
     try:
-        task_logs = list_task_logs(db_session, dtable_uuid, script_name, order_by)
+        task_logs = list_task_logs(
+            db_session, uuid_str_to_36_chars(dtable_uuid), script_name, order_by
+        )
         count = task_logs.count()
         task_logs = task_logs[start:end]
         task_log_list = [task_log.to_dict() for task_log in task_logs]
@@ -277,6 +251,35 @@ def scripts_running_count():
     return make_response(({"count": count}, 200))
 
 
+# endpoint to be informed that a script starts to run. (from starter)
+@app.route("/script-running-callback/", methods=["POST"])
+def callback_script_running():
+    """
+    Update script_log is running, called from python-starter
+    """
+    try:
+        data = request.get_json()
+    except Exception:
+        return make_response("Bad Request.", 400)
+    script_id = data.get("script_id")
+    started_at = data.get("started_at")
+
+    db_session = DBSession()
+    try:
+        script_log = get_script(db_session, script_id)
+        if not script_log:
+            return {"error_msg": "Script not found"}, 404
+        update_script_running(
+            db_session, datetime.fromtimestamp(started_at), script_log
+        )
+    except Exception as e:
+        logger.exception("update script %s running error %s", script_id, e)
+    finally:
+        db_session.close()
+
+    return {"success": True}, 200
+
+
 # endpoint to be informed that the execution of python code is done. (from starter)
 @app.route("/script-result/", methods=["POST"])
 def record_script_result():
@@ -290,17 +293,26 @@ def record_script_result():
     success = data.get("success", False)
     return_code = data.get("return_code")
     output = data.get("output")
-    spend_time = data.get("spend_time")
+    started_at = data.get("started_at")
+    spend_time = data.get("spend_time") or 0
     script_id = data.get("script_id")
 
-    db_session = DBSession()
-
     # update script_log and run-time statistics
+    db_session = DBSession()
     try:
-        if script_id:
-            hook_update_script(
-                db_session, script_id, success, return_code, output, spend_time
-            )
+        script_log = get_script(db_session, script_id)
+        if not script_log:
+            return {"error_msg": "Script not found"}, 404
+        on_script_done_update(
+            db_session,
+            script_id,
+            success,
+            return_code,
+            output,
+            datetime.fromtimestamp(started_at),
+            spend_time,
+        )
+        scheduler.on_script_done(script_log.to_dict(), spend_time)
 
     except Exception as e:
         logger.exception(e)
@@ -308,7 +320,7 @@ def record_script_result():
     finally:
         db_session.close()
 
-    return "success"
+    return {"success": True}, 200
 
 
 # internal function...
@@ -578,5 +590,6 @@ def get_run_statistics_grouped_by_day():
 
 
 if __name__ == "__main__":
-    http_server = WSGIServer(("127.0.0.1", 5055), app)
+    scheduler.start()
+    http_server = WSGIServer((HOST, 5055), app)
     http_server.serve_forever()
