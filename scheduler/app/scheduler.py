@@ -30,15 +30,15 @@ class ScriptQueue:
         #     "<team>_<dtable_uuid>_<script_name>": 0
         # }
         try:
-            run_limit_per_team = os.environ.get('RUN_LIMIT_PER_TEAM', 0)
+            run_limit_per_team = int(os.environ.get('RUN_LIMIT_PER_TEAM', 0))
         except:
             run_limit_per_team = 0
         try:
-            run_limit_per_base = os.environ.get('RUN_LIMIT_PER_BASE', 0)
+            run_limit_per_base = int(os.environ.get('RUN_LIMIT_PER_BASE', 0))
         except:
             run_limit_per_base = 0
         try:
-            run_limit_per_script = os.environ.get('RUN_LIMIT_PER_SCRIPT', 0)
+            run_limit_per_script = int(os.environ.get('RUN_LIMIT_PER_SCRIPT', 0))
         except:
             run_limit_per_script = 0
         self.config = {
@@ -135,10 +135,11 @@ class Scheduelr:
             script_log = self.script_queue.get()
             if not script_log:
                 time.sleep(0.5)
+                continue
             try:
                 script_file_info = get_script_file(script_log.dtable_uuid, script_log.script_name)
                 run_script(
-                    script_log.script_id,
+                    script_log.id,
                     script_log.dtable_uuid,
                     script_log.script_name,
                     script_file_info['script_url'],

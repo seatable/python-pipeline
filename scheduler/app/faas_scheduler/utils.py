@@ -172,6 +172,7 @@ def call_faas_func(script_url, temp_api_token, context_data, script_id=None):
             },
             "context_data": context_data,
             "script_id": script_id,
+            "timeout": int(SUB_PROCESS_TIMEOUT)
         }
         headers = {"User-Agent": "python-scheduler/" + VERSION}
         logger.debug("I call starter at url %s", RUN_FUNC_URL)

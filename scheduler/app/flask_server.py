@@ -23,7 +23,7 @@ from faas_scheduler.utils import (
     uuid_str_to_32_chars,
     basic_log,
 )
-from .scheduler import scheduler
+from scheduler import scheduler
 
 
 basic_log("scheduler.log")
@@ -134,15 +134,15 @@ def script_api(script_id):
         if dtable_uuid != script.dtable_uuid or script_name != script.script_name:
             return make_response(("Bad request", 400))
 
-        # if SUB_PROCESS_TIMEOUT and isinstance(SUB_PROCESS_TIMEOUT, int):
-        #     now = datetime.now()
-        #     duration_seconds = (now - script.started_at).seconds
-        #     if duration_seconds > SUB_PROCESS_TIMEOUT:
-        #         script.success = False
-        #         script.return_code = -1
-        #         script.finished_at = now
-        #         script.output = TIMEOUT_OUTPUT
-        #         db_session.commit()
+        if SUB_PROCESS_TIMEOUT and isinstance(SUB_PROCESS_TIMEOUT, int):
+            now = datetime.now()
+            duration_seconds = (now - script.started_at).seconds
+            if duration_seconds > SUB_PROCESS_TIMEOUT:
+                script.success = False
+                script.return_code = -1
+                script.finished_at = now
+                script.output = TIMEOUT_OUTPUT
+                db_session.commit()
 
         return make_response(({"script": script.to_dict()}, 200))
 
@@ -375,5 +375,6 @@ def base_run_python_statistics():
 
 
 if __name__ == "__main__":
+    scheduler.start()
     http_server = WSGIServer(("127.0.0.1", 5055), app)
     http_server.serve_forever()
