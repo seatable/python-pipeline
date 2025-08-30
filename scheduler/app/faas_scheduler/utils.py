@@ -2,7 +2,7 @@ import os
 import json
 import logging
 import requests
-from datetime import datetime
+from datetime import datetime, timedelta
 from uuid import UUID
 
 from tzlocal import get_localzone
@@ -380,8 +380,8 @@ def add_script(
         org_id,
         script_name,
         context_data,
-        datetime.now(),
         ScriptLog.PENDING,
+        datetime.now(),
         operate_from,
     )
     db_session.add(script)
@@ -390,8 +390,11 @@ def add_script(
     return script
 
 
-def update_script(db_session, script, success, return_code, output):
-    script.finished_at = datetime.now()
+def update_script(
+    db_session, script, success, return_code, output, started_at, finished_at
+):
+    script.started_at = started_at
+    script.finished_at = finished_at
     script.success = success
     script.return_code = return_code
     script.output = output
@@ -423,10 +426,15 @@ def run_script(
     return True
 
 
-def hook_update_script(db_session, script_id, success, return_code, output, spend_time):
+def hook_update_script(
+    db_session, script_id, success, return_code, output, started_at, spend_time
+):
     script = db_session.query(ScriptLog).filter_by(id=script_id).first()
     if script:
-        update_script(db_session, script, success, return_code, output)
+        finished_at = started_at + timedelta(seconds=spend_time)
+        update_script(
+            db_session, script, success, return_code, output, started_at, finished_at
+        )
         update_statistics(
             db_session, script.dtable_uuid, script.owner, script.org_id, spend_time
         )
