@@ -33,9 +33,9 @@ class ScriptLog(Base):
     operate_from = Column(String(255))
     state = Column(String(10))
 
-    PENDING = 'pending'
-    RUNNING = 'running'
-    FINISHED = 'finished'
+    PENDING = "pending"
+    RUNNING = "running"
+    FINISHED = "finished"
 
     def __init__(
         self,
@@ -59,11 +59,11 @@ class ScriptLog(Base):
 
     def get_info(self):
         return {
-            'id': self.id,
-            'org_id': self.org_id,
-            'owner': self.owner,
-            'dtable_uuid': self.dtable_uuid,
-            'script_name': self.script_name
+            "id": self.id,
+            "org_id": self.org_id,
+            "owner": self.owner,
+            "dtable_uuid": self.dtable_uuid,
+            "script_name": self.script_name,
         }
 
     def to_dict(self):
@@ -84,7 +84,7 @@ class ScriptLog(Base):
             "return_code": self.return_code,
             "output": self.output,
             "operate_from": self.operate_from,
-            "state": self.state
+            "state": self.state,
         }
 
 
