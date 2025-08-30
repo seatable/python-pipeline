@@ -141,6 +141,7 @@ def send_to_scheduler(
     - success: whether script running successfully
     - return_code: return-code of subprocess
     - output: output of subprocess or error message
+    - started_at: start timestamp
     - spend_time: time subprocess took
     - request_data: data from request
     """
@@ -156,7 +157,7 @@ def send_to_scheduler(
         "return_code": return_code,
         "output": output,
         "started_at": datetime.fromtimestamp(started_at).isoformat(),
-        "spend_time": spend_time,
+        "spend_time": spend_time or 0,
     }
     result_data.update(
         {
@@ -190,9 +191,11 @@ def run_python(data):
 
     logging.info("New python run initalized... (v%s)", VERSION)
 
+    started_at = time.time()
+
     script_url = data.get("script_url")
     if not script_url:
-        send_to_scheduler(False, None, "Script URL is missing", None, data)
+        send_to_scheduler(False, None, "Script URL is missing", started_at, None, data)
         return
     if (
         to_python_bool(USE_ALTERNATIVE_FILE_SERVER_ROOT)
@@ -232,11 +235,11 @@ def run_python(data):
             logging.error(
                 "Failed to get script from %s, response: %s", script_url, resp
             )
-            send_to_scheduler(False, None, "Fail to get script", None, data)
+            send_to_scheduler(False, None, "Fail to get script", started_at, None, data)
             return
     except Exception as e:
         logging.error("Failed to get script from %s, error: %s", script_url, e)
-        send_to_scheduler(False, None, "Fail to get script", None, data)
+        send_to_scheduler(False, None, "Fail to get script", started_at, None, data)
         return
 
     logging.debug("Generate temporary random folder directory")
@@ -343,8 +346,6 @@ def run_python(data):
     command.append("run")  # override command
     logging.debug("command: %s", command)
 
-    start_at = time.time()
-
     logging.debug("try to start the python runner image")
     try:
         result = subprocess.run(
@@ -375,6 +376,7 @@ def run_python(data):
             False,
             -1,
             "The script's running time exceeded the limit and the execution was aborted.",
+            started_at,
             DEFAULT_SUB_PROCESS_TIMEOUT,
             data,
         )
@@ -382,7 +384,7 @@ def run_python(data):
     except Exception as e:
         logging.exception(e)
         logging.error("Failed to run file %s error: %s", script_url, e)
-        send_to_scheduler(False, None, None, None, data)
+        send_to_scheduler(False, None, None, started_at, None, data)
         return
     else:
         logging.debug(
@@ -392,7 +394,7 @@ def run_python(data):
         if os.path.isfile(output_file_path):
             if os.path.islink(output_file_path):
                 send_to_scheduler(
-                    False, -1, "Script invalid!", time.time() - start_at, data
+                    False, -1, "Script invalid!", started_at, time.time() - started_at, data
                 )
                 return
             with open(output_file_path, "r") as f:
@@ -422,7 +424,7 @@ def run_python(data):
         except Exception as e:
             logging.warning("Fail to remove container error: %s", e)
 
-    spend_time = time.time() - start_at
+    spend_time = time.time() - started_at
     logging.info("python run finished successful. duration was: %s", spend_time)
     logging.debug(
         "send this to the scheduler. return_code: %s, output: %s, spend_time: %s, data: %s",
@@ -431,7 +433,7 @@ def run_python(data):
         spend_time,
         data,
     )
-    send_to_scheduler(return_code == 0, return_code, output, start_at, spend_time, data)
+    send_to_scheduler(return_code == 0, return_code, output, started_at, spend_time, data)
 
 
 ####################
