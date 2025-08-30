@@ -381,6 +381,7 @@ def add_script(
         script_name,
         context_data,
         datetime.now(),
+        ScriptLog.PENDING,
         operate_from,
     )
     db_session.add(script)
@@ -394,6 +395,7 @@ def update_script(db_session, script, success, return_code, output):
     script.success = success
     script.return_code = return_code
     script.output = output
+    script.state = ScriptLog.FINISHED
     db_session.commit()
 
     return script
