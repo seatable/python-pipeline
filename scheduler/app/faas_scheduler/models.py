@@ -57,6 +57,15 @@ class ScriptLog(Base):
         self.operate_from = operate_from
         self.state = state
 
+    def get_info(self):
+        return {
+            'id': self.id,
+            'org_id': self.org_id,
+            'owner': self.owner,
+            'dtable_uuid': self.dtable_uuid,
+            'script_name': self.script_name
+        }
+
     def to_dict(self):
         from faas_scheduler.utils import datetime_to_isoformat_timestr
 
