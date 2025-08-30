@@ -95,7 +95,7 @@ def scripts_api():
             owner,
             script_name,
             context_data,
-            operate_from
+            operate_from,
         )
 
         return make_response(({"script_id": script_log.id}, 200))
@@ -131,7 +131,10 @@ def script_api(script_id):
         script = get_script(db_session, script_id)
         if not script:
             return make_response(("Not found", 404))
-        if uuid_str_to_32_chars(dtable_uuid) != script.dtable_uuid or script_name != script.script_name:
+        if (
+            uuid_str_to_32_chars(dtable_uuid) != script.dtable_uuid
+            or script_name != script.script_name
+        ):
             return make_response(("Bad request", 400))
 
         if SUB_PROCESS_TIMEOUT and isinstance(SUB_PROCESS_TIMEOUT, int):
