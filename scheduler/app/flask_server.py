@@ -276,7 +276,7 @@ def record_script_result():
     return_code = data.get("return_code")
     output = data.get("output")
     started_at = datetime.fromisoformat(data.get("started_at"))
-    spend_time = data.get("spend_time")
+    spend_time = data.get("spend_time") or 0
     script_id = data.get("script_id")
     # update script_log and run-time statistics
     try:
