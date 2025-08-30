@@ -394,7 +394,12 @@ def run_python(data):
         if os.path.isfile(output_file_path):
             if os.path.islink(output_file_path):
                 send_to_scheduler(
-                    False, -1, "Script invalid!", started_at, time.time() - started_at, data
+                    False,
+                    -1,
+                    "Script invalid!",
+                    started_at,
+                    time.time() - started_at,
+                    data,
                 )
                 return
             with open(output_file_path, "r") as f:
@@ -433,7 +438,9 @@ def run_python(data):
         spend_time,
         data,
     )
-    send_to_scheduler(return_code == 0, return_code, output, started_at, spend_time, data)
+    send_to_scheduler(
+        return_code == 0, return_code, output, started_at, spend_time, data
+    )
 
 
 ####################
