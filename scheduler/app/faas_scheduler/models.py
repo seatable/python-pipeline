@@ -32,6 +32,7 @@ class ScriptLog(Base):
     output = Column(Text, nullable=True)
     operate_from = Column(String(255))
     state = Column(String(10))
+    created_at = Column(DateTime, index=True)
 
     PENDING = "pending"
     RUNNING = "running"
@@ -44,8 +45,8 @@ class ScriptLog(Base):
         org_id,
         script_name,
         context_data,
-        started_at,
         state,
+        created_at,
         operate_from=None,
     ):
         self.dtable_uuid = dtable_uuid
@@ -53,8 +54,8 @@ class ScriptLog(Base):
         self.org_id = org_id
         self.script_name = script_name
         self.context_data = context_data
-        self.started_at = started_at
         self.state = state
+        self.created_at = created_at
         self.operate_from = operate_from
 
     def get_info(self):
@@ -77,7 +78,8 @@ class ScriptLog(Base):
             "context_data": (
                 json.loads(self.context_data) if self.context_data else None
             ),
-            "started_at": datetime_to_isoformat_timestr(self.started_at),
+            "started_at": self.started_at
+            and datetime_to_isoformat_timestr(self.started_at),
             "finished_at": self.finished_at
             and datetime_to_isoformat_timestr(self.finished_at),
             "success": self.success,
@@ -85,6 +87,8 @@ class ScriptLog(Base):
             "output": self.output,
             "operate_from": self.operate_from,
             "state": self.state,
+            "created_at": self.created_at
+            and datetime_to_isoformat_timestr(self.created_at),
         }
 
 

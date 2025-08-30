@@ -2,7 +2,7 @@ import json
 import logging
 import os
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 from threading import Lock, Thread
 
 from database import DBSession
@@ -24,8 +24,10 @@ TIMEOUT_OUTPUT = "Script running for too long time!"
 class ScriptQueue:
 
     def __init__(self):
-        self.q = []  # a list of ScriptLog
-        self.script_logs_dict = {}  # a dict of {id: ScriptLog}
+        self.script_queue = (
+            []
+        )  # a list of ScriptLog instances, but can not be used to update database records!!!
+        self.script_dict = {}  # a dict of {id: ScriptLog}
         self.lock = Lock()
         self.running_count = {}
         # a dict of
@@ -75,10 +77,10 @@ class ScriptQueue:
 
         return True
 
-    def add_script_log(self, script_log: ScriptLog):
+    def add(self, script_log: ScriptLog):
         with self.lock:
-            self.q.append(script_log)
-            self.script_logs_dict[script_log.id] = script_log
+            self.script_queue.append(script_log)
+            self.script_dict[script_log.id] = script_log
             self.inspect_queue_and_running(
                 pre_msg=f"add script {script_log.get_info()} to queue"
             )
@@ -92,11 +94,11 @@ class ScriptQueue:
             return_task = None
 
             index = 0
-            while index < len(self.q):
-                script_log = self.q[index]
+            while index < len(self.script_queue):
+                script_log = self.script_queue[index]
                 if self.can_run_script(script_log):
                     return_task = script_log
-                    self.q.pop(index)
+                    self.script_queue.pop(index)
                     self.increase_running(script_log)
                     self.inspect_queue_and_running(
                         pre_msg=f"get script {script_log.get_info()} from queue"
@@ -154,7 +156,7 @@ class ScriptQueue:
 
     def script_done_callback(self, script_log: ScriptLog):
         with self.lock:
-            self.script_logs_dict.pop(script_log.id, None)
+            self.script_dict.pop(script_log.id, None)
             self.decrease_running(script_log)
             self.inspect_queue_and_running(
                 pre_msg=f"script {script_log.get_info()} run done"
@@ -172,7 +174,7 @@ class ScriptQueue:
         lines.append(f"{'<' * 10} running {'<' * 10}")
 
         lines.append(f"{'>' * 10} queue {'>' * 10}")
-        for script_log in self.q:
+        for script_log in self.script_queue:
             lines.append(
                 f"org_id: {script_log.org_id} owner: {script_log.owner} dtable_uuid: {script_log.dtable_uuid} script_name: {script_log.script_name}"
             )
@@ -180,17 +182,24 @@ class ScriptQueue:
         logger.debug("\n".join(lines))
 
     def get_script_log_by_id(self, script_id):
-        return self.script_logs_dict.get(script_id)
+        return self.script_dict.get(script_id)
 
-    def get_timeout_scripts(self):
+    def pop_timeout_scripts(self):
         script_logs = []
         now_time = datetime.now()
         with self.lock:
-            for index in range(len(self.q) - 1, -1, -1):
-                script_log = self.q[index]
-                if (now_time - script_log.started_at).seconds >= SUB_PROCESS_TIMEOUT:
-                    script_logs.append(self.q.pop(index))
-                    self.script_logs_dict.pop(script_log.id, None)
+            for index in range(len(self.script_queue) - 1, -1, -1):
+                script_log = self.script_queue[index]
+                if (
+                    script_log.state == ScriptLog.RUNNING
+                    and (now_time - script_log.started_at).seconds
+                    >= SUB_PROCESS_TIMEOUT
+                ):
+                    script_logs.append(self.script_queue.pop(index))
+                    self.decrease_running(script_log)
+                    self.inspect_queue_and_running(
+                        pre_msg=f"set script {script_log.get_info()} timeout from queue"
+                    )
         return script_logs
 
 
@@ -199,9 +208,7 @@ class Scheduelr:
     def __init__(self):
         self.script_queue = ScriptQueue()
 
-    def add_script_log(
-        self, dtable_uuid, org_id, owner, script_name, context_data, operate_from
-    ):
+    def add(self, dtable_uuid, org_id, owner, script_name, context_data, operate_from):
         script_log = add_script(
             DBSession(),
             dtable_uuid,
@@ -211,7 +218,7 @@ class Scheduelr:
             context_data,
             operate_from,
         )
-        self.script_queue.add_script_log(script_log)
+        self.script_queue.add(script_log)
         return script_log
 
     def schedule(self):
@@ -225,7 +232,11 @@ class Scheduelr:
                 db_session.query(ScriptLog).filter(
                     ScriptLog.id == script_log.id
                 ).update(
-                    {ScriptLog.state: ScriptLog.RUNNING}, synchronize_session=False
+                    {
+                        ScriptLog.state: ScriptLog.RUNNING,
+                        ScriptLog.started_at: script_log.started_at,
+                    },
+                    synchronize_session=False,
                 )
                 db_session.commit()
                 script_file_info = get_script_file(
@@ -244,49 +255,28 @@ class Scheduelr:
             finally:
                 DBSession.remove()
 
-    def script_done_callback(self, script_id, success, return_code, output, spend_time):
+    def script_done_callback(
+        self, script_id, success, return_code, output, started_at, spend_time
+    ):
         hook_update_script(
-            DBSession(), script_id, success, return_code, output, spend_time
+            DBSession(), script_id, success, return_code, output, started_at, spend_time
         )
         script_log = self.script_queue.get_script_log_by_id(script_id)
         if not script_log:  # not counted in memory, only update db record
             return
         self.script_queue.script_done_callback(script_log)
 
-    def load_pending_script_logs(self):
+    def load_pending_scripts(self):
         """load pending script logs, should be called only when server start"""
-        script_logs = (
+        script_logs = list(
             DBSession.query(ScriptLog)
             .filter_by(state=ScriptLog.PENDING)
+            .filter(ScriptLog.created_at > (datetime.now() - timedelta(hours=1)))
             .order_by(ScriptLog.id)
         )
+        logger.info(f"load {len(script_logs)} pending scripts created within 1 hour")
         for script_log in script_logs:
-            self.script_queue.add_script_log(script_log)
-
-    def timeout_setter(self):
-        while True:
-            db_session = DBSession()
-            now_time = datetime.now()
-            try:
-                script_logs = self.script_queue.get_timeout_scripts()
-                if script_logs:
-                    db_session.query(ScriptLog).filter(
-                        ScriptLog.id.in_([script_log.id for script_log in script_logs])
-                    ).update(
-                        {
-                            ScriptLog.state: ScriptLog.FINISHED,
-                            ScriptLog.finished_at: now_time,
-                            ScriptLog.success: False,
-                            ScriptLog.output: TIMEOUT_OUTPUT,
-                            ScriptLog.return_code: -1,
-                        },
-                        synchronize_session=False,
-                    )
-            except Exception as e:
-                logger.exception(e)
-            finally:
-                DBSession.remove()
-            time.sleep(60)
+            self.script_queue.add(script_log)
 
     def statistic_cleaner(self):
         while True:
@@ -301,10 +291,9 @@ class Scheduelr:
             time.sleep(24 * 60 * 60)
 
     def start(self):
-        self.load_pending_script_logs()
+        self.load_pending_scripts()
         Thread(target=self.schedule, daemon=True).start()
         Thread(target=self.statistic_cleaner, daemon=True).start()
-        Thread(target=self.timeout_setter, daemon=True).start()
 
 
 scheduler = Scheduelr()

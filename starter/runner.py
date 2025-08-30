@@ -7,6 +7,7 @@ import subprocess
 import time
 import ast
 import sys
+from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor
 from uuid import uuid4
 
@@ -132,7 +133,9 @@ def to_python_bool(value):
     return value.lower() == "true"
 
 
-def send_to_scheduler(success, return_code, output, spend_time, request_data):
+def send_to_scheduler(
+    success, return_code, output, started_at, spend_time, request_data
+):
     """
     This function is used to send result of script to scheduler
     - success: whether script running successfully
@@ -152,6 +155,7 @@ def send_to_scheduler(success, return_code, output, spend_time, request_data):
         "success": success,
         "return_code": return_code,
         "output": output,
+        "started_at": datetime.fromtimestamp(started_at).isoformat(),
         "spend_time": spend_time,
     }
     result_data.update(
@@ -427,7 +431,7 @@ def run_python(data):
         spend_time,
         data,
     )
-    send_to_scheduler(return_code == 0, return_code, output, spend_time, data)
+    send_to_scheduler(return_code == 0, return_code, output, start_at, spend_time, data)
 
 
 ####################

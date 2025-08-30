@@ -14,7 +14,6 @@ from faas_scheduler.utils import (
     check_auth_token,
     get_script,
     get_run_script_statistics_by_month,
-    hook_update_script,
     can_run_task,
     get_run_scripts_count_monthly,
     ping_starter,
@@ -89,7 +88,7 @@ def scripts_api():
             owner, org_id, db_session, scripts_running_limit=scripts_running_limit
         ):
             return make_response(("The number of runs exceeds the limit"), 400)
-        script_log = scheduler.add_script_log(
+        script_log = scheduler.add(
             uuid_str_to_32_chars(dtable_uuid),
             org_id,
             owner,
@@ -137,23 +136,21 @@ def script_api(script_id):
         ):
             return make_response(("Bad request", 400))
 
-        if SUB_PROCESS_TIMEOUT and isinstance(SUB_PROCESS_TIMEOUT, int):
-            now = datetime.now()
-            duration_seconds = (now - script.started_at).seconds
-            if duration_seconds > SUB_PROCESS_TIMEOUT:
-                script.success = False
-                script.return_code = -1
-                script.finished_at = now
-                script.output = TIMEOUT_OUTPUT
-                db_session.commit()
+        # if SUB_PROCESS_TIMEOUT and isinstance(SUB_PROCESS_TIMEOUT, int):
+        #     now = datetime.now()
+        #     duration_seconds = (now - script.created_at).seconds
+        #     if duration_seconds > SUB_PROCESS_TIMEOUT:
+        #         script.success = False
+        #         script.return_code = -1
+        #         script.finished_at = now
+        #         script.output = TIMEOUT_OUTPUT
+        #         db_session.commit()
 
         return make_response(({"script": script.to_dict()}, 200))
 
     except Exception as e:
         logger.exception(e)
         return make_response(("Internal server error", 500))
-    finally:
-        db_session.close()
 
 
 # get python script statistics logs...
@@ -278,16 +275,14 @@ def record_script_result():
     success = data.get("success", False)
     return_code = data.get("return_code")
     output = data.get("output")
+    started_at = datetime.fromisoformat(data.get("started_at"))
     spend_time = data.get("spend_time")
     script_id = data.get("script_id")
     # update script_log and run-time statistics
     try:
         if script_id:
-            # hook_update_script(
-            #     db_session, script_id, success, return_code, output, spend_time
-            # )
             scheduler.script_done_callback(
-                script_id, success, return_code, output, spend_time
+                script_id, success, return_code, output, started_at, spend_time
             )
 
     except Exception as e:
