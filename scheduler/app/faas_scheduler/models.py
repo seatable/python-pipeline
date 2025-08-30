@@ -54,8 +54,8 @@ class ScriptLog(Base):
         self.script_name = script_name
         self.context_data = context_data
         self.started_at = started_at
-        self.operate_from = operate_from
         self.state = state
+        self.operate_from = operate_from
 
     def get_info(self):
         return {

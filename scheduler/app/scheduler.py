@@ -200,7 +200,13 @@ class Scheduelr:
             if not script_log:
                 time.sleep(0.5)
                 continue
+            db_session = DBSession()
             try:
+                db_session.query(ScriptLog).filter(ScriptLog.id==script_log.id).update(
+                    {ScriptLog.state: ScriptLog.RUNNING},
+                    synchronize_session=False
+                )
+                db_session.commit()
                 script_file_info = get_script_file(script_log.dtable_uuid, script_log.script_name)
                 run_script(
                     script_log.id,
@@ -212,6 +218,8 @@ class Scheduelr:
                 )
             except Exception as e:
                 logger.exception(f'run script: {script_log} error {e}')
+            finally:
+                DBSession.remove()
 
     def script_done_callback(
             self,
@@ -255,7 +263,8 @@ class Scheduelr:
                             ScriptLog.success: False,
                             ScriptLog.output: TIMEOUT_OUTPUT,
                             ScriptLog.return_code: -1
-                        }
+                        },
+                        synchronize_session=False
                     )
             except Exception as e:
                 logger.exception(e)
@@ -271,6 +280,8 @@ class Scheduelr:
                 delete_statistics_after_days(db_session)
             except Exception as e:
                 logger.exception(e)
+            finally:
+                DBSession.remove()
             time.sleep(24 * 60 * 60)
 
     def start(self):
