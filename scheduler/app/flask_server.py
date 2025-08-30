@@ -131,7 +131,7 @@ def script_api(script_id):
         script = get_script(db_session, script_id)
         if not script:
             return make_response(("Not found", 404))
-        if dtable_uuid != script.dtable_uuid or script_name != script.script_name:
+        if uuid_str_to_32_chars(dtable_uuid) != script.dtable_uuid or script_name != script.script_name:
             return make_response(("Bad request", 400))
 
         if SUB_PROCESS_TIMEOUT and isinstance(SUB_PROCESS_TIMEOUT, int):
@@ -277,21 +277,19 @@ def record_script_result():
     output = data.get("output")
     spend_time = data.get("spend_time")
     script_id = data.get("script_id")
-
-    db_session = DBSession()
-
     # update script_log and run-time statistics
     try:
         if script_id:
-            hook_update_script(
-                db_session, script_id, success, return_code, output, spend_time
+            # hook_update_script(
+            #     db_session, script_id, success, return_code, output, spend_time
+            # )
+            scheduler.script_done_callback(
+                script_id, success, return_code, output, spend_time
             )
 
     except Exception as e:
         logger.exception(e)
         return make_response(("Internal server error", 500))
-    finally:
-        db_session.close()
 
     return "success"
 
@@ -376,5 +374,5 @@ def base_run_python_statistics():
 
 if __name__ == "__main__":
     scheduler.start()
-    http_server = WSGIServer(("127.0.0.1", 5055), app)
+    http_server = WSGIServer(("0.0.0.0", 5055), app)
     http_server.serve_forever()
