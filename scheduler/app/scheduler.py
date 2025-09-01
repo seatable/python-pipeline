@@ -249,10 +249,9 @@ class Scheduelr:
                 )
             except Exception as e:
                 logger.exception(f"run script: {script_log} error {e}")
-                hook_update_script(
-                    db_session, script_log.id, False, -1, "", datetime.now(), 0
+                self.script_done_callback(
+                    script_log.id, False, -1, "", datetime.now(), 0
                 )
-                db_session.commit()
             finally:
                 DBSession.remove()
 
