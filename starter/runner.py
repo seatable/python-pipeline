@@ -271,6 +271,7 @@ def run_python(data):
         return_code, output = None, ""  # init output
     except Exception as e:
         logging.error("Failed to save script %s, error: %s", script_url, e)
+        send_to_scheduler(False, -1, "", started_at, 0, data)
         return
 
     try:
@@ -278,6 +279,7 @@ def run_python(data):
         os.chown(tmp_dir, SEATABLE_USER_UID, SEATABLE_USER_GID)
     except Exception as e:
         logging.error("Failed to chown %s, error: %s", tmp_dir, e)
+        send_to_scheduler(False, -1, "", started_at, 0, data)
         return
 
     logging.debug("prepare the command to start the python runner")
