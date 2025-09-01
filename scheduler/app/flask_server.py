@@ -175,7 +175,9 @@ def task_logs_api(dtable_uuid, script_name):
 
     db_session = DBSession()
     try:
-        task_logs = list_task_logs(db_session, dtable_uuid, script_name, order_by)
+        task_logs = list_task_logs(
+            db_session, uuid_str_to_32_chars(dtable_uuid), script_name, order_by
+        )
         count = task_logs.count()
         task_logs = task_logs[start:end]
         task_log_list = [task_log.to_dict() for task_log in task_logs]
