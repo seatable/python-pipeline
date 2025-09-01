@@ -7,7 +7,12 @@ from uuid import UUID
 
 from tzlocal import get_localzone
 from sqlalchemy import desc, text
-from faas_scheduler.models import ScriptLog
+from faas_scheduler.models import (
+    ScriptLog,
+    UserRunScriptStatistics,
+    OrgRunScriptStatistics,
+    DTableRunScriptStatistics,
+)
 
 import sys
 
@@ -197,66 +202,134 @@ def call_faas_func(script_url, temp_api_token, context_data, script_id=None):
         return None
 
 
-def update_statistics(db_session, dtable_uuid, owner, org_id, spend_time):
-    if not spend_time:
-        return
-    username = owner
-
-    # dtable_run_script_statistcis
-    sqls = [
-        """
-    INSERT INTO dtable_run_script_statistics(dtable_uuid, run_date, total_run_count, total_run_time, update_at) VALUES
-    (:dtable_uuid, :run_date, 1, :spend_time, :update_at)
-    ON DUPLICATE KEY UPDATE
-    total_run_count=total_run_count+1,
-    total_run_time=total_run_time+:spend_time,
-    update_at=:update_at;
-    """
-    ]
-
-    # org_run_script_statistics
-    if org_id and org_id != -1:
-        sqls += [
-            """
-        INSERT INTO org_run_script_statistics(org_id, run_date, total_run_count, total_run_time, update_at) VALUES
-        (:org_id, :run_date, 1, :spend_time, :update_at)
-        ON DUPLICATE KEY UPDATE
-        total_run_count=total_run_count+1,
-        total_run_time=total_run_time+:spend_time,
-        update_at=:update_at;
-        """
-        ]
-
-    # user_run_script_statistics
-    if "@seafile_group" not in username:
-        sqls += [
-            """
-        INSERT INTO user_run_script_statistics(username, org_id, run_date, total_run_count, total_run_time, update_at) VALUES
-        (:username, :org_id, :run_date, 1, :spend_time, :update_at)
-        ON DUPLICATE KEY UPDATE
-        org_id=:org_id,
-        total_run_count=total_run_count+1,
-        total_run_time=total_run_time+:spend_time,
-        update_at=:update_at;
-        """
-        ]
-
+def update_stats_run_count(db_session, dtable_uuid, owner, org_id):
+    run_date = datetime.today().strftime("%Y-%m-%d")
     try:
-        for sql in sqls:
-            db_session.execute(
-                text(sql),
-                {
-                    "dtable_uuid": dtable_uuid,
-                    "username": username,
-                    "org_id": org_id,
-                    "run_date": datetime.today(),
-                    "spend_time": spend_time,
-                    "update_at": datetime.now(),
-                },
+        dtable_stats = (
+            db_session.query(DTableRunScriptStatistics)
+            .filter_by(dtable_uuid=dtable_uuid, run_date=run_date)
+            .first()
+        )
+        if not dtable_stats:
+            dtable_stats = DTableRunScriptStatistics(
+                dtable_uuid=dtable_uuid,
+                run_date=run_date,
+                total_run_count=1,
+                total_run_time=0,
+                update_at=datetime.now(),
             )
+            db_session.add(dtable_stats)
+        else:
+            dtable_stats.total_run_count += 1
+            dtable_stats.update_at = datetime.now()
+        if org_id == -1:
+            if "@seafile_group" not in owner:
+                user_stats = (
+                    db_session.query(UserRunScriptStatistics)
+                    .filter_by(username=owner, run_date=run_date)
+                    .first()
+                )
+                if not user_stats:
+                    user_stats = UserRunScriptStatistics(
+                        username=owner,
+                        run_date=run_date,
+                        total_run_count=1,
+                        total_run_time=0,
+                        update_at=datetime.now(),
+                    )
+                    db_session.add(user_stats)
+                else:
+                    user_stats.total_run_count += 1
+                    user_stats.update_at = datetime.now()
+        else:
+            org_stats = (
+                db_session.query(OrgRunScriptStatistics)
+                .filter_by(org_id=org_id, run_date=run_date)
+                .first()
+            )
+            if not org_stats:
+                org_stats = OrgRunScriptStatistics(
+                    org_id=org_id,
+                    run_date=run_date,
+                    total_run_count=1,
+                    total_run_time=0,
+                    update_at=datetime.now(),
+                )
+                db_session.add(org_stats)
+            else:
+                org_stats.total_run_count += 1
+                org_stats.update_at = datetime.now()
         db_session.commit()
     except Exception as e:
-        logger.exception("update statistics sql error: %s", e)
+        logger.exception(
+            f"update stats for org_id {org_id} owner {owner} dtable {dtable_uuid} run count error {e}"
+        )
+
+
+def update_stats_run_time(db_session, dtable_uuid, owner, org_id, spend_time):
+    if not spend_time:
+        return
+    run_date = datetime.today().strftime("%Y-%m-%d")
+    try:
+        dtable_stats = (
+            db_session.query(DTableRunScriptStatistics)
+            .filter_by(dtable_uuid=dtable_uuid, run_date=run_date)
+            .first()
+        )
+        if not dtable_stats:
+            dtable_stats = DTableRunScriptStatistics(
+                dtable_uuid=dtable_uuid,
+                run_date=run_date,
+                total_run_count=1,
+                total_run_time=spend_time,
+                update_at=datetime.now(),
+            )
+            db_session.add(dtable_stats)
+        else:
+            dtable_stats.total_run_time += spend_time
+            dtable_stats.update_at = datetime.now()
+        if org_id == -1:
+            if "@seafile_group" not in owner:
+                user_stats = (
+                    db_session.query(UserRunScriptStatistics)
+                    .filter_by(username=owner, run_date=run_date)
+                    .first()
+                )
+                if not user_stats:
+                    user_stats = UserRunScriptStatistics(
+                        username=owner,
+                        run_date=run_date,
+                        total_run_count=1,
+                        total_run_time=spend_time,
+                        update_at=datetime.now(),
+                    )
+                    db_session.add(user_stats)
+                else:
+                    user_stats.total_run_time += spend_time
+                    user_stats.update_at = datetime.now()
+        else:
+            org_stats = (
+                db_session.query(OrgRunScriptStatistics)
+                .filter_by(org_id=org_id, run_date=run_date)
+                .first()
+            )
+            if not org_stats:
+                org_stats = OrgRunScriptStatistics(
+                    org_id=org_id,
+                    run_date=run_date,
+                    total_run_count=1,
+                    total_run_time=spend_time,
+                    update_at=datetime.now(),
+                )
+                db_session.add(org_stats)
+            else:
+                org_stats.total_run_time += spend_time
+                org_stats.update_at = datetime.now()
+        db_session.commit()
+    except Exception as e:
+        logger.exception(
+            f"update stats for org_id {org_id} owner {owner} dtable {dtable_uuid} run time error {e}"
+        )
 
 
 # required to get "script logs" in dtable-web
@@ -387,6 +460,8 @@ def add_script(
     db_session.add(script)
     db_session.commit()
 
+    update_stats_run_count(db_session, dtable_uuid, owner, org_id)
+
     return script
 
 
@@ -435,7 +510,7 @@ def hook_update_script(
         update_script(
             db_session, script, success, return_code, output, started_at, finished_at
         )
-        update_statistics(
+        update_stats_run_time(
             db_session, script.dtable_uuid, script.owner, script.org_id, spend_time
         )
 
