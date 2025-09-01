@@ -232,10 +232,7 @@ class Scheduelr:
                 db_session.query(ScriptLog).filter(
                     ScriptLog.id == script_log.id
                 ).update(
-                    {
-                        ScriptLog.state: ScriptLog.RUNNING,
-                        ScriptLog.started_at: script_log.started_at,
-                    },
+                    {ScriptLog.state: ScriptLog.RUNNING},
                     synchronize_session=False,
                 )
                 db_session.commit()
@@ -252,6 +249,17 @@ class Scheduelr:
                 )
             except Exception as e:
                 logger.exception(f"run script: {script_log} error {e}")
+                db_session.query(ScriptLog).filter(
+                    ScriptLog.id == script_log.id
+                ).update(
+                    {
+                        ScriptLog.started_at: datetime.now(),
+                        ScriptLog.finished_at: datetime.now(),
+                        ScriptLog.state: ScriptLog.FINISHED,
+                    },
+                    synchronize_session=False,
+                )
+                db_session.commit()
             finally:
                 DBSession.remove()
 
