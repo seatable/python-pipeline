@@ -271,8 +271,6 @@ def update_stats_run_count(db_session, dtable_uuid, owner, org_id):
 
 
 def update_stats_run_time(db_session, dtable_uuid, owner, org_id, spend_time):
-    if not spend_time:
-        return
     run_date = datetime.today().strftime("%Y-%m-%d")
     try:
         dtable_stats = (

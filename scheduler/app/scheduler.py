@@ -249,15 +249,8 @@ class Scheduelr:
                 )
             except Exception as e:
                 logger.exception(f"run script: {script_log} error {e}")
-                db_session.query(ScriptLog).filter(
-                    ScriptLog.id == script_log.id
-                ).update(
-                    {
-                        ScriptLog.started_at: datetime.now(),
-                        ScriptLog.finished_at: datetime.now(),
-                        ScriptLog.state: ScriptLog.FINISHED,
-                    },
-                    synchronize_session=False,
+                hook_update_script(
+                    db_session, script_log.id, False, -1, "", datetime.now(), 0
                 )
                 db_session.commit()
             finally:
