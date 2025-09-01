@@ -262,7 +262,11 @@ def update_stats_run_count(db_session, dtable_uuid, owner, org_id):
         db_session.commit()
     except Exception as e:
         logger.exception(
-            f"update stats for org_id {org_id} owner {owner} dtable {dtable_uuid} run count error {e}"
+            "update stats for org_id %s owner %s dtable %s run count error %s",
+            org_id,
+            owner,
+            dtable_uuid,
+            e,
         )
 
 
@@ -328,7 +332,11 @@ def update_stats_run_time(db_session, dtable_uuid, owner, org_id, spend_time):
         db_session.commit()
     except Exception as e:
         logger.exception(
-            f"update stats for org_id {org_id} owner {owner} dtable {dtable_uuid} run time error {e}"
+            "update stats for org_id %s owner %s dtable %s run time error %s",
+            org_id,
+            owner,
+            dtable_uuid,
+            e,
         )
 
 
