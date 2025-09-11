@@ -59,7 +59,7 @@ def ping():
 
 # called from dtable-web to start the python run
 @app.route("/run-script/", methods=["POST"])
-def scripts_api():
+def run_script_api():
     if not check_auth_token(request):
         return make_response(("Forbidden: the auth token is not correct.", 403))
 
@@ -108,7 +108,7 @@ def scripts_api():
 
 # called from dtable-web to get the status of a specific run.
 @app.route("/run-script/<script_id>/", methods=["GET"])
-def script_api(script_id):
+def get_script_api(script_id):
     if not check_auth_token(request):
         return make_response(("Forbidden: the auth token is not correct.", 403))
 

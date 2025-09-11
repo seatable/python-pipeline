@@ -31,12 +31,7 @@ class ScriptLog(Base):
     return_code = Column(Integer, nullable=True)
     output = Column(Text, nullable=True)
     operate_from = Column(String(255))
-    state = Column(String(10))
     created_at = Column(DateTime, index=True)
-
-    PENDING = "pending"
-    RUNNING = "running"
-    FINISHED = "finished"
 
     def __init__(
         self,
@@ -45,7 +40,6 @@ class ScriptLog(Base):
         org_id,
         script_name,
         context_data,
-        state,
         created_at,
         operate_from=None,
     ):
@@ -54,7 +48,6 @@ class ScriptLog(Base):
         self.org_id = org_id
         self.script_name = script_name
         self.context_data = context_data
-        self.state = state
         self.created_at = created_at
         self.operate_from = operate_from
 
@@ -86,7 +79,6 @@ class ScriptLog(Base):
             "return_code": self.return_code,
             "output": self.output,
             "operate_from": self.operate_from,
-            "state": self.state,
             "created_at": self.created_at
             and datetime_to_isoformat_timestr(self.created_at),
         }
