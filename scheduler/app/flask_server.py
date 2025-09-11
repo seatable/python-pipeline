@@ -33,6 +33,7 @@ SUB_PROCESS_TIMEOUT = int(os.environ.get("PYTHON_PROCESS_TIMEOUT", 60 * 15))
 TIMEOUT_OUTPUT = (
     "The script's running time exceeded the limit and the execution was aborted."
 )
+HOST = os.environ.get("PYTHON_SCHEDULER_BIND_HOST", "127.0.0.1")
 
 app = Flask(__name__)
 
@@ -373,6 +374,5 @@ def base_run_python_statistics():
 
 
 if __name__ == "__main__":
-    scheduler.start()
-    http_server = WSGIServer(("0.0.0.0", 5055), app)
+    http_server = WSGIServer((HOST, 5055), app)
     http_server.serve_forever()
