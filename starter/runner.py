@@ -71,6 +71,9 @@ LOG_DIR = "/opt/seatable-python-starter/logs/"
 SEATABLE_USER_UID = 1000
 SEATABLE_USER_GID = 1000
 
+# bind host
+HOST = os.environ.get("PYTHON_STARTER_BIND_HOST", "127.0.0.1")
+
 
 def get_log_level(level):
     if level.lower() == "info":
@@ -474,4 +477,4 @@ def health_check():
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=8088, debug=False)
+    app.run(host=HOST, port=8088, debug=False)
