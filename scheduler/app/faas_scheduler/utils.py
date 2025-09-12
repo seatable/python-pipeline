@@ -499,6 +499,8 @@ def run_script(
         call_faas_func(script_url, temp_api_token, context_data, script_id=script_id)
     except Exception as e:
         logger.exception("Run script %d error: %s", script_id, e)
+        now = datetime.now()
+        hook_update_script(db_session, script_id, False, -1, '', now, 0)
     finally:
         db_session.close()
 
