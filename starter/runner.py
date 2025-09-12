@@ -23,6 +23,7 @@ PYTHON_SCHEDULER_URL = os.environ.get("PYTHON_SCHEDULER_URL")
 LOG_LEVEL = os.environ.get("PYTHON_STARTER_LOG_LEVEL", "INFO")
 TIME_ZONE = os.environ.get("TIME_ZONE", "")
 PYTHON_RUNNER_IMAGE = os.environ.get("PYTHON_RUNNER_IMAGE")
+IS_CHOWN_SCRIPT_DIR = os.environ.get("IS_CHOWN_SCRIPT_DIR", "true").lower() == "true"
 
 THREAD_COUNT = int(os.environ.get("PYTHON_STARTER_THREAD_COUNT", 10))
 SUB_PROCESS_TIMEOUT = int(os.environ.get("PYTHON_PROCESS_TIMEOUT", 60 * 15))  # 15 mins
@@ -279,7 +280,8 @@ def run_python(data):
 
     try:
         logging.debug("Fix ownership of %s", tmp_dir)
-        os.chown(tmp_dir, SEATABLE_USER_UID, SEATABLE_USER_GID)
+        if IS_CHOWN_SCRIPT_DIR:
+            os.chown(tmp_dir, SEATABLE_USER_UID, SEATABLE_USER_GID)
     except Exception as e:
         logging.error("Failed to chown %s, error: %s", tmp_dir, e)
         send_to_scheduler(False, -1, "", started_at, 0, data)
