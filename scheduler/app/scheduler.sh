@@ -8,7 +8,6 @@ fi
 
 function stop_server() {
     pkill -9 -f flask_server.py
-    pkill -9 -f scheduler.py
     pkill -9 -f monitor
     rm -f /opt/scheduler/pids/*.pid
 }
@@ -30,9 +29,6 @@ function start_server() {
 
     cd /opt/scheduler/
     python3 -u flask_server.py >> "${LOG_FILE}" 2>&1 &
-    sleep 0.2
-
-    python3 -u scheduler.py >> "${LOG_FILE}" 2>&1 &
     sleep 0.2
 
     ./monitor.sh &

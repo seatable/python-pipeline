@@ -80,10 +80,9 @@ def ping_starter():
     return False
 
 
-## triggered from scheduler.py to remove old script_logs
 def delete_log_after_days(db_session):
     clean_script_logs = (
-        "DELETE FROM `script_log` WHERE `created_at` < DATE_SUB(NOW(), INTERVAL %s DAY)"
+        "DELETE FROM `script_log` WHERE `started_at` < DATE_SUB(NOW(), INTERVAL %s DAY)"
         % DELETE_LOG_DAYS
     )
     logger.debug(clean_script_logs)
@@ -99,7 +98,6 @@ def delete_log_after_days(db_session):
         db_session.close()
 
 
-## triggered from scheduler.py to remove old statistics
 def delete_statistics_after_days(db_session):
     tables = [
         "dtable_run_script_statistics",
@@ -459,7 +457,6 @@ def add_script(
         org_id,
         script_name,
         context_data,
-        datetime.now(),
         operate_from,
     )
     db_session.add(script)

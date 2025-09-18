@@ -40,11 +40,6 @@ app = Flask(__name__)
 logger = logging.getLogger(__name__)
 
 
-@app.teardown_appcontext
-def shutdown_session(exception=None):
-    DBSession.remove()
-
-
 @app.route("/ping/", methods=["GET"])
 def ping():
     if not ping_starter():
@@ -90,6 +85,7 @@ def run_script_api():
         ):
             return make_response(("The number of runs exceeds the limit"), 400)
         script_log = scheduler.add(
+            db_session,
             uuid_str_to_32_chars(dtable_uuid),
             org_id,
             owner,
@@ -137,21 +133,13 @@ def get_script_api(script_id):
         ):
             return make_response(("Bad request", 400))
 
-        # if SUB_PROCESS_TIMEOUT and isinstance(SUB_PROCESS_TIMEOUT, int):
-        #     now = datetime.now()
-        #     duration_seconds = (now - script.created_at).seconds
-        #     if duration_seconds > SUB_PROCESS_TIMEOUT:
-        #         script.success = False
-        #         script.return_code = -1
-        #         script.finished_at = now
-        #         script.output = TIMEOUT_OUTPUT
-        #         db_session.commit()
-
         return make_response(({"script": script.to_dict()}, 200))
 
     except Exception as e:
         logger.exception(e)
         return make_response(("Internal server error", 500))
+    finally:
+        db_session.close()
 
 
 # get python script statistics logs...
@@ -282,15 +270,18 @@ def record_script_result():
     spend_time = data.get("spend_time") or 0
     script_id = data.get("script_id")
     # update script_log and run-time statistics
+    db_session = DBSession()
     try:
         if script_id:
             scheduler.script_done_callback(
-                script_id, success, return_code, output, started_at, spend_time
+                db_session, script_id, success, return_code, output, started_at, spend_time
             )
 
     except Exception as e:
         logger.exception(e)
         return make_response(("Internal server error", 500))
+    finally:
+        db_session.close()
 
     return "success"
 

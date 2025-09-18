@@ -31,7 +31,6 @@ class ScriptLog(Base):
     return_code = Column(Integer, nullable=True)
     output = Column(Text, nullable=True)
     operate_from = Column(String(255))
-    created_at = Column(DateTime, index=True)
 
     def __init__(
         self,
@@ -40,7 +39,6 @@ class ScriptLog(Base):
         org_id,
         script_name,
         context_data,
-        created_at,
         operate_from=None,
     ):
         self.dtable_uuid = dtable_uuid
@@ -48,7 +46,6 @@ class ScriptLog(Base):
         self.org_id = org_id
         self.script_name = script_name
         self.context_data = context_data
-        self.created_at = created_at
         self.operate_from = operate_from
 
     def get_info(self):
@@ -79,8 +76,6 @@ class ScriptLog(Base):
             "return_code": self.return_code,
             "output": self.output,
             "operate_from": self.operate_from,
-            "created_at": self.created_at
-            and datetime_to_isoformat_timestr(self.created_at),
         }
 
 

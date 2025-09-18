@@ -27,9 +27,9 @@ class Scheduelr:
     def __init__(self):
         self.executor = ThreadPoolExecutor()
 
-    def add(self, dtable_uuid, org_id, owner, script_name, context_data, operate_from):
+    def add(self, db_session, dtable_uuid, org_id, owner, script_name, context_data, operate_from):
         script_log = add_script(
-            DBSession(),
+            db_session,
             dtable_uuid,
             owner,
             org_id,
@@ -52,10 +52,10 @@ class Scheduelr:
         return script_log
 
     def script_done_callback(
-        self, script_id, success, return_code, output, started_at, spend_time
+        self, db_session, script_id, success, return_code, output, started_at, spend_time
     ):
         hook_update_script(
-            DBSession(), script_id, success, return_code, output, started_at, spend_time
+            db_session, script_id, success, return_code, output, started_at, spend_time
         )
 
     def statistic_cleaner(self):
@@ -67,7 +67,7 @@ class Scheduelr:
             except Exception as e:
                 logger.exception(e)
             finally:
-                DBSession.remove()
+                db_session.close()
             time.sleep(24 * 60 * 60)
 
     def start(self):

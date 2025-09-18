@@ -3,7 +3,7 @@ from urllib.parse import quote
 
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, scoped_session
+from sqlalchemy.orm import sessionmaker
 
 DB_ROOT_USER = os.getenv("DB_ROOT_USER", "root")
 DB_ROOT_PASSWD = os.getenv("DB_ROOT_PASSWD")
@@ -37,4 +37,4 @@ db_kwargs = dict(pool_recycle=300, echo=False, echo_pool=False)
 
 engine = create_engine(db_url, **db_kwargs)
 Base = declarative_base()
-DBSession = scoped_session(sessionmaker(bind=engine))
+DBSession = sessionmaker(bind=engine)
