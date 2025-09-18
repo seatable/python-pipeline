@@ -27,7 +27,16 @@ class Scheduelr:
     def __init__(self):
         self.executor = ThreadPoolExecutor()
 
-    def add(self, db_session, dtable_uuid, org_id, owner, script_name, context_data, operate_from):
+    def add(
+        self,
+        db_session,
+        dtable_uuid,
+        org_id,
+        owner,
+        script_name,
+        context_data,
+        operate_from,
+    ):
         script_log = add_script(
             db_session,
             dtable_uuid,
@@ -52,7 +61,14 @@ class Scheduelr:
         return script_log
 
     def script_done_callback(
-        self, db_session, script_id, success, return_code, output, started_at, spend_time
+        self,
+        db_session,
+        script_id,
+        success,
+        return_code,
+        output,
+        started_at,
+        spend_time,
     ):
         hook_update_script(
             db_session, script_id, success, return_code, output, started_at, spend_time

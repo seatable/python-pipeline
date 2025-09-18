@@ -274,7 +274,13 @@ def record_script_result():
     try:
         if script_id:
             scheduler.script_done_callback(
-                db_session, script_id, success, return_code, output, started_at, spend_time
+                db_session,
+                script_id,
+                success,
+                return_code,
+                output,
+                started_at,
+                spend_time,
             )
 
     except Exception as e:
