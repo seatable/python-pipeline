@@ -13,3 +13,4 @@ pdfmerge
 pillow-heif
 rapidfuzz       # enable fuzzy string matching
 markdown        # allow processing content of long-text columns
+seaborn         # data visualization library based on matplotlib
