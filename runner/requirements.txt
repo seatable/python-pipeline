@@ -11,3 +11,5 @@ scipy
 pyjwt
 pdfmerge
 pillow-heif
+rapidfuzz       # enable fuzzy string matching
+markdown        # allow processing content of long-text columns
