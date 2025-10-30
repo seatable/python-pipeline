@@ -39,7 +39,6 @@ class ScriptLog(Base):
         org_id,
         script_name,
         context_data,
-        started_at,
         operate_from=None,
     ):
         self.dtable_uuid = dtable_uuid
@@ -47,8 +46,16 @@ class ScriptLog(Base):
         self.org_id = org_id
         self.script_name = script_name
         self.context_data = context_data
-        self.started_at = started_at
         self.operate_from = operate_from
+
+    def get_info(self):
+        return {
+            "id": self.id,
+            "org_id": self.org_id,
+            "owner": self.owner,
+            "dtable_uuid": self.dtable_uuid,
+            "script_name": self.script_name,
+        }
 
     def to_dict(self):
         from faas_scheduler.utils import datetime_to_isoformat_timestr
@@ -61,7 +68,8 @@ class ScriptLog(Base):
             "context_data": (
                 json.loads(self.context_data) if self.context_data else None
             ),
-            "started_at": datetime_to_isoformat_timestr(self.started_at),
+            "started_at": self.started_at
+            and datetime_to_isoformat_timestr(self.started_at),
             "finished_at": self.finished_at
             and datetime_to_isoformat_timestr(self.finished_at),
             "success": self.success,

@@ -8,16 +8,12 @@ import logging
 from datetime import datetime
 from flask import Flask, request, make_response
 from gevent.pywsgi import WSGIServer
-from concurrent.futures import ThreadPoolExecutor
 
 from database import DBSession
 from faas_scheduler.utils import (
     check_auth_token,
-    run_script,
     get_script,
-    add_script,
     get_run_script_statistics_by_month,
-    hook_update_script,
     can_run_task,
     get_run_scripts_count_monthly,
     ping_starter,
@@ -26,6 +22,7 @@ from faas_scheduler.utils import (
     uuid_str_to_32_chars,
     basic_log,
 )
+from scheduler import scheduler
 
 
 basic_log("scheduler.log")
@@ -36,11 +33,11 @@ SUB_PROCESS_TIMEOUT = int(os.environ.get("PYTHON_PROCESS_TIMEOUT", 60 * 15))
 TIMEOUT_OUTPUT = (
     "The script's running time exceeded the limit and the execution was aborted."
 )
+HOST = os.environ.get("PYTHON_SCHEDULER_BIND_HOST", "127.0.0.1")
 
 app = Flask(__name__)
 
 logger = logging.getLogger(__name__)
-executor = ThreadPoolExecutor(max_workers=SCRIPT_WORKERS)
 
 
 @app.route("/ping/", methods=["GET"])
@@ -57,7 +54,7 @@ def ping():
 
 # called from dtable-web to start the python run
 @app.route("/run-script/", methods=["POST"])
-def scripts_api():
+def run_script_api():
     if not check_auth_token(request):
         return make_response(("Forbidden: the auth token is not correct.", 403))
 
@@ -74,8 +71,6 @@ def scripts_api():
     context_data = data.get("context_data")
     owner = data.get("owner")
     org_id = data.get("org_id")
-    script_url = data.get("script_url")
-    temp_api_token = data.get("temp_api_token")
     scripts_running_limit = data.get("scripts_running_limit", -1)
     operate_from = data.get("operate_from", "manualy")
     if not dtable_uuid or not script_name or not owner:
@@ -89,27 +84,17 @@ def scripts_api():
             owner, org_id, db_session, scripts_running_limit=scripts_running_limit
         ):
             return make_response(("The number of runs exceeds the limit"), 400)
-        script = add_script(
+        script_log = scheduler.add(
             db_session,
-            dtable_uuid,
-            owner,
+            uuid_str_to_32_chars(dtable_uuid),
             org_id,
+            owner,
             script_name,
             context_data,
             operate_from,
         )
-        logger.debug("lets call the starter to fire up the runner...")
-        executor.submit(
-            run_script,
-            script.id,
-            dtable_uuid,
-            script_name,
-            script_url,
-            temp_api_token,
-            context_data,
-        )
 
-        return make_response(({"script_id": script.id}, 200))
+        return make_response(({"script_id": script_log.id}, 200))
     except Exception as e:
         logger.exception(e)
         return make_response(("Internal server error", 500))
@@ -119,7 +104,7 @@ def scripts_api():
 
 # called from dtable-web to get the status of a specific run.
 @app.route("/run-script/<script_id>/", methods=["GET"])
-def script_api(script_id):
+def get_script_api(script_id):
     if not check_auth_token(request):
         return make_response(("Forbidden: the auth token is not correct.", 403))
 
@@ -142,18 +127,11 @@ def script_api(script_id):
         script = get_script(db_session, script_id)
         if not script:
             return make_response(("Not found", 404))
-        if dtable_uuid != script.dtable_uuid or script_name != script.script_name:
+        if (
+            uuid_str_to_32_chars(dtable_uuid) != script.dtable_uuid
+            or script_name != script.script_name
+        ):
             return make_response(("Bad request", 400))
-
-        if SUB_PROCESS_TIMEOUT and isinstance(SUB_PROCESS_TIMEOUT, int):
-            now = datetime.now()
-            duration_seconds = (now - script.started_at).seconds
-            if duration_seconds > SUB_PROCESS_TIMEOUT:
-                script.success = False
-                script.return_code = -1
-                script.finished_at = now
-                script.output = TIMEOUT_OUTPUT
-                db_session.commit()
 
         return make_response(({"script": script.to_dict()}, 200))
 
@@ -186,7 +164,9 @@ def task_logs_api(dtable_uuid, script_name):
 
     db_session = DBSession()
     try:
-        task_logs = list_task_logs(db_session, dtable_uuid, script_name, order_by)
+        task_logs = list_task_logs(
+            db_session, uuid_str_to_32_chars(dtable_uuid), script_name, order_by
+        )
         count = task_logs.count()
         task_logs = task_logs[start:end]
         task_log_list = [task_log.to_dict() for task_log in task_logs]
@@ -286,16 +266,21 @@ def record_script_result():
     success = data.get("success", False)
     return_code = data.get("return_code")
     output = data.get("output")
-    spend_time = data.get("spend_time")
+    started_at = datetime.fromisoformat(data.get("started_at"))
+    spend_time = data.get("spend_time") or 0
     script_id = data.get("script_id")
-
-    db_session = DBSession()
-
     # update script_log and run-time statistics
+    db_session = DBSession()
     try:
         if script_id:
-            hook_update_script(
-                db_session, script_id, success, return_code, output, spend_time
+            scheduler.script_done_callback(
+                db_session,
+                script_id,
+                success,
+                return_code,
+                output,
+                started_at,
+                spend_time,
             )
 
     except Exception as e:
@@ -386,5 +371,5 @@ def base_run_python_statistics():
 
 
 if __name__ == "__main__":
-    http_server = WSGIServer(("127.0.0.1", 5055), app)
+    http_server = WSGIServer((HOST, 5055), app)
     http_server.serve_forever()

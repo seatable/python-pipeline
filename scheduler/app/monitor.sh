@@ -39,24 +39,11 @@ function monitor_flask_server() {
     fi
 }
 
-function monitor_scheduler() {
-    process_name="scheduler.py"
-    check_num=$(check_process $process_name)
-    if [ $check_num -eq 0 ]; then
-        log "Start $process_name"
-        sleep 0.2
-        cd /opt/scheduler/
-        python3 -u scheduler.py >> "${LOG_FILE}" 2>&1 &
-        sleep 0.2
-    fi
-}
-
 
 log "Start Monitor"
 
 while [ 1 ]; do
     monitor_flask_server
-    monitor_scheduler
 
     sleep 30
 done
