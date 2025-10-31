@@ -442,7 +442,7 @@ def list_runs():
 
     runs = [r.to_dict(include_context_data=False, include_output=False) for r in runs]
 
-    return {"runs": runs, "count": total_count}
+    return {"runs": runs, "total_count": total_count}
 
 
 # Get run statistics grouped by base UUID
