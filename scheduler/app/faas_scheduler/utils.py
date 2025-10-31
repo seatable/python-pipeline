@@ -3,11 +3,11 @@ import json
 import logging
 import requests
 from datetime import datetime
-from typing import List, Tuple
+from typing import List, Optional, Tuple
 from uuid import UUID
 
 from tzlocal import get_localzone
-from sqlalchemy import desc, text
+from sqlalchemy import case, desc, func, text
 from sqlalchemy.orm import load_only
 from faas_scheduler.models import ScriptLog
 
@@ -519,6 +519,49 @@ def get_script_runs(db_session, org_id, base_uuid, start, end, page, per_page) -
 
     return runs, total_count
 
+
+def get_statistics_grouped_by_base(db_session, org_id: int, start: Optional[datetime], end: Optional[datetime], page: int, per_page: int) -> Tuple[List[dict], int]:
+    fields = [
+        ScriptLog.dtable_uuid,
+        func.count(ScriptLog.id).label('number_of_runs'),
+        # This calls MariaDB's TIMESTAMPDIFF() function with microsecond precision to prevent rounding errors
+        # Note: Scripts that haven't finished yet are simply ignored
+        func.sum(func.timestampdiff(text('MICROSECOND'), ScriptLog.started_at, ScriptLog.finished_at) / 1_000_000).label('total_run_time'),
+        # FIXME: manualy -> manually
+        func.count(case((ScriptLog.operate_from == 'manualy', 1))).label('triggered_manually'),
+        func.count(case((ScriptLog.operate_from == 'automation-rule', 1))).label('triggered_by_automation_rule'),
+        func.count(case((ScriptLog.success == True, 1))).label('successful_runs'),
+        func.count(case((ScriptLog.success == False, 1))).label('unsuccessful_runs'),
+    ]
+
+    query = db_session.query(*fields) \
+        .filter_by(org_id=org_id) \
+        .group_by(ScriptLog.dtable_uuid)
+
+    if start:
+        query = query.filter(ScriptLog.started_at >= start)
+
+    if end:
+        query = query.filter(ScriptLog.started_at <= end)
+
+    total_count = query.count()
+    rows = query.limit(per_page).offset((page-1) * per_page).all()
+
+    results = []
+
+    for row in rows:
+        results.append({''
+            'base_uuid': row.dtable_uuid,
+            'number_of_runs': row.number_of_runs,
+            # int() is required since MariaDB returns total_run_time as a string
+            'total_run_time': int(row.total_run_time),
+            'triggered_manually': row.triggered_manually,
+            'triggered_by_automation_rule': row.triggered_by_automation_rule,
+            'successful_runs': row.successful_runs,
+            'unsuccessful_runs': row.unsuccessful_runs,
+        })
+
+    return results, total_count
 
 def datetime_to_isoformat_timestr(datetime_obj):
     if not datetime_obj:
