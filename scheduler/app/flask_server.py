@@ -420,7 +420,7 @@ def list_runs():
         return {'error': 'page must be an integer'}, 400
 
     try:
-        per_page = int(request.args.get("per_page", "20"))
+        per_page = int(request.args.get("per_page", "100"))
     except ValueError:
         return {'error': 'per_page must be an integer'}, 400
 
