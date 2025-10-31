@@ -555,7 +555,6 @@ def get_statistics_grouped_by_base(
             )
             / 1_000_000
         ).label("total_run_time"),
-        # FIXME: manualy -> manually
         func.count(case((ScriptLog.operate_from == "manualy", 1))).label(
             "triggered_manually"
         ),
