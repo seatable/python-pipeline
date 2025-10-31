@@ -387,7 +387,7 @@ def base_run_python_statistics():
 
 
 # List all runs
-@app.route('/admin/runs', methods=['GET'])
+@app.route('/admin/runs/', methods=['GET'])
 def list_runs():
     if not check_auth_token(request):
         return make_response(("Forbidden: the auth token is not correct.", 403))
