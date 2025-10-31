@@ -3,10 +3,12 @@ import json
 import logging
 import requests
 from datetime import datetime
+from typing import List, Tuple
 from uuid import UUID
 
 from tzlocal import get_localzone
 from sqlalchemy import desc, text
+from sqlalchemy.orm import load_only
 from faas_scheduler.models import ScriptLog
 
 import sys
@@ -494,6 +496,28 @@ def get_run_script_statistics_by_month(
         total_count = 0
 
     return month.strftime("%Y-%m"), total_count, results
+
+
+def get_script_runs(db_session, org_id, base_uuid, start, end, page, per_page) -> Tuple[List[ScriptLog], int]:
+    fields = [ScriptLog.id, ScriptLog.dtable_uuid, ScriptLog.owner, ScriptLog.org_id, ScriptLog.script_name, ScriptLog.started_at, ScriptLog.finished_at, ScriptLog.success, ScriptLog.return_code, ScriptLog.operate_from]
+    query = db_session.query(ScriptLog).options(load_only(*fields))
+
+    if org_id:
+        query = query.filter_by(org_id=org_id)
+
+    if base_uuid:
+        query = query.filter_by(dtable_uuid=base_uuid)
+
+    if start:
+        query = query.filter(ScriptLog.started_at >= start)
+
+    if end:
+        query = query.filter(ScriptLog.started_at <= end)
+
+    total_count = query.count()
+    runs = query.limit(per_page).offset((page-1) * per_page).all()
+
+    return runs, total_count
 
 
 def datetime_to_isoformat_timestr(datetime_obj):

@@ -50,25 +50,29 @@ class ScriptLog(Base):
         self.started_at = started_at
         self.operate_from = operate_from
 
-    def to_dict(self):
+    def to_dict(self, include_context_data=True, include_output=True):
         from faas_scheduler.utils import datetime_to_isoformat_timestr
 
-        return {
+        entry = {
             "id": self.id,
             "dtable_uuid": self.dtable_uuid,
             "owner": self.owner,
             "script_name": self.script_name,
-            "context_data": (
-                json.loads(self.context_data) if self.context_data else None
-            ),
             "started_at": datetime_to_isoformat_timestr(self.started_at),
             "finished_at": self.finished_at
             and datetime_to_isoformat_timestr(self.finished_at),
             "success": self.success,
             "return_code": self.return_code,
-            "output": self.output,
             "operate_from": self.operate_from,
         }
+
+        if include_context_data:
+            entry['context_data'] = json.loads(self.context_data) if self.context_data else None
+
+        if include_output:
+            entry['output'] = self.output
+
+        return entry
 
 
 class DTableRunScriptStatistics(Base):
