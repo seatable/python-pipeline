@@ -5,7 +5,7 @@ monkey.patch_all()
 import os
 import json
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 from flask import Flask, request, make_response
 from gevent.pywsgi import WSGIServer
 from concurrent.futures import ThreadPoolExecutor
@@ -407,6 +407,8 @@ def list_runs():
     if request.args.get('end'):
         try:
             end = datetime.strptime(request.args.get("end"), "%Y-%m-%d")
+            # Add one day since a date parsed by strptime defaults to midnight
+            end = end + timedelta(days=1)
         except:
             return {'error': 'Invalid value for end parameter'}, 400
     else:
