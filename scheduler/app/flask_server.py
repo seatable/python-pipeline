@@ -388,50 +388,52 @@ def base_run_python_statistics():
 
 
 # List all runs
-@app.route('/admin/runs/', methods=['GET'])
+@app.route("/admin/runs/", methods=["GET"])
 def list_runs():
     if not check_auth_token(request):
         return make_response(("Forbidden: the auth token is not correct.", 403))
 
     # org_id and base_uuid are optional
     org_id = request.args.get("org_id")
-    base_uuid = request.args.get('base_uuid')
+    base_uuid = request.args.get("base_uuid")
 
-    if request.args.get('start'):
+    if request.args.get("start"):
         try:
             start = datetime.strptime(request.args.get("start"), "%Y-%m-%d")
-        except:
-            return {'error': 'Invalid value for start parameter'}, 400
+        except ValueError:
+            return {"error": "Invalid value for start parameter"}, 400
     else:
         start = None
 
-    if request.args.get('end'):
+    if request.args.get("end"):
         try:
             end = datetime.strptime(request.args.get("end"), "%Y-%m-%d")
             # Add one day since a date parsed by strptime defaults to midnight
             end = end + timedelta(days=1)
-        except:
-            return {'error': 'Invalid value for end parameter'}, 400
+        except ValueError:
+            return {"error": "Invalid value for end parameter"}, 400
     else:
         end = None
 
     try:
         page = int(request.args.get("page", "1"))
     except ValueError:
-        return {'error': 'page must be an integer'}, 400
+        return {"error": "page must be an integer"}, 400
 
     try:
         per_page = int(request.args.get("per_page", "100"))
     except ValueError:
-        return {'error': 'per_page must be an integer'}, 400
+        return {"error": "per_page must be an integer"}, 400
 
     if per_page > 1000:
-        return {'error': 'per_page cannot be greater than 1000'}, 400
+        return {"error": "per_page cannot be greater than 1000"}, 400
 
     db_session = DBSession()
 
     try:
-        runs, total_count = get_script_runs(db_session, org_id, base_uuid, start, end, page, per_page)
+        runs, total_count = get_script_runs(
+            db_session, org_id, base_uuid, start, end, page, per_page
+        )
     except Exception as e:
         logger.exception(e)
         return make_response(("Internal server error", 500))
@@ -444,50 +446,52 @@ def list_runs():
 
 
 # Get run statistics grouped by base UUID
-@app.route('/admin/statistics/by-base/', methods=['GET'])
+@app.route("/admin/statistics/by-base/", methods=["GET"])
 def get_run_statistics_grouped_by_base():
     if not check_auth_token(request):
         return make_response(("Forbidden: the auth token is not correct.", 403))
 
     org_id = request.args.get("org_id")
     if not org_id:
-        return {'error': 'org_id is required'}, 400
+        return {"error": "org_id is required"}, 400
 
-    if request.args.get('start'):
+    if request.args.get("start"):
         try:
             start = datetime.strptime(request.args.get("start"), "%Y-%m-%d")
-        except:
-            return {'error': 'Invalid value for start parameter'}, 400
+        except ValueError:
+            return {"error": "Invalid value for start parameter"}, 400
     else:
         start = None
 
-    if request.args.get('end'):
+    if request.args.get("end"):
         try:
             end = datetime.strptime(request.args.get("end"), "%Y-%m-%d")
             # Add one day since a date parsed by strptime defaults to midnight
             end = end + timedelta(days=1)
-        except:
-            return {'error': 'Invalid value for end parameter'}, 400
+        except ValueError:
+            return {"error": "Invalid value for end parameter"}, 400
     else:
         end = None
 
     try:
         page = int(request.args.get("page", "1"))
     except ValueError:
-        return {'error': 'page must be an integer'}, 400
+        return {"error": "page must be an integer"}, 400
 
     try:
         per_page = int(request.args.get("per_page", "100"))
     except ValueError:
-        return {'error': 'per_page must be an integer'}, 400
+        return {"error": "per_page must be an integer"}, 400
 
     if per_page > 1000:
-        return {'error': 'per_page cannot be greater than 1000'}, 400
+        return {"error": "per_page cannot be greater than 1000"}, 400
 
     db_session = DBSession()
 
     try:
-        results, total_count = get_statistics_grouped_by_base(db_session, org_id, start, end, page, per_page)
+        results, total_count = get_statistics_grouped_by_base(
+            db_session, org_id, start, end, page, per_page
+        )
     except Exception as e:
         logger.exception(e)
         return make_response(("Internal server error", 500))
@@ -495,6 +499,7 @@ def get_run_statistics_grouped_by_base():
         db_session.close()
 
     return {"results": results, "total_count": total_count}
+
 
 if __name__ == "__main__":
     http_server = WSGIServer(("127.0.0.1", 5055), app)

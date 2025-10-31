@@ -67,10 +67,12 @@ class ScriptLog(Base):
         }
 
         if include_context_data:
-            entry['context_data'] = json.loads(self.context_data) if self.context_data else None
+            entry["context_data"] = (
+                json.loads(self.context_data) if self.context_data else None
+            )
 
         if include_output:
-            entry['output'] = self.output
+            entry["output"] = self.output
 
         return entry
 
