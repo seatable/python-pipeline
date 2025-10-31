@@ -541,6 +541,9 @@ def get_statistics_grouped_by_base(
     page: int,
     per_page: int,
 ) -> Tuple[List[dict], int]:
+    # pylint: disable=E1102
+    # False positive caused by https://github.com/pylint-dev/pylint/issues/8138
+
     fields = [
         ScriptLog.dtable_uuid,
         func.count(ScriptLog.id).label("number_of_runs"),
