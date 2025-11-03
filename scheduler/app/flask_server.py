@@ -5,7 +5,7 @@ monkey.patch_all()
 import os
 import json
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime
 from flask import Flask, request, make_response
 from gevent.pywsgi import WSGIServer
 from concurrent.futures import ThreadPoolExecutor
