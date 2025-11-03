@@ -399,7 +399,7 @@ def list_runs():
 
     if request.args.get("start"):
         try:
-            start = datetime.strptime(request.args.get("start"), "%Y-%m-%d")
+            start = datetime.fromisoformat(request.args.get("start"))
         except ValueError:
             return {"error": "Invalid value for start parameter"}, 400
     else:
@@ -407,9 +407,7 @@ def list_runs():
 
     if request.args.get("end"):
         try:
-            end = datetime.strptime(request.args.get("end"), "%Y-%m-%d")
-            # Add one day since a date parsed by strptime defaults to midnight
-            end = end + timedelta(days=1)
+            end = datetime.fromisoformat(request.args.get("end"))
         except ValueError:
             return {"error": "Invalid value for end parameter"}, 400
     else:
@@ -457,7 +455,7 @@ def get_run_statistics_grouped_by_base():
 
     if request.args.get("start"):
         try:
-            start = datetime.strptime(request.args.get("start"), "%Y-%m-%d")
+            start = datetime.fromisoformat(request.args.get("start"))
         except ValueError:
             return {"error": "Invalid value for start parameter"}, 400
     else:
@@ -465,9 +463,7 @@ def get_run_statistics_grouped_by_base():
 
     if request.args.get("end"):
         try:
-            end = datetime.strptime(request.args.get("end"), "%Y-%m-%d")
-            # Add one day since a date parsed by strptime defaults to midnight
-            end = end + timedelta(days=1)
+            end = datetime.fromisoformat(request.args.get("end"))
         except ValueError:
             return {"error": "Invalid value for end parameter"}, 400
     else:
