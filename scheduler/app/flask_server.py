@@ -15,6 +15,7 @@ from faas_scheduler.utils import (
     check_auth_token,
     get_script_runs,
     get_statistics_grouped_by_base,
+    get_statistics_grouped_by_day,
     run_script,
     get_script,
     add_script,
@@ -487,6 +488,69 @@ def get_run_statistics_grouped_by_base():
     try:
         results, total_count = get_statistics_grouped_by_base(
             db_session, org_id, start, end, page, per_page
+        )
+    except Exception as e:
+        logger.exception(e)
+        return make_response(("Internal server error", 500))
+    finally:
+        db_session.close()
+
+    return {"results": results, "total_count": total_count}
+
+
+# Get run statistics grouped by day
+@app.route("/admin/statistics/by-day/", methods=["GET"])
+def get_run_statistics_grouped_by_day():
+    if not check_auth_token(request):
+        return make_response(("Forbidden: the auth token is not correct.", 403))
+
+    org_id = request.args.get("org_id")
+    if not org_id:
+        return {"error": "org_id is required"}, 400
+
+    # base_uuid is optional
+    base_uuid = request.args.get("base_uuid")
+
+    if request.args.get("start"):
+        try:
+            start = datetime.fromisoformat(request.args.get("start"))
+        except ValueError:
+            return {"error": "Invalid value for start parameter"}, 400
+    else:
+        start = None
+
+    if request.args.get("end"):
+        try:
+            end = datetime.fromisoformat(request.args.get("end"))
+        except ValueError:
+            return {"error": "Invalid value for end parameter"}, 400
+    else:
+        end = None
+
+    try:
+        page = int(request.args.get("page", "1"))
+    except ValueError:
+        return {"error": "page must be an integer"}, 400
+
+    try:
+        per_page = int(request.args.get("per_page", "100"))
+    except ValueError:
+        return {"error": "per_page must be an integer"}, 400
+
+    if per_page > 1000:
+        return {"error": "per_page cannot be greater than 1000"}, 400
+
+    db_session = DBSession()
+
+    try:
+        results, total_count = get_statistics_grouped_by_day(
+            db_session=db_session,
+            org_id=org_id,
+            base_uuid=base_uuid,
+            start=start,
+            end=end,
+            page=page,
+            per_page=per_page,
         )
     except Exception as e:
         logger.exception(e)
