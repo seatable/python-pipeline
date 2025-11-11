@@ -683,6 +683,14 @@ def datetime_to_isoformat_timestr(datetime_obj):
         return ""
 
 
+def is_date_yyyy_mm_dd(value: str) -> bool:
+    try:
+        datetime.strptime(value, "%Y-%m-%d")
+        return True
+    except ValueError:
+        return False
+
+
 def uuid_str_to_32_chars(uuid_str):
     return uuid_str.replace("-", "")
 

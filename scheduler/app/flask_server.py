@@ -5,7 +5,7 @@ monkey.patch_all()
 import os
 import json
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 from flask import Flask, request, make_response
 from gevent.pywsgi import WSGIServer
 from concurrent.futures import ThreadPoolExecutor
@@ -16,6 +16,7 @@ from faas_scheduler.utils import (
     get_script_runs,
     get_statistics_grouped_by_base,
     get_statistics_grouped_by_day,
+    is_date_yyyy_mm_dd,
     run_script,
     get_script,
     add_script,
@@ -411,6 +412,11 @@ def list_runs():
             end = datetime.fromisoformat(request.args.get("end"))
         except ValueError:
             return {"error": "Invalid value for end parameter"}, 400
+
+        if is_date_yyyy_mm_dd(request.args.get("end")):
+            # If a plain date was passed in (i.e. without time information),
+            # we need to add 1 day to ensure that the results for the last day are included
+            end += timedelta(days=1)
     else:
         end = None
 
@@ -467,6 +473,11 @@ def get_run_statistics_grouped_by_base():
             end = datetime.fromisoformat(request.args.get("end"))
         except ValueError:
             return {"error": "Invalid value for end parameter"}, 400
+
+        if is_date_yyyy_mm_dd(request.args.get("end")):
+            # If a plain date was passed in (i.e. without time information),
+            # we need to add 1 day to ensure that the results for the last day are included
+            end += timedelta(days=1)
     else:
         end = None
 
@@ -524,6 +535,11 @@ def get_run_statistics_grouped_by_day():
             end = datetime.fromisoformat(request.args.get("end"))
         except ValueError:
             return {"error": "Invalid value for end parameter"}, 400
+
+        if is_date_yyyy_mm_dd(request.args.get("end")):
+            # If a plain date was passed in (i.e. without time information),
+            # we need to add 1 day to ensure that the results for the last day are included
+            end += timedelta(days=1)
     else:
         end = None
 
