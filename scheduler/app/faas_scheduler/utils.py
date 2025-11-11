@@ -3,10 +3,12 @@ import json
 import logging
 import requests
 from datetime import datetime
+from typing import List, Optional, Tuple
 from uuid import UUID
 
 from tzlocal import get_localzone
-from sqlalchemy import desc, text
+from sqlalchemy import case, desc, func, text
+from sqlalchemy.orm import load_only
 from faas_scheduler.models import ScriptLog
 
 import sys
@@ -496,6 +498,177 @@ def get_run_script_statistics_by_month(
     return month.strftime("%Y-%m"), total_count, results
 
 
+def get_script_runs(
+    db_session, org_id, base_uuid, start, end, page, per_page
+) -> Tuple[List[ScriptLog], int]:
+    fields = [
+        ScriptLog.id,
+        ScriptLog.dtable_uuid,
+        ScriptLog.owner,
+        ScriptLog.org_id,
+        ScriptLog.script_name,
+        ScriptLog.started_at,
+        ScriptLog.finished_at,
+        ScriptLog.success,
+        ScriptLog.return_code,
+        ScriptLog.operate_from,
+    ]
+    query = db_session.query(ScriptLog).options(load_only(*fields))
+
+    if org_id:
+        query = query.filter_by(org_id=org_id)
+
+    if base_uuid:
+        query = query.filter_by(dtable_uuid=base_uuid)
+
+    if start:
+        query = query.filter(ScriptLog.started_at >= start)
+
+    if end:
+        query = query.filter(ScriptLog.started_at <= end)
+
+    total_count = query.count()
+    runs = query.limit(per_page).offset((page - 1) * per_page).all()
+
+    return runs, total_count
+
+
+def get_statistics_grouped_by_base(
+    db_session,
+    org_id: int,
+    start: Optional[datetime],
+    end: Optional[datetime],
+    page: int,
+    per_page: int,
+) -> Tuple[List[dict], int]:
+    # pylint: disable=E1102
+    # False positive caused by https://github.com/pylint-dev/pylint/issues/8138
+
+    fields = [
+        ScriptLog.dtable_uuid,
+        func.count(ScriptLog.id).label("number_of_runs"),
+        # This calls MariaDB's TIMESTAMPDIFF() function with microsecond precision to prevent rounding errors
+        # Note: Scripts that haven't finished yet are simply ignored
+        func.sum(
+            func.timestampdiff(
+                text("MICROSECOND"), ScriptLog.started_at, ScriptLog.finished_at
+            )
+            / 1_000_000
+        ).label("total_run_time"),
+        func.count(case((ScriptLog.operate_from == "manualy", 1))).label(
+            "triggered_manually"
+        ),
+        func.count(case((ScriptLog.operate_from == "automation-rule", 1))).label(
+            "triggered_by_automation_rule"
+        ),
+        func.count(case((ScriptLog.success == True, 1))).label("successful_runs"),
+        func.count(case((ScriptLog.success == False, 1))).label("unsuccessful_runs"),
+    ]
+
+    query = (
+        db_session.query(*fields)
+        .filter_by(org_id=org_id)
+        .group_by(ScriptLog.dtable_uuid)
+    )
+
+    if start:
+        query = query.filter(ScriptLog.started_at >= start)
+
+    if end:
+        query = query.filter(ScriptLog.started_at <= end)
+
+    total_count = query.count()
+    rows = query.limit(per_page).offset((page - 1) * per_page).all()
+
+    results = []
+
+    for row in rows:
+        results.append(
+            {
+                "base_uuid": row.dtable_uuid,
+                "number_of_runs": row.number_of_runs,
+                # int() is required since MariaDB returns total_run_time as a string
+                "total_run_time": int(row.total_run_time),
+                "triggered_manually": row.triggered_manually,
+                "triggered_by_automation_rule": row.triggered_by_automation_rule,
+                "successful_runs": row.successful_runs,
+                "unsuccessful_runs": row.unsuccessful_runs,
+            }
+        )
+
+    return results, total_count
+
+
+def get_statistics_grouped_by_day(
+    db_session,
+    org_id: int,
+    base_uuid: Optional[str],
+    start: Optional[datetime],
+    end: Optional[datetime],
+    page: int,
+    per_page: int,
+) -> Tuple[List[dict], int]:
+    # pylint: disable=E1102
+    # False positive caused by https://github.com/pylint-dev/pylint/issues/8138
+
+    fields = [
+        func.date(ScriptLog.started_at).label("date"),
+        func.count(ScriptLog.id).label("number_of_runs"),
+        # This calls MariaDB's TIMESTAMPDIFF() function with microsecond precision to prevent rounding errors
+        # Note: Scripts that haven't finished yet are simply ignored
+        func.sum(
+            func.timestampdiff(
+                text("MICROSECOND"), ScriptLog.started_at, ScriptLog.finished_at
+            )
+            / 1_000_000
+        ).label("total_run_time"),
+        func.count(case((ScriptLog.operate_from == "manualy", 1))).label(
+            "triggered_manually"
+        ),
+        func.count(case((ScriptLog.operate_from == "automation-rule", 1))).label(
+            "triggered_by_automation_rule"
+        ),
+        func.count(case((ScriptLog.success == True, 1))).label("successful_runs"),
+        func.count(case((ScriptLog.success == False, 1))).label("unsuccessful_runs"),
+    ]
+
+    query = (
+        db_session.query(*fields)
+        .filter_by(org_id=org_id)
+        .group_by(func.date(ScriptLog.started_at))
+    )
+
+    if base_uuid:
+        query = query.filter(ScriptLog.dtable_uuid == base_uuid)
+
+    if start:
+        query = query.filter(ScriptLog.started_at >= start)
+
+    if end:
+        query = query.filter(ScriptLog.started_at <= end)
+
+    total_count = query.count()
+    rows = query.limit(per_page).offset((page - 1) * per_page).all()
+
+    results = []
+
+    for row in rows:
+        results.append(
+            {
+                "date": row.date.strftime("%Y-%m-%d"),
+                "number_of_runs": row.number_of_runs,
+                # int() is required since MariaDB returns total_run_time as a string
+                "total_run_time": int(row.total_run_time),
+                "triggered_manually": row.triggered_manually,
+                "triggered_by_automation_rule": row.triggered_by_automation_rule,
+                "successful_runs": row.successful_runs,
+                "unsuccessful_runs": row.unsuccessful_runs,
+            }
+        )
+
+    return results, total_count
+
+
 def datetime_to_isoformat_timestr(datetime_obj):
     if not datetime_obj:
         return ""
@@ -508,6 +681,14 @@ def datetime_to_isoformat_timestr(datetime_obj):
     except Exception as e:
         logger.error(e)
         return ""
+
+
+def is_date_yyyy_mm_dd(value: str) -> bool:
+    try:
+        datetime.strptime(value, "%Y-%m-%d")
+        return True
+    except ValueError:
+        return False
 
 
 def uuid_str_to_32_chars(uuid_str):
