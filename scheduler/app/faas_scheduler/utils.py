@@ -513,7 +513,11 @@ def get_script_runs(
         ScriptLog.return_code,
         ScriptLog.operate_from,
     ]
-    query = db_session.query(ScriptLog).options(load_only(*fields))
+    query = (
+        db_session.query(ScriptLog)
+        .options(load_only(*fields))
+        .order_by(ScriptLog.id.desc())
+    )
 
     if org_id:
         query = query.filter_by(org_id=org_id)
