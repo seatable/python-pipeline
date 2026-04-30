@@ -7,3 +7,4 @@ requests
 pyjwt
 pytz
 tzlocal
+redis==7.1.0

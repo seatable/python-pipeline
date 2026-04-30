@@ -2,24 +2,26 @@ import os
 import json
 import logging
 import requests
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import List, Optional, Tuple
 from uuid import UUID
 
 from tzlocal import get_localzone
-from sqlalchemy import case, desc, func, text
+from sqlalchemy import case, desc, func, text, and_
 from sqlalchemy.orm import load_only
-from faas_scheduler.models import ScriptLog
+from faas_scheduler.models import (
+    ScriptLog,
+    UserRunScriptStatistics,
+    OrgRunScriptStatistics,
+    DTableRunScriptStatistics,
+)
 
 import sys
 
 sys.path.append("/opt/scheduler")
-from database import DBSession
 
 logger = logging.getLogger(__name__)
 
-STARTER_URL = os.getenv("PYTHON_STARTER_URL", "")
-RUN_FUNC_URL = STARTER_URL.rstrip("/") + "/function/run-python"
 SEATABLE_SERVER_URL = os.getenv("SEATABLE_SERVER_URL", "")
 SCHEDULER_AUTH_TOKEN = os.getenv("PYTHON_SCHEDULER_AUTH_TOKEN", "")
 DELETE_LOG_DAYS = os.environ.get("DELETE_LOG_DAYS", "30")
@@ -68,13 +70,12 @@ class ScriptInvalidException(Exception):
     pass
 
 
-## part of ping to get the check if the python starter can be reached.
-def ping_starter():
-    response = requests.get(STARTER_URL.rstrip("/") + "/ping/", timeout=30)
-    if response.status_code == 200:
-        return True
+class RunScriptError(Exception):
+    pass
 
-    return False
+
+class SendExceededNotificationsError(Exception):
+    pass
 
 
 ## triggered from scheduler.py to remove old script_logs
@@ -122,6 +123,34 @@ def delete_statistics_after_days(db_session):
     db_session.close()
 
 
+def update_running_scripts_timeout(db_session):
+    deadline = datetime.now() - timedelta(seconds=SUB_PROCESS_TIMEOUT)
+    updated_count = (
+        db_session.query(ScriptLog)
+        .filter(
+            and_(
+                ScriptLog.started_at.isnot(None),
+                ScriptLog.started_at <= deadline,
+                ScriptLog.state == ScriptLog.RUNNING,
+            )
+        )
+        .update(
+            {
+                ScriptLog.output: "timeout",
+                ScriptLog.return_code: -1,
+                ScriptLog.success: False,
+                ScriptLog.finished_at: datetime.now(),
+                ScriptLog.state: "finished",
+            },
+            synchronize_session=False,
+        )
+    )
+
+    db_session.commit()
+
+    logger.info("updated %s script logs", updated_count)
+
+
 def check_auth_token(request):
     value = request.headers.get("Authorization", "")
     if (
@@ -163,101 +192,99 @@ def get_script_file(dtable_uuid, script_name):
     return response.json()
 
 
-# call python-starter to run the script!
-def call_faas_func(script_url, temp_api_token, context_data, script_id=None):
+def update_stats(db_session, dtable_uuid, owner, org_id, spend_time):
+    run_date = datetime.today().strftime("%Y-%m-%d")
     try:
-        data = {
-            "script_url": script_url,
-            "env": {
-                "dtable_web_url": SEATABLE_SERVER_URL.rstrip("/"),
-                "api_token": temp_api_token,
-            },
-            "context_data": context_data,
-            "script_id": script_id,
-        }
-        headers = {"User-Agent": "python-scheduler/" + VERSION}
-        logger.debug("I call starter at url %s", RUN_FUNC_URL)
-        response = requests.post(RUN_FUNC_URL, json=data, timeout=30, headers=headers)
-
-        # script will be executed asynchronously, so there will be nothing in response
-        # so only check response
-
-        if response.status_code != 200:
-            logger.error(
-                "Fail to call scheduler: %s, data: %s, error response: %s, %s",
-                RUN_FUNC_URL,
-                data,
-                response.status_code,
-                response.text,
-            )
-
-    except Exception as e:
-        logger.error(
-            "Fail to call scheduler: %s, data: %s, error: %s", RUN_FUNC_URL, data, e
+        dtable_stats = (
+            db_session.query(DTableRunScriptStatistics)
+            .filter_by(dtable_uuid=dtable_uuid, run_date=run_date)
+            .first()
         )
-        return None
-
-
-def update_statistics(db_session, dtable_uuid, owner, org_id, spend_time):
-    if not spend_time:
-        return
-    username = owner
-
-    # dtable_run_script_statistcis
-    sqls = [
-        """
-    INSERT INTO dtable_run_script_statistics(dtable_uuid, run_date, total_run_count, total_run_time, update_at) VALUES
-    (:dtable_uuid, :run_date, 1, :spend_time, :update_at)
-    ON DUPLICATE KEY UPDATE
-    total_run_count=total_run_count+1,
-    total_run_time=total_run_time+:spend_time,
-    update_at=:update_at;
-    """
-    ]
-
-    # org_run_script_statistics
-    if org_id and org_id != -1:
-        sqls += [
-            """
-        INSERT INTO org_run_script_statistics(org_id, run_date, total_run_count, total_run_time, update_at) VALUES
-        (:org_id, :run_date, 1, :spend_time, :update_at)
-        ON DUPLICATE KEY UPDATE
-        total_run_count=total_run_count+1,
-        total_run_time=total_run_time+:spend_time,
-        update_at=:update_at;
-        """
-        ]
-
-    # user_run_script_statistics
-    if "@seafile_group" not in username:
-        sqls += [
-            """
-        INSERT INTO user_run_script_statistics(username, org_id, run_date, total_run_count, total_run_time, update_at) VALUES
-        (:username, :org_id, :run_date, 1, :spend_time, :update_at)
-        ON DUPLICATE KEY UPDATE
-        org_id=:org_id,
-        total_run_count=total_run_count+1,
-        total_run_time=total_run_time+:spend_time,
-        update_at=:update_at;
-        """
-        ]
-
-    try:
-        for sql in sqls:
-            db_session.execute(
-                text(sql),
-                {
-                    "dtable_uuid": dtable_uuid,
-                    "username": username,
-                    "org_id": org_id,
-                    "run_date": datetime.today(),
-                    "spend_time": spend_time,
-                    "update_at": datetime.now(),
-                },
+        if not dtable_stats:
+            dtable_stats = DTableRunScriptStatistics(
+                dtable_uuid=dtable_uuid,
+                run_date=run_date,
+                total_run_count=1,
+                total_run_time=spend_time,
+                update_at=datetime.now(),
             )
+            db_session.add(dtable_stats)
+        else:
+            db_session.query(DTableRunScriptStatistics).filter_by(
+                dtable_uuid=dtable_uuid, run_date=run_date
+            ).update(
+                {
+                    DTableRunScriptStatistics.total_run_time: DTableRunScriptStatistics.total_run_time
+                    + spend_time,
+                    DTableRunScriptStatistics.total_run_count: DTableRunScriptStatistics.total_run_count
+                    + 1,
+                    DTableRunScriptStatistics.update_at: datetime.now(),
+                }
+            )
+        if "@seafile_group" not in owner:
+            user_stats = (
+                db_session.query(UserRunScriptStatistics)
+                .filter_by(username=owner, run_date=run_date)
+                .first()
+            )
+            if not user_stats:
+                user_stats = UserRunScriptStatistics(
+                    username=owner,
+                    org_id=org_id,
+                    run_date=run_date,
+                    total_run_count=1,
+                    total_run_time=spend_time,
+                    update_at=datetime.now(),
+                )
+                db_session.add(user_stats)
+            else:
+                db_session.query(UserRunScriptStatistics).filter_by(
+                    username=owner, run_date=run_date
+                ).update(
+                    {
+                        UserRunScriptStatistics.total_run_time: UserRunScriptStatistics.total_run_time
+                        + spend_time,
+                        UserRunScriptStatistics.total_run_count: UserRunScriptStatistics.total_run_count
+                        + 1,
+                        UserRunScriptStatistics.update_at: datetime.now(),
+                    }
+                )
+        if org_id and org_id != -1:
+            org_stats = (
+                db_session.query(OrgRunScriptStatistics)
+                .filter_by(org_id=org_id, run_date=run_date)
+                .first()
+            )
+            if not org_stats:
+                org_stats = OrgRunScriptStatistics(
+                    org_id=org_id,
+                    run_date=run_date,
+                    total_run_count=1,
+                    total_run_time=spend_time,
+                    update_at=datetime.now(),
+                )
+                db_session.add(org_stats)
+            else:
+                db_session.query(OrgRunScriptStatistics).filter_by(
+                    org_id=org_id, run_date=run_date
+                ).update(
+                    {
+                        OrgRunScriptStatistics.total_run_time: OrgRunScriptStatistics.total_run_time
+                        + spend_time,
+                        OrgRunScriptStatistics.total_run_count: OrgRunScriptStatistics.total_run_count
+                        + 1,
+                        OrgRunScriptStatistics.update_at: datetime.now(),
+                    }
+                )
         db_session.commit()
     except Exception as e:
-        logger.exception("update statistics sql error: %s", e)
+        logger.exception(
+            "update stats for org_id %s owner %s dtable %s run time error %s",
+            org_id,
+            owner,
+            dtable_uuid,
+            e,
+        )
 
 
 # required to get "script logs" in dtable-web
@@ -338,27 +365,6 @@ def can_run_task(owner, org_id, db_session, scripts_running_limit=None):
     return count < scripts_running_limit
 
 
-# update entries in script_log after SUB_PROCESS_TIMEOUT (typically 15 minutes)
-def check_and_set_tasks_timeout(db_session):
-    now = datetime.now()
-    sql = """
-        UPDATE script_log SET success=0, return_code=-1, output=:timeout_output, finished_at=:now
-        WHERE success IS NULL AND TIMESTAMPDIFF(SECOND, started_at, :now) > :timeout_interval
-    """
-    try:
-        db_session.execute(
-            text(sql),
-            {
-                "now": now,
-                "timeout_interval": SUB_PROCESS_TIMEOUT,
-                "timeout_output": TIMEOUT_OUTPUT,
-            },
-        )
-        db_session.commit()
-    except Exception as e:
-        logger.exception(e)
-
-
 def get_script(db_session, script_id):
     script = db_session.query(ScriptLog).filter_by(id=script_id).first()
 
@@ -381,52 +387,48 @@ def add_script(
         org_id,
         script_name,
         context_data,
+        ScriptLog.PENDING,
         datetime.now(),
         operate_from,
     )
     db_session.add(script)
     db_session.commit()
 
+    # update_stats_run_count(db_session, dtable_uuid, owner, org_id)
+
     return script
 
 
-def update_script(db_session, script, success, return_code, output):
-    script.finished_at = datetime.now()
+def update_script_running(db_session, started_at, script):
+    script.started_at = started_at
+    script.state = ScriptLog.RUNNING
+    db_session.commit()
+
+
+def update_script(
+    db_session, script, success, return_code, output, started_at, finished_at
+):
+    script.started_at = started_at
+    script.finished_at = finished_at
     script.success = success
     script.return_code = return_code
     script.output = output
+    script.state = ScriptLog.FINISHED
     db_session.commit()
 
     return script
 
 
-# run_script is called from flash_server. Initializes the process.
-def run_script(
-    script_id, dtable_uuid, script_name, script_url, temp_api_token, context_data
+def on_script_done_update(
+    db_session, script_id, success, return_code, output, started_at, spend_time
 ):
-    """Only for flask-server"""
-    # from faas_scheduler import DBSession
-    db_session = DBSession()  # for multithreading
-
-    try:
-        if not script_url:
-            script_file = get_script_file(dtable_uuid, script_name)
-            script_url = script_file.get("script_url", "")
-        logger.debug("run_script executed...")
-        call_faas_func(script_url, temp_api_token, context_data, script_id=script_id)
-    except Exception as e:
-        logger.exception("Run script %d error: %s", script_id, e)
-    finally:
-        db_session.close()
-
-    return True
-
-
-def hook_update_script(db_session, script_id, success, return_code, output, spend_time):
     script = db_session.query(ScriptLog).filter_by(id=script_id).first()
     if script:
-        update_script(db_session, script, success, return_code, output)
-        update_statistics(
+        finished_at = started_at + timedelta(seconds=spend_time)
+        update_script(
+            db_session, script, success, return_code, output, started_at, finished_at
+        )
+        update_stats(
             db_session, script.dtable_uuid, script.owner, script.org_id, spend_time
         )
 
@@ -685,6 +687,21 @@ def datetime_to_isoformat_timestr(datetime_obj):
     except Exception as e:
         logger.error(e)
         return ""
+
+
+def send_exceeded_notifications(org_ids, owners):
+    url = f"{SEATABLE_SERVER_URL.strip('/')}/api/v2.1/scripts-exceeded-notifications/"
+    headers = {"Authorization": f"Token {SCHEDULER_AUTH_TOKEN}"}
+    data = {}
+    if org_ids:
+        data["org_ids"] = org_ids
+    if owners:
+        data["owners"] = owners
+    resp = requests.post(url, headers=headers, json=data, timeout=30)
+    if not resp.ok:
+        raise SendExceededNotificationsError(
+            f"send exceeded notification for org_ids: {org_ids} owners: {owners} error status code {resp.status_code} content {resp.content}"
+        )
 
 
 def is_date_yyyy_mm_dd(value: str) -> bool:

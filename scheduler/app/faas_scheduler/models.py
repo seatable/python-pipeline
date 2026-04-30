@@ -31,6 +31,12 @@ class ScriptLog(Base):
     return_code = Column(Integer, nullable=True)
     output = Column(Text, nullable=True)
     operate_from = Column(String(255))
+    state = Column(String(10))
+    created_at = Column(DateTime, index=True)
+
+    PENDING = "pending"
+    RUNNING = "running"
+    FINISHED = "finished"
 
     def __init__(
         self,
@@ -39,7 +45,8 @@ class ScriptLog(Base):
         org_id,
         script_name,
         context_data,
-        started_at,
+        state,
+        created_at,
         operate_from=None,
     ):
         self.dtable_uuid = dtable_uuid
@@ -47,7 +54,8 @@ class ScriptLog(Base):
         self.org_id = org_id
         self.script_name = script_name
         self.context_data = context_data
-        self.started_at = started_at
+        self.state = state
+        self.created_at = created_at
         self.operate_from = operate_from
 
     def to_dict(self, include_context_data=True, include_output=True):
@@ -57,6 +65,7 @@ class ScriptLog(Base):
             "id": self.id,
             "dtable_uuid": self.dtable_uuid,
             "owner": self.owner,
+            "org_id": self.org_id,
             "script_name": self.script_name,
             "started_at": datetime_to_isoformat_timestr(self.started_at),
             "finished_at": self.finished_at
@@ -64,6 +73,9 @@ class ScriptLog(Base):
             "success": self.success,
             "return_code": self.return_code,
             "operate_from": self.operate_from,
+            "state": self.state,
+            "created_at": self.created_at
+            and datetime_to_isoformat_timestr(self.created_at),
         }
 
         if include_context_data:
@@ -103,6 +115,7 @@ class UserRunScriptStatistics(Base):
     __tablename__ = "user_run_script_statistics"
     id = Column(Integer, primary_key=True, autoincrement=True)
     username = Column(String(255), nullable=False, index=True)
+    org_id = Column(Integer, nullable=False)
     run_date = Column(Date, nullable=False)
     total_run_count = Column(Integer, default=0)
     total_run_time = Column(Float, default=0)
@@ -114,6 +127,7 @@ class UserRunScriptStatistics(Base):
         return {
             "id": self.id,
             "username": self.username,
+            "org_id": self.org_id,
             "run_date": self.run_date,
             "total_run_count": self.total_run_count,
             "total_run_time": self.total_run_time,
