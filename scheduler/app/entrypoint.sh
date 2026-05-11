@@ -18,7 +18,7 @@ fi
 function log() {
     local time=$(date +"%F %T")
     echo "$time $1 "
-    echo "[$time] $1 " &>> "{LOG_FILE}"
+    echo "[$time] $1 " &>> "${LOG_FILE}"
 }
 
 # time zone
