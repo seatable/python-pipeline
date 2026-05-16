@@ -27,6 +27,12 @@ SCHEDULER_AUTH_TOKEN = os.getenv("PYTHON_SCHEDULER_AUTH_TOKEN", "")
 DELETE_LOG_DAYS = os.environ.get("DELETE_LOG_DAYS", "30")
 DELETE_STATISTICS_DAYS = os.environ.get("DELETE_STATISTICS_DAYS", "90")
 LOG_LEVEL = os.environ.get("PYTHON_SCHEDULER_LOG_LEVEL", "INFO")
+ALTERNATIVE_FILE_SERVER_ROOT = os.environ.get(
+    "PYTHON_STARTER_ALTERNATIVE_FILE_SERVER_ROOT", ""
+)
+USE_ALTERNATIVE_FILE_SERVER_ROOT = os.environ.get(
+    "PYTHON_STARTER_USE_ALTERNATIVE_FILE_SERVER_ROOT", ""
+)
 
 # defaults...
 LOG_DIR = "/opt/scheduler/logs/"
@@ -190,6 +196,43 @@ def get_script_file(dtable_uuid, script_name):
         raise ValueError("script not found")
 
     return response.json()
+
+
+def get_script_content(dtable_uuid, script_name):
+    script_file_info = get_script_file(dtable_uuid, script_name)
+    script_url = script_file_info["script_url"]
+    if (
+        USE_ALTERNATIVE_FILE_SERVER_ROOT.lower() == "true"
+        and ALTERNATIVE_FILE_SERVER_ROOT
+    ):
+        logger.info("old script_url: %s", script_url)
+        script_url = requests.utils.requote_uri(
+            script_url.replace(
+                script_url.split("/", 3)[:3][-1],
+                script_url.split("/", 3)[:3][-1],
+            )
+        )
+        script_url = requests.compat.re.sub(
+            r"https?://.*?/", ALTERNATIVE_FILE_SERVER_ROOT.strip("/") + "/", script_url
+        )
+        logger.info("new script_url: %s", script_url)
+
+    headers = {"User-Agent": "python-scheduler/" + VERSION}
+    response = requests.get(script_url, headers=headers, timeout=60)
+    if response.status_code < 200 or response.status_code >= 300:
+        logger.error(
+            "Fail to get script content: %s %s, error response: %s, %s",
+            dtable_uuid,
+            script_name,
+            response.status_code,
+            response.text,
+        )
+        raise ValueError("script content not found")
+
+    return {
+        "script_content": response.text,
+        "temp_api_token": script_file_info["temp_api_token"],
+    }
 
 
 def update_stats(db_session, dtable_uuid, owner, org_id, spend_time):

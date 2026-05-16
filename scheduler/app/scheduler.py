@@ -12,7 +12,7 @@ from faas_scheduler.constants import SCRIPTS_KEY
 from faas_scheduler.models import ScriptLog
 from faas_scheduler.redis_client import RedisClient
 from faas_scheduler.utils import (
-    get_script_file,
+    get_script_content,
     update_script,
     delete_log_after_days,
     delete_statistics_after_days,
@@ -117,7 +117,7 @@ class Scheduler:
                 ScriptLog.id == script_log_info["id"]
             ).update({ScriptLog.state: ScriptLog.RUNNING})
             db_session.commit()
-            script_file_info = get_script_file(
+            script_content_info = get_script_content(
                 script_log_info["dtable_uuid"], script_log_info["script_name"]
             )
             self.redis_client.lpush(
@@ -125,11 +125,11 @@ class Scheduler:
                 json.dumps(
                     {
                         "script_id": script_log_info["id"],
-                        "script_url": script_file_info["script_url"],
+                        "script_content": script_content_info["script_content"],
                         "dtable_uuid": script_log_info["dtable_uuid"],
                         "env": {
                             "dtable_web_url": SEATABLE_SERVER_URL.rstrip("/"),
-                            "api_token": script_file_info["temp_api_token"],
+                            "api_token": script_content_info["temp_api_token"],
                         },
                         "context_data": script_log_info["context_data"],
                     }
