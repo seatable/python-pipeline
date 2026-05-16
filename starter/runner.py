@@ -121,6 +121,7 @@ elif os.path.isfile("/etc/timezone"):
         time_zone_str = time_zone_str.strip()
         SYSTEM_TIMEZONE_COMMAND = ["-e", "TZ=%s" % time_zone_str]
 
+
 class CallbackScriptRunningError(Exception):
     pass
 
