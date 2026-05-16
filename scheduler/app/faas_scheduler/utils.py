@@ -1,6 +1,7 @@
 import os
 import json
 import logging
+import re
 import requests
 from datetime import datetime, timedelta
 from typing import List, Optional, Tuple
@@ -212,7 +213,7 @@ def get_script_content(dtable_uuid, script_name):
                 script_url.split("/", 3)[:3][-1],
             )
         )
-        script_url = requests.compat.re.sub(
+        script_url = re.sub(
             r"https?://.*?/", ALTERNATIVE_FILE_SERVER_ROOT.strip("/") + "/", script_url
         )
         logger.info("new script_url: %s", script_url)
