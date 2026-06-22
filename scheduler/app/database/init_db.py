@@ -59,7 +59,7 @@ sql = "mysql -h %s -u%s -p%s %s </opt/scheduler/database/initial_tables.sql" % (
 os.system(sql)
 
 sql = (
-    "mysql -h %s -u%s -p%s %s -e \"INSERT INTO version_history (version, update_at) "
+    'mysql -h %s -u%s -p%s %s -e "INSERT INTO version_history (version, update_at) '
     "SELECT '%s', NOW() WHERE NOT EXISTS (SELECT 1 FROM version_history LIMIT 1);\""
     % (
         shlex.quote(DB_HOST),
