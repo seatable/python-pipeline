@@ -22,6 +22,8 @@ else:
 DB_HOST = os.getenv("DB_HOST", "seatable-mysql")
 DB_PORT = int(os.getenv("DB_PORT", "3306"))
 DATABASE_NAME = os.getenv("DATABASE_NAME", "scheduler")
+# All upgrade statements start from 2.2.4, but here it is not actually 2.2.4—it's just a default value.
+CURRENT_VERSION = os.getenv("VERSION", "2.2.4")
 
 
 def wait_for_mysql():
@@ -54,6 +56,20 @@ sql = "mysql -h %s -u%s -p%s %s </opt/scheduler/database/initial_tables.sql" % (
     shlex.quote(db_user),
     shlex.quote(db_passwd),
     DATABASE_NAME,
+)
+os.system(sql)
+
+# Write the current version number directly during the initial deployment.
+sql = (
+    'mysql -h %s -u%s -p%s %s -e "INSERT INTO version_history (version, update_at) '
+    "SELECT '%s', NOW() WHERE NOT EXISTS (SELECT 1 FROM version_history LIMIT 1);\""
+    % (
+        shlex.quote(DB_HOST),
+        shlex.quote(db_user),
+        shlex.quote(db_passwd),
+        DATABASE_NAME,
+        CURRENT_VERSION,
+    )
 )
 os.system(sql)
 
