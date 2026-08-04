@@ -514,6 +514,8 @@ def get_script_runs(
         ScriptLog.success,
         ScriptLog.return_code,
         ScriptLog.operate_from,
+        ScriptLog.state,
+        ScriptLog.created_at,
     ]
     query = (
         db_session.query(ScriptLog)
