@@ -434,7 +434,6 @@ def run_python(data):
 
         if return_code == 137:
             output += "out-of-memory(OOM) error!\n"
-            output.error("Out of memory!!!")
         output += result.stdout.decode()
         logging.debug("the output: %s", output)
     finally:
