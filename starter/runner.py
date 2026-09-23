@@ -1,7 +1,6 @@
 import json
 import logging
 import os
-import re
 import shutil
 import subprocess
 import time
@@ -26,12 +25,6 @@ PYTHON_RUNNER_IMAGE = os.environ.get("PYTHON_RUNNER_IMAGE")
 
 THREAD_COUNT = int(os.environ.get("PYTHON_STARTER_THREAD_COUNT", 10))
 SUB_PROCESS_TIMEOUT = int(os.environ.get("PYTHON_PROCESS_TIMEOUT", 60 * 15))  # 15 mins
-ALTERNATIVE_FILE_SERVER_ROOT = os.environ.get(
-    "PYTHON_STARTER_ALTERNATIVE_FILE_SERVER_ROOT", ""
-)
-USE_ALTERNATIVE_FILE_SERVER_ROOT = os.environ.get(
-    "PYTHON_STARTER_USE_ALTERNATIVE_FILE_SERVER_ROOT", ""
-)
 
 OUTPUT_LIMIT = int(os.environ.get("PYTHON_RUNNER_OUTPUT_LIMIT", 1000000))
 CONTAINER_MEMORY = os.environ.get(
@@ -129,14 +122,6 @@ elif os.path.isfile("/etc/timezone"):
         SYSTEM_TIMEZONE_COMMAND = ["-e", "TZ=%s" % time_zone_str]
 
 
-def to_python_bool(value):
-    if isinstance(value, bool):
-        return value
-    if not isinstance(value, str):
-        return False
-    return value.lower() == "true"
-
-
 class CallbackScriptRunningError(Exception):
     pass
 
@@ -218,19 +203,12 @@ def run_python(data):
 
     callback_script_running(data.get("script_id"), started_at)
 
-    script_url = data.get("script_url")
-    if not script_url:
-        send_to_scheduler(False, None, "Script URL is missing", started_at, None, data)
-        return
-    if (
-        to_python_bool(USE_ALTERNATIVE_FILE_SERVER_ROOT)
-        and ALTERNATIVE_FILE_SERVER_ROOT
-    ):
-        logging.info("old script_url: %s", script_url)
-        script_url = re.sub(
-            r"https?://.*?/", ALTERNATIVE_FILE_SERVER_ROOT.strip("/") + "/", script_url
+    script_content = data.get("script_content")
+    if not isinstance(script_content, str):
+        send_to_scheduler(
+            False, None, "Script content is missing", started_at, None, data
         )
-        logging.info("new script_url: %s", script_url)
+        return
 
     # env must be map
     env = data.get("env")
@@ -251,22 +229,6 @@ def run_python(data):
         context_data = None
     context_data = json.dumps(context_data) if context_data else None
 
-    logging.debug("try to get script from seatable server")
-    try:
-        headers = {"User-Agent": "python-starter/" + VERSION}
-        resp = requests.get(script_url, headers=headers, timeout=60)
-        logging.debug("response from seatable server: resp: %s", resp)
-        if resp.status_code < 200 or resp.status_code >= 300:
-            logging.error(
-                "Failed to get script from %s, response: %s", script_url, resp
-            )
-            send_to_scheduler(False, None, "Fail to get script", started_at, None, data)
-            return
-    except Exception as e:
-        logging.error("Failed to get script from %s, error: %s", script_url, e)
-        send_to_scheduler(False, None, "Fail to get script", started_at, None, data)
-        return
-
     logging.debug("Generate temporary random folder directory")
     tmp_id = uuid4().hex
     tmp_dir = os.path.join(PYTHON_TRANSFER_DIRECTORY, tmp_id)
@@ -281,7 +243,7 @@ def run_python(data):
     logging.debug("try to save the script and env.list to the temporary directory")
     try:
         with open(os.path.join(tmp_dir, "index.py"), "wb") as f:
-            f.write(resp.content)
+            f.write(script_content.encode("utf-8"))
         # save env
         env_file = os.path.join(tmp_dir, "env.list")
         with open(env_file, "w") as f:
@@ -295,7 +257,7 @@ def run_python(data):
 
         return_code, output = None, ""  # init output
     except Exception as e:
-        logging.error("Failed to save script %s, error: %s", script_url, e)
+        logging.error("Failed to save script content, error: %s", e)
         send_to_scheduler(False, -1, "", started_at, 0, data)
         return
 
@@ -394,8 +356,7 @@ def run_python(data):
             )
         except Exception as stop_e:
             logging.warning(
-                "stop script: %s container: %s, error: %s",
-                script_url,
+                "stop script content container: %s, error: %s",
                 container_name,
                 stop_e,
             )
@@ -410,7 +371,7 @@ def run_python(data):
         return
     except Exception as e:
         logging.exception(e)
-        logging.error("Failed to run file %s error: %s", script_url, e)
+        logging.error("Failed to run script content error: %s", e)
         send_to_scheduler(False, None, None, started_at, None, data)
         return
     else:
