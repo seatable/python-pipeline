@@ -1,5 +1,5 @@
 astroid==3.0.3
-black==24.2.0
+black==26.10.1
 click==8.1.7
 dill==0.3.8
 isort==5.13.2
