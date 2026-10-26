@@ -12,7 +12,7 @@ from faas_scheduler.constants import SCRIPTS_KEY
 from faas_scheduler.models import ScriptLog
 from faas_scheduler.redis_client import RedisClient
 from faas_scheduler.utils import (
-    get_script_file,
+    get_script_content,
     update_script,
     delete_log_after_days,
     delete_statistics_after_days,
@@ -25,6 +25,7 @@ logger = logging.getLogger(__name__)
 
 SEATABLE_SERVER_URL = os.environ.get("SEATABLE_SERVER_URL")
 REDIS_SCRIPTS_QUEUE_MAX_SIZE = int(os.environ.get("REDIS_SCRIPTS_QUEUE_MAX_SIZE", "1"))
+DRAFT_CONTENT_LOST_ERROR = "Draft script content was lost after scheduler restart"
 
 
 class Scheduler:
@@ -117,7 +118,7 @@ class Scheduler:
                 ScriptLog.id == script_log_info["id"]
             ).update({ScriptLog.state: ScriptLog.RUNNING})
             db_session.commit()
-            script_file_info = get_script_file(
+            script_content_info = get_script_content(
                 script_log_info["dtable_uuid"], script_log_info["script_name"]
             )
             self.redis_client.lpush(
@@ -125,11 +126,11 @@ class Scheduler:
                 json.dumps(
                     {
                         "script_id": script_log_info["id"],
-                        "script_url": script_file_info["script_url"],
+                        "script_content": script_content_info["script_content"],
                         "dtable_uuid": script_log_info["dtable_uuid"],
                         "env": {
                             "dtable_web_url": SEATABLE_SERVER_URL.rstrip("/"),
-                            "api_token": script_file_info["temp_api_token"],
+                            "api_token": script_content_info["temp_api_token"],
                         },
                         "context_data": script_log_info["context_data"],
                     }
@@ -182,6 +183,89 @@ class Scheduler:
                 db_session.close()
             self.on_script_done(script_log_info, 0)
 
+    def run_draft_script(self, script_log_info: dict):
+        now = time.time()
+
+        db_session = DBSession()
+        try:
+            script_content = script_log_info.get("script_content")
+            temp_api_token = script_log_info.get("temp_api_token")
+            if not isinstance(script_content, str) or not temp_api_token:
+                raise ValueError(DRAFT_CONTENT_LOST_ERROR)
+
+            db_session.query(ScriptLog).filter(
+                ScriptLog.id == script_log_info["id"]
+            ).update({ScriptLog.state: ScriptLog.RUNNING})
+            db_session.commit()
+            self.redis_client.lpush(
+                SCRIPTS_KEY,
+                json.dumps(
+                    {
+                        "script_id": script_log_info["id"],
+                        "script_content": script_content,
+                        "dtable_uuid": script_log_info["dtable_uuid"],
+                        "env": {
+                            "dtable_web_url": SEATABLE_SERVER_URL.rstrip("/"),
+                            "api_token": temp_api_token,
+                        },
+                        "context_data": script_log_info["context_data"],
+                    }
+                ),
+            )
+            logger.info(
+                "dispatched script id %s org_id %s owner %s dtable_uuid %s script_name %s",
+                script_log_info["id"],
+                script_log_info["org_id"],
+                script_log_info["owner"],
+                script_log_info["dtable_uuid"],
+                script_log_info["script_name"],
+            )
+        except Exception as e:
+            output = (
+                DRAFT_CONTENT_LOST_ERROR
+                if str(e) == DRAFT_CONTENT_LOST_ERROR
+                else "Failed"
+            )
+            logger.exception(
+                "dispatched script id %s org_id %s owner %s dtable_uuid %s script_name %s error %s",
+                script_log_info["id"],
+                script_log_info["org_id"],
+                script_log_info["owner"],
+                script_log_info["dtable_uuid"],
+                script_log_info["script_name"],
+                e,
+            )
+            try:
+                script_log = (
+                    db_session.query(ScriptLog)
+                    .filter(ScriptLog.id == script_log_info["id"])
+                    .first()
+                )
+                update_script(
+                    db_session,
+                    script_log,
+                    False,
+                    -1,
+                    output,
+                    datetime.fromtimestamp(now),
+                    datetime.fromtimestamp(now),
+                )
+            except Exception as ee:
+                logger.exception(
+                    "update script id %s org_id %s owner %s dtable_uuid %s script_name %s finished error %s",
+                    script_log_info["id"],
+                    script_log_info["org_id"],
+                    script_log_info["owner"],
+                    script_log_info["dtable_uuid"],
+                    script_log_info["script_name"],
+                    ee,
+                )
+            finally:
+                db_session.close()
+            self.on_script_done(script_log_info, 0)
+        else:
+            db_session.close()
+
     def load_pending_script_logs(self):
         db_session = DBSession()
         try:
@@ -191,7 +275,23 @@ class Scheduler:
                 .order_by(ScriptLog.id)
             )
             logger.info("load %s pending scripts", len(script_logs))
+            now = datetime.now()
             for script_log in script_logs:
+                if script_log.operate_from == "draft":
+                    update_script(
+                        db_session,
+                        script_log,
+                        False,
+                        -1,
+                        DRAFT_CONTENT_LOST_ERROR,
+                        now,
+                        now,
+                    )
+                    logger.info(
+                        "mark pending draft script %s as failed after scheduler restart",
+                        script_log.id,
+                    )
+                    continue
                 self.add_script(script_log.to_dict())
         except Exception as e:
             logger.exception("load pending script logs error %s", e)
@@ -237,7 +337,10 @@ class Scheduler:
                 usage / (self.window_secs * self.python_starter_total_thread_count)
                 < self.rate_limit_percent
             ):
-                self.run_script(script_log_info)
+                if script_log_info.get("operate_from") == "draft":
+                    self.run_draft_script(script_log_info)
+                else:
+                    self.run_script(script_log_info)
             else:
                 db_session = DBSession()
                 try:

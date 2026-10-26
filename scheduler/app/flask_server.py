@@ -99,6 +99,67 @@ def scripts_api():
         db_session.close()
 
 
+@app.route("/run-draft-script/", methods=["POST"])
+def draft_scripts_api():
+    if not check_auth_token(request):
+        return make_response(("Forbidden: the auth token is not correct.", 403))
+
+    logger.debug("dtable-web initialized the execution of a draft python script...")
+    try:
+        data = json.loads(request.data)
+        if not isinstance(data, dict):
+            return make_response(("Bad request", 400))
+    except Exception:
+        return make_response(("Bad request", 400))
+
+    dtable_uuid = data.get("dtable_uuid")
+    script_name = data.get("script_name")
+    script_content = data.get("script_content")
+    context_data = data.get("context_data")
+    owner = data.get("owner")
+    org_id = data.get("org_id")
+    temp_api_token = data.get("temp_api_token")
+    scripts_running_limit = data.get("scripts_running_limit", -1)
+    operate_from = data.get("operate_from", "draft")
+    if (
+        not dtable_uuid
+        or not script_name
+        or not owner
+        or not isinstance(script_content, str)
+        or not temp_api_token
+    ):
+        return make_response(("Parameters invalid", 400))
+
+    db_session = DBSession()
+    logger.debug("create a database entry for this draft python run...")
+    try:
+        if scripts_running_limit != -1 and not can_run_task(
+            owner, org_id, db_session, scripts_running_limit=scripts_running_limit
+        ):
+            return make_response(("The number of runs exceeds the limit"), 400)
+
+        script_log = add_script(
+            db_session,
+            dtable_uuid,
+            owner,
+            org_id,
+            script_name,
+            context_data,
+            operate_from,
+        )
+        script_log_info = script_log.to_dict()
+        script_log_info["script_content"] = script_content
+        script_log_info["temp_api_token"] = temp_api_token
+        scheduler.add_script(script_log_info)
+
+        return make_response(({"script_id": script_log.id}, 200))
+    except Exception as e:
+        logger.exception(e)
+        return make_response(("Internal server error", 500))
+    finally:
+        db_session.close()
+
+
 # called from dtable-web to get the status of a specific run.
 @app.route("/run-script/<script_id>/", methods=["GET"])
 def script_api(script_id):
