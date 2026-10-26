@@ -210,6 +210,14 @@ def callback_script_running(script_id, started_at):
         )
 
 
+def cleanup_tmp_dir(tmp_dir):
+    logging.debug("try to clean up and delete the directory")
+    try:
+        shutil.rmtree(tmp_dir)
+    except Exception as e:
+        logging.warning("Fail to remove script files error: %s", e)
+
+
 def run_python(data):
 
     logging.info("New python run initalized... (v%s)", VERSION)
@@ -296,6 +304,7 @@ def run_python(data):
         return_code, output = None, ""  # init output
     except Exception as e:
         logging.error("Failed to save script %s, error: %s", script_url, e)
+        cleanup_tmp_dir(tmp_dir)
         send_to_scheduler(False, -1, "", started_at, 0, data)
         return
 
@@ -304,6 +313,7 @@ def run_python(data):
         os.chown(tmp_dir, SEATABLE_USER_UID, SEATABLE_USER_GID)
     except Exception as e:
         logging.error("Failed to chown %s, error: %s", tmp_dir, e)
+        cleanup_tmp_dir(tmp_dir)
         send_to_scheduler(False, -1, "", started_at, 0, data)
         return
 
@@ -437,12 +447,7 @@ def run_python(data):
         output += result.stdout.decode()
         logging.debug("the output: %s", output)
     finally:
-        logging.debug("try to clean up and delete the directory")
-
-        try:
-            shutil.rmtree(tmp_dir)
-        except Exception as e:
-            logging.warning("Fail to remove script files error: %s", e)
+        cleanup_tmp_dir(tmp_dir)
 
         try:
             subprocess.run(
@@ -458,11 +463,11 @@ def run_python(data):
     spend_time = time.time() - started_at
     logging.info("python run finished successful. duration was: %s", spend_time)
     logging.debug(
-        "send this to the scheduler. return_code: %s, output: %s, spend_time: %s, data: %s",
+        "send result to scheduler. script_id: %s, return_code: %s, output: %s, spend_time: %s",
+        data.get("script_id"),
         return_code,
         output,
         spend_time,
-        data,
     )
     send_to_scheduler(
         return_code == 0, return_code, output, started_at, spend_time, data

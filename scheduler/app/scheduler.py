@@ -120,6 +120,11 @@ class Scheduler:
             script_file_info = get_script_file(
                 script_log_info["dtable_uuid"], script_log_info["script_name"]
             )
+            env = {
+                "dtable_web_url": SEATABLE_SERVER_URL.rstrip("/"),
+                "api_token": script_file_info["temp_api_token"],
+            }
+            env.update(script_file_info["secrets"])
             self.redis_client.lpush(
                 SCRIPTS_KEY,
                 json.dumps(
@@ -127,10 +132,7 @@ class Scheduler:
                         "script_id": script_log_info["id"],
                         "script_url": script_file_info["script_url"],
                         "dtable_uuid": script_log_info["dtable_uuid"],
-                        "env": {
-                            "dtable_web_url": SEATABLE_SERVER_URL.rstrip("/"),
-                            "api_token": script_file_info["temp_api_token"],
-                        },
+                        "env": env,
                         "context_data": script_log_info["context_data"],
                     }
                 ),
